@@ -27,6 +27,7 @@
   let error = $state("");
   let query = $state("");
   let filter = $state<LibraryFilter>("all");
+  let rootFilter = $state("all");
   let sort = $state<LibrarySort>("nameAsc");
 
   let duplicateIds = $derived(findDuplicateIds(snapshot?.library.items ?? []));
@@ -37,7 +38,12 @@
       .slice()
       .sort(compareItems),
   );
-  let controlsChanged = $derived(query.trim().length > 0 || filter !== "all" || sort !== "nameAsc");
+  let controlsChanged = $derived(
+    query.trim().length > 0 ||
+    filter !== "all" ||
+    rootFilter !== "all" ||
+    sort !== "nameAsc",
+  );
   let packCount = $derived(
     snapshot
       ? snapshot.library.summary.behaviorPacks + snapshot.library.summary.resourcePacks + snapshot.library.summary.skinPacks
@@ -75,7 +81,14 @@
     return ids;
   }
 
+  function rootLabel(rootId: string): string {
+    const root = snapshot?.minecraft.roots.find((candidate) => candidate.id === rootId);
+    if (!root) return "Unknown storage";
+    return root.accountHint ?? root.storageKind;
+  }
+
   function matchesCurrentFilter(item: LocalContentItem): boolean {
+    if (rootFilter !== "all" && item.rootId !== rootFilter) return false;
     if (filter === "issues" && item.status !== "invalidMetadata") return false;
     if (filter === "duplicates" && !duplicateIds.has(item.id)) return false;
     if (filter !== "all" && filter !== "issues" && filter !== "duplicates" && item.contentType !== filter) return false;
@@ -100,6 +113,7 @@
   function resetControls(): void {
     query = "";
     filter = "all";
+    rootFilter = "all";
     sort = "nameAsc";
   }
 
@@ -296,6 +310,14 @@
         <option value="duplicates">Duplicate UUIDs</option>
         <option value="issues">Needs review</option>
       </select>
+      {#if snapshot.minecraft.roots.length > 1}
+        <select class="select-field" bind:value={rootFilter} aria-label="Filter Minecraft storage">
+          <option value="all">All storage</option>
+          {#each snapshot.minecraft.roots as root}
+            <option value={root.id}>{root.accountHint ?? root.storageKind}</option>
+          {/each}
+        </select>
+      {/if}
       <select class="select-field" bind:value={sort} aria-label="Sort library">
         <option value="nameAsc">Name A–Z</option>
         <option value="nameDesc">Name Z–A</option>
@@ -343,6 +365,7 @@
             <div class="content-card__meta">
               <span>{localContentTypeLabel(item.contentType)}</span>
               {#if item.isDevelopment}<span class="chip">Development</span>{/if}
+              {#if snapshot.minecraft.roots.length > 1}<span class="chip">{rootLabel(item.rootId)}</span>{/if}
               {#if duplicateIds.has(item.id)}<span class="chip">Duplicate UUID</span>{/if}
             </div>
             <h2 title={item.title}>{item.title}</h2>
