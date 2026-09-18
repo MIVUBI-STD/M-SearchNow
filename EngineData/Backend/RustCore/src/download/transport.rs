@@ -1,6 +1,8 @@
 use super::model::DownloadSourceRef;
 use crate::error::{BackendError, BackendResult};
-use std::{collections::HashMap, fs::File, io::Read, path::Path, sync::Arc};
+use std::{collections::HashMap, io::Read, sync::Arc};
+#[cfg(test)]
+use std::{fs::File, path::Path};
 
 pub struct DownloadTransportStream {
     pub reader: Box<dyn Read + Send>,
@@ -43,6 +45,7 @@ impl DownloadTransportRegistry {
         Self::default()
     }
 
+    #[cfg(test)]
     pub fn with_local_file() -> BackendResult<Self> {
         let mut registry = Self::new();
         registry.register(Arc::new(LocalFileTransport))?;
@@ -89,15 +92,13 @@ impl DownloadTransportRegistry {
         };
         transport.open(source)
     }
-
-    pub fn contains(&self, key: &str) -> bool {
-        self.transports.contains_key(key)
-    }
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct LocalFileTransport;
 
+#[cfg(test)]
 impl DownloadTransport for LocalFileTransport {
     fn key(&self) -> &str {
         "local-file"

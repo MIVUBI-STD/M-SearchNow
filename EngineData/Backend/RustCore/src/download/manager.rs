@@ -30,6 +30,7 @@ pub struct DownloadManager {
 }
 
 impl DownloadManager {
+    #[cfg(test)]
     pub fn new(policy: DownloadPolicy) -> BackendResult<Self> {
         validate_policy(policy)?;
         Ok(Self {
@@ -123,6 +124,7 @@ impl DownloadManager {
         }
     }
 
+    #[cfg(test)]
     pub fn enqueue(&mut self, request: DownloadRequest) -> BackendResult<DownloadJob> {
         self.enqueue_to(request, None)
     }

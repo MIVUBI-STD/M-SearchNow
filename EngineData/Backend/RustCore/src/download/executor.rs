@@ -71,6 +71,7 @@ impl DownloadExecutionRuntime {
         Ok(snapshot)
     }
 
+    #[cfg(test)]
     pub fn queue(&self, request: DownloadRequest) -> BackendResult<DownloadJob> {
         self.queue_to(request, None)
     }

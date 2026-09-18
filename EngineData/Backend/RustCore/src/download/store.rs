@@ -3,7 +3,7 @@ use crate::{
     error::{BackendError, BackendResult},
     storage::AtomicFileStore,
 };
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 const MAX_DOWNLOAD_STATE_BYTES: u64 = 4 * 1024 * 1024;
 
@@ -17,10 +17,6 @@ impl DownloadStore {
         Self {
             file: AtomicFileStore::new(path, ".downloads.backup", ".downloads"),
         }
-    }
-
-    pub fn path(&self) -> &Path {
-        self.file.path()
     }
 
     pub fn load(&self) -> BackendResult<PersistedDownloadState> {
