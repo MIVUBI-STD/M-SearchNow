@@ -218,3 +218,59 @@ fn finalization_keeps_existing_file_and_uses_next_available_name() {
         b"complete payload"
     );
 }
+
+#[test]
+fn store_rejects_invalid_json() {
+    let directory = tempfile::tempdir().expect("tempdir");
+    let path = directory.path().join("downloads.json");
+    fs::write(&path, b"{not-json").expect("corrupt state");
+    let store = DownloadStore::new(path);
+
+    let error = store.load().expect_err("invalid JSON must fail closed");
+    assert_eq!(error.code(), "download_state_invalid_json");
+}
+
+#[test]
+fn store_rejects_unsupported_schema() {
+    let directory = tempfile::tempdir().expect("tempdir");
+    let path = directory.path().join("downloads.json");
+    fs::write(
+        &path,
+        br#"{"schemaVersion":999,"nextSequence":1,"jobs":[]}"#,
+    )
+    .expect("future state");
+    let store = DownloadStore::new(path);
+
+    let error = store
+        .load()
+        .expect_err("unsupported schema must fail closed");
+    assert_eq!(error.code(), "download_state_schema_unsupported");
+}
+
+#[test]
+fn invalid_terminal_and_active_transitions_fail_closed() {
+    let mut manager = DownloadManager::new(DownloadPolicy::default()).expect("manager");
+    let job = manager.enqueue(request("pack")).expect("queue");
+
+    let error = manager
+        .mark_completed(&job.id)
+        .expect_err("queued job must not complete");
+    assert_eq!(error.code(), "download_complete_state_invalid");
+
+    let error = manager
+        .remove_terminal(&job.id)
+        .expect_err("queued job must not be removed");
+    assert_eq!(error.code(), "download_remove_state_invalid");
+
+    manager.claim_ready_jobs();
+    manager.mark_transferring(&job.id).expect("transfer");
+    manager
+        .report_progress(&job.id, 10, Some(10))
+        .expect("progress");
+    manager.begin_finalizing(&job.id).expect("finalize");
+
+    let error = manager
+        .request_cancel(&job.id)
+        .expect_err("finalizing job must not be cancelled");
+    assert_eq!(error.code(), "download_cancel_too_late");
+}
