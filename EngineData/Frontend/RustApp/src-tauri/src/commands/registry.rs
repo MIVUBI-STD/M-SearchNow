@@ -12,6 +12,7 @@ pub fn register<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         crate::commands::package::choose_and_inspect_package,
         crate::commands::package::choose_and_inspect_package_folder,
         crate::commands::package::import_package,
+        crate::commands::package::replace_package,
         crate::commands::catalog::query_catalog,
         crate::commands::desktop::choose_download_directory,
         crate::commands::desktop::open_local_content_directory,

@@ -56,6 +56,21 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
   package_import_not_ready: "This package must pass inspection before it can be imported.",
   package_import_root_unavailable: "The selected Minecraft storage is no longer available.",
   package_import_kind_unsupported: "This Minecraft content type is not supported by automatic import yet.",
+  package_replace_not_supported: "Automatic update currently supports one .mcpack at a time.",
+  package_replace_uuid_missing: "This pack cannot be updated automatically because it has no manifest UUID.",
+  package_replace_target_missing: "The installed pack to update could not be found.",
+  package_replace_target_ambiguous: "More than one installed pack uses this UUID, so SearchNow will not update automatically.",
+  package_replace_kind_unsupported: "This pack type is not supported by automatic update.",
+  package_replace_type_mismatch: "The installed content type does not match the incoming pack.",
+  package_replace_same_version: "This exact pack version is already installed.",
+  package_replace_path_rejected: "SearchNow refused to update this pack because its installed location is not safe.",
+  package_replace_existing_unavailable: "The installed pack is no longer available.",
+  package_replace_existing_invalid: "The installed pack path is not safe to update.",
+  package_replace_staging_failed: "SearchNow could not prepare the pack update.",
+  package_replace_backup_failed: "SearchNow could not preserve the installed pack before updating.",
+  package_replace_manifest_missing: "The update package changed after inspection and can no longer be applied.",
+  package_replace_commit_failed: "SearchNow could not install the update. The previous pack was restored when possible.",
+  package_replace_cleanup_failed: "The update was installed, but SearchNow could not clean its temporary backup.",
 };
 
 export function toProductError(error: unknown, fallbackMessage: string): ProductError {

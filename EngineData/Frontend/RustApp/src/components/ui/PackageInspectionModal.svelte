@@ -10,6 +10,7 @@
     installedItems,
     onClose,
     onImport,
+    onUpdate,
     importBusy = false,
   }: {
     inspection: PackageInspection | null;
@@ -18,6 +19,7 @@
     installedItems: LocalContentItem[];
     onClose: () => void;
     onImport: (rootId: string) => void;
+    onUpdate: (rootId: string) => void;
     importBusy?: boolean;
   } = $props();
 
@@ -70,6 +72,24 @@
     );
   }
 
+  function updateTarget(): LocalContentItem | null {
+    if (!inspection || inspection.inputKind !== "mcPack" || inspection.packs.length !== 1) return null;
+    const conflicts = conflictingItems();
+    if (conflicts.length !== 1) return null;
+    const incomingVersion = inspection.packs[0].version;
+    const installedVersion = conflicts[0].version.join(".");
+    if (!incomingVersion || incomingVersion === installedVersion) return null;
+    return conflicts[0];
+  }
+
+  function canAutoUpdate(): boolean {
+    if (!inspection || inspection.status !== "ready") return false;
+    const target = updateTarget();
+    if (!target) return false;
+    const kind = inspection.packs[0].kind;
+    return kind === "behaviorPack" || kind === "resourcePack" || kind === "skinPack";
+  }
+
   function canAutoImport(): boolean {
     if (!inspection || inspection.status !== "ready" || conflictingItems().length > 0) return false;
     if (inspection.inputKind === "mcWorld") return inspection.world !== null;
@@ -82,6 +102,7 @@
     if (!inspection) return "";
     if (inspection.status === "rejected") return "Rejected";
     if (inspection.status === "issues") return "Needs review";
+    if (canAutoUpdate()) return "Update available";
     if (conflictingItems().length > 0) return "Already installed";
     return canAutoImport() ? "Ready to import" : "Inspection passed";
   }
@@ -138,8 +159,12 @@
 
         {#if conflictingItems().length}
           <div class="catalog-modal__issue">
-            <strong>Already installed</strong>
-            <span>{conflictingItems().map((item) => item.title).join(", ")} uses the same manifest UUID in this Minecraft storage.</span>
+            <strong>{canAutoUpdate() ? "Update available" : "Already installed"}</strong>
+            {#if canAutoUpdate() && updateTarget()}
+              <span>{updateTarget()!.title}: v{updateTarget()!.version.join(".")} → v{inspection.packs[0].version}</span>
+            {:else}
+              <span>{conflictingItems().map((item) => item.title).join(", ")} uses the same manifest UUID in this Minecraft storage.</span>
+            {/if}
           </div>
         {/if}
 
@@ -165,14 +190,25 @@
         />
 
         <div class="catalog-modal__footer">
-          <button
-            class="button button--primary"
-            type="button"
-            disabled={!canAutoImport() || roots.length === 0 || importBusy}
-            onclick={() => onImport(selectedRootId)}
-          >
-            {importBusy ? "Importing…" : "Import package"}
-          </button>
+          {#if canAutoUpdate()}
+            <button
+              class="button button--primary"
+              type="button"
+              disabled={roots.length === 0 || importBusy}
+              onclick={() => onUpdate(selectedRootId)}
+            >
+              {importBusy ? "Updating…" : "Update installed pack"}
+            </button>
+          {:else}
+            <button
+              class="button button--primary"
+              type="button"
+              disabled={!canAutoImport() || roots.length === 0 || importBusy}
+              onclick={() => onImport(selectedRootId)}
+            >
+              {importBusy ? "Importing…" : "Import package"}
+            </button>
+          {/if}
         </div>
       </div>
     </div>

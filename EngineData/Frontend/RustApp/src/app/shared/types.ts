@@ -372,3 +372,8 @@ export type PackageImportResult = {
   imported: ImportedPack[];
   world: ImportedWorld | null;
 };
+
+export type PackageReplaceRequest = {
+  sourcePath: string;
+  rootId: string;
+};

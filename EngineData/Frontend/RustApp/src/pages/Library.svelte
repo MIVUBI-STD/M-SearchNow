@@ -141,6 +141,28 @@
     inspectionBusy = false;
   }
 
+  async function updateInspectedPackage(rootId: string): Promise<void> {
+    const inspection = packageInspection;
+    if (!inspection || importBusy) return;
+    importBusy = true;
+    error = "";
+    success = "";
+    const result = await runtimeProductFacade.replacePackage({
+      sourcePath: inspection.sourcePath,
+      rootId,
+    });
+    if (result.ok) {
+      const name = result.data.imported[0]?.name ?? "Pack";
+      success = `${name} updated successfully.`;
+      packageInspection = null;
+      loaded = false;
+      await refresh();
+    } else {
+      error = result.error.message;
+    }
+    importBusy = false;
+  }
+
   async function importInspectedPackage(rootId: string): Promise<void> {
     const inspection = packageInspection;
     if (!inspection || importBusy) return;
@@ -328,5 +350,6 @@
     if (!importBusy) packageInspection = null;
   }}
   onImport={importInspectedPackage}
+  onUpdate={updateInspectedPackage}
   {importBusy}
 />

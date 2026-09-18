@@ -1,7 +1,9 @@
 use super::error::CommandError;
 use searchnow_core::{
     app_runtime::SearchNowBackendRuntime,
-    package::{PackageImportRequest, PackageImportResult, PackageInspection},
+    package::{
+        PackageImportRequest, PackageImportResult, PackageInspection, PackageReplaceRequest,
+    },
 };
 use tauri::{AppHandle, Runtime, State};
 use tauri_plugin_dialog::DialogExt;
@@ -80,5 +82,22 @@ pub async fn choose_and_inspect_package_folder<R: Runtime>(
             )
         })?
         .map(Some)
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn replace_package(
+    state: State<'_, SearchNowBackendRuntime>,
+    request: PackageReplaceRequest,
+) -> Result<PackageImportResult, CommandError> {
+    let runtime = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || runtime.replace_package(request))
+        .await
+        .map_err(|error| {
+            CommandError::new(
+                "package_replace_task_failed",
+                format!("Package update task failed: {error}"),
+            )
+        })?
         .map_err(CommandError::from)
 }
