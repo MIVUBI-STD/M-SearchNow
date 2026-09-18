@@ -58,11 +58,11 @@ All notable SearchNow repository/product changes will be recorded here.
 - Product-facing loading/empty/unavailable copy stays separate from implementation and credential details.
 - Card, metric, form, loading, and narrow-window presentation now share a final visual density/polish layer without introducing another runtime or state system.
 
-### Verified
+### Verification
 
-- Remote backend foundation verification passes 71 RustCore tests with strict Clippy, frontend architecture/size/typecheck/build checks, and native hosted-Windows RustCore/Tauri locked compilation on established baselines.
-- Frontend visual-refinement code endpoint `bd4f8426a77638fc3da54103876560390932fd9d` passes Repository Verify **#241** on the Linux/static/frontend gate, including repository contracts, 71 RustCore tests, Tauri formatting, locked dependency installation, architecture/source-size validation, Svelte/TypeScript checking, and production frontend build.
-- The immediately preceding information-hierarchy documentation baseline passes the full hosted-Windows RustCore/frontend/Tauri compile gate. Native hosted-Windows verification for `bd4f842` was queued when this entry was recorded; installed target-Windows runtime behavior remains unproven until owner smoke testing.
+- Repository verification covers RustCore format/tests/Clippy, Tauri formatting, locked frontend installation, frontend architecture/typecheck/build checks, and hosted Windows RustCore/Tauri compilation.
+- Exact commit SHA, workflow run number, test count, and current pass/fail state are intentionally not duplicated here; the `Repository Verify` run attached to the relevant branch HEAD is the verification authority.
+- Installed target-Windows runtime behavior, real provider/network behavior, performance, installer, branding, and clean-machine release acceptance remain separate evidence boundaries.
 
 ### Safety / Architecture
 
