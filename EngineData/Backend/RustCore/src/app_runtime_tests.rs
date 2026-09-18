@@ -247,3 +247,60 @@ fn local_content_directory_is_resolved_from_current_library_state() {
         pack
     );
 }
+
+#[test]
+fn local_content_directory_rejects_stale_item_ids_after_content_is_removed() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let root = temp.path().join("minecraft-root");
+    let pack = root.join("resource_packs/example");
+    fs::create_dir_all(&pack).expect("pack");
+    fs::write(
+        pack.join("manifest.json"),
+        r#"{"header":{"name":"Example Pack","version":[1,0,0]}}"#,
+    )
+    .expect("manifest");
+
+    let runtime = SearchNowBackendRuntime::compose(
+        SearchNowBackendPaths::from_roots(
+            temp.path().join("config"),
+            temp.path().join("data"),
+        ),
+        PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
+        Vec::new(),
+        HttpTransport::new_test_http(test_http_policy()).expect("test HTTP"),
+    )
+    .expect("runtime");
+
+    let mut settings = runtime.load_settings().expect("settings");
+    settings.minecraft.root_override = Some(root);
+    runtime.save_settings(&settings).expect("save settings");
+
+    let snapshot = runtime.scan_local_library().expect("library");
+    let item_id = snapshot.library.items[0].id.clone();
+    fs::remove_dir_all(&pack).expect("remove pack");
+
+    let error = runtime
+        .local_content_directory(&item_id)
+        .expect_err("stale item id must fail closed");
+    assert_eq!(error.code(), "library_item_not_found");
+}
+
+#[test]
+fn completed_download_directory_rejects_unknown_job_ids() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let runtime = SearchNowBackendRuntime::compose(
+        SearchNowBackendPaths::from_roots(
+            temp.path().join("config"),
+            temp.path().join("data"),
+        ),
+        PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
+        Vec::new(),
+        HttpTransport::new_test_http(test_http_policy()).expect("test HTTP"),
+    )
+    .expect("runtime");
+
+    let error = runtime
+        .completed_download_directory("download-missing")
+        .expect_err("unknown download id must fail closed");
+    assert_eq!(error.code(), "download_job_not_found");
+}
