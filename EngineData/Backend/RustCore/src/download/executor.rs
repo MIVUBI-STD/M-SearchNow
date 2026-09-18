@@ -5,6 +5,7 @@ use super::{
     DownloadStore, DownloadTransportRegistry, PersistedDownloadState,
 };
 use crate::error::{BackendError, BackendResult};
+use ring::digest::{Context, SHA256};
 use std::{
     io::{ErrorKind, Read, Write},
     path::{Path, PathBuf},
@@ -349,6 +350,32 @@ impl DownloadExecutionRuntime {
             return Ok(());
         }
 
+        if let Some(expected_sha256) = job.expected_sha256.as_deref() {
+            match verify_sha256(&plan.payload_path, expected_sha256) {
+                Ok(true) => {}
+                Ok(false) => {
+                    self.fail_job(
+                        job_id,
+                        &plan,
+                        "download_integrity_mismatch",
+                        "Downloaded content did not match the expected SHA-256 digest.",
+                        true,
+                    )?;
+                    return Ok(());
+                }
+                Err(error) => {
+                    self.fail_job(
+                        job_id,
+                        &plan,
+                        error.code(),
+                        error.message(),
+                        true,
+                    )?;
+                    return Ok(());
+                }
+            }
+        }
+
         self.mutate_persist(|manager| manager.begin_finalizing(job_id))?;
 
         let final_path = match finalize_payload(&plan) {
@@ -534,6 +561,43 @@ impl DownloadExecutionRuntime {
             )
         })
     }
+}
+
+fn verify_sha256(path: &Path, expected: &str) -> BackendResult<bool> {
+    let mut file = std::fs::File::open(path).map_err(|error| {
+        BackendError::from_io(
+            "download_integrity_read_failed",
+            "SearchNow could not read the completed download for integrity verification.",
+            error,
+        )
+    })?;
+    let mut context = Context::new(&SHA256);
+    let mut buffer = [0_u8; 256 * 1024];
+    loop {
+        let read = file.read(&mut buffer).map_err(|error| {
+            BackendError::from_io(
+                "download_integrity_read_failed",
+                "SearchNow could not read the completed download for integrity verification.",
+                error,
+            )
+        })?;
+        if read == 0 {
+            break;
+        }
+        context.update(&buffer[..read]);
+    }
+    let digest = context.finish();
+    Ok(hex_lower(digest.as_ref()) == expected)
+}
+
+fn hex_lower(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut output = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        output.push(HEX[(byte >> 4) as usize] as char);
+        output.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    output
 }
 
 fn reconcile_persisted_state(

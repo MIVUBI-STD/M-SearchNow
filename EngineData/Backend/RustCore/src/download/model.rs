@@ -17,6 +17,7 @@ pub struct DownloadRequest {
     pub display_name: String,
     pub destination_file_name: String,
     pub expected_bytes: Option<u64>,
+    pub expected_sha256: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -82,6 +83,8 @@ pub struct DownloadJob {
     pub destination_directory: Option<PathBuf>,
     pub state: DownloadJobState,
     pub progress: DownloadProgress,
+    #[serde(default)]
+    pub expected_sha256: Option<String>,
     pub attempt: u32,
     pub last_error: Option<DownloadFailure>,
     pub created_at_ms: u64,

@@ -104,6 +104,7 @@ pub struct CatalogItem {
     pub updated_at_ms: Option<u64>,
     pub file_name: Option<String>,
     pub expected_bytes: Option<u64>,
+    pub expected_sha256: Option<String>,
     pub download: Option<CatalogDownloadRef>,
 }
 
@@ -141,6 +142,7 @@ impl CatalogError {
 pub struct CatalogDownloadMetadata {
     pub file_name: String,
     pub expected_bytes: Option<u64>,
+    pub expected_sha256: Option<String>,
 }
 
 impl CatalogDownloadMetadata {
@@ -148,7 +150,13 @@ impl CatalogDownloadMetadata {
         Self {
             file_name: file_name.into(),
             expected_bytes,
+            expected_sha256: None,
         }
+    }
+
+    pub fn with_sha256(mut self, expected_sha256: impl Into<String>) -> Self {
+        self.expected_sha256 = Some(expected_sha256.into());
+        self
     }
 }
 

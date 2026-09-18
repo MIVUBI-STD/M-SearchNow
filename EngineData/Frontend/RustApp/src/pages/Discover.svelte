@@ -123,6 +123,7 @@
       destinationFileName: item.fileName,
       destinationDirectory: picker.data,
       expectedBytes: item.expectedBytes,
+      expectedSha256: item.expectedSha256,
     });
     if (result.ok) {
       selectedItem = null;

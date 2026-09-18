@@ -374,6 +374,7 @@
                 { label: "File", value: job.destinationFileName },
                 { label: "Job", value: job.id },
                 { label: "Transport", value: job.source.transport },
+                { label: "Integrity", value: job.expectedSha256 ? "SHA-256 required" : "Size/structure checks" },
               ]}
             />
           </div>

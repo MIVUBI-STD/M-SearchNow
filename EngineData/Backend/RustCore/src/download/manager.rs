@@ -175,6 +175,7 @@ impl DownloadManager {
                 downloaded_bytes: 0,
                 total_bytes: request.expected_bytes,
             },
+            expected_sha256: request.expected_sha256.map(|value| value.to_ascii_lowercase()),
             attempt: 0,
             last_error: None,
             created_at_ms: now,
@@ -549,6 +550,16 @@ fn validate_request(request: &DownloadRequest) -> BackendResult<()> {
             "Download resource id is empty or unsupported.",
         ));
     }
+    if request
+        .expected_sha256
+        .as_deref()
+        .is_some_and(|digest| digest.len() != 64 || !digest.bytes().all(|byte| byte.is_ascii_hexdigit()))
+    {
+        return Err(BackendError::new(
+            "download_integrity_digest_invalid",
+            "Expected SHA-256 digest must contain exactly 64 hexadecimal characters.",
+        ));
+    }
     validate_destination_file_name(&request.destination_file_name)
 }
 
@@ -570,6 +581,7 @@ fn validate_persisted_job(job: &DownloadJob) -> BackendResult<()> {
         display_name: job.display_name.clone(),
         destination_file_name: job.destination_file_name.clone(),
         expected_bytes: job.progress.total_bytes,
+        expected_sha256: job.expected_sha256.clone(),
     })?;
     validate_destination_directory(job.destination_directory.as_ref())?;
 

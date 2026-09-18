@@ -70,6 +70,7 @@ pub struct QueueCatalogDownloadRequest {
     pub destination_file_name: String,
     pub destination_directory: Option<PathBuf>,
     pub expected_bytes: Option<u64>,
+    pub expected_sha256: Option<String>,
 }
 
 fn parse_numeric_version(value: &str) -> Option<Vec<u32>> {
@@ -322,6 +323,7 @@ impl SearchNowBackendRuntime {
                     display_name: request.display_name,
                     destination_file_name: request.destination_file_name,
                     expected_bytes: request.expected_bytes,
+                    expected_sha256: request.expected_sha256,
                 },
                 request.destination_directory,
             )

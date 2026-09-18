@@ -189,7 +189,11 @@ fn normalize_page(
             file_name: download_metadata
                 .as_ref()
                 .map(|value| value.file_name.clone()),
-            expected_bytes: download_metadata.and_then(|value| value.expected_bytes),
+            expected_bytes: download_metadata
+                .as_ref()
+                .and_then(|value| value.expected_bytes),
+            expected_sha256: download_metadata
+                .and_then(|value| value.expected_sha256),
             download: item.download,
         });
     }
@@ -254,11 +258,20 @@ fn validate_download_metadata(
         return Err(invalid_provider_data());
     }
     if metadata.is_some_and(|value| {
-        validate_destination_file_name(&value.file_name).is_err() || value.expected_bytes == Some(0)
+        validate_destination_file_name(&value.file_name).is_err()
+            || value.expected_bytes == Some(0)
+            || value
+                .expected_sha256
+                .as_deref()
+                .is_some_and(|digest| !valid_sha256(digest))
     }) {
         return Err(invalid_provider_data());
     }
     Ok(())
+}
+
+fn valid_sha256(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
 fn valid_compact_text(value: &str, max_bytes: usize) -> bool {

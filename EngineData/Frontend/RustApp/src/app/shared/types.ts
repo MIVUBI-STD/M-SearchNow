@@ -142,6 +142,7 @@ export type DownloadJob = {
   destinationDirectory: string | null;
   state: DownloadJobState;
   progress: DownloadProgress;
+  expectedSha256: string | null;
   attempt: number;
   lastError: DownloadFailure | null;
   createdAtMs: number;
@@ -249,6 +250,7 @@ export type QueueCatalogDownloadRequest = {
   destinationFileName: string;
   destinationDirectory: string | null;
   expectedBytes: number | null;
+  expectedSha256: string | null;
 };
 
 export type CatalogItem = {
@@ -264,6 +266,7 @@ export type CatalogItem = {
   updatedAtMs: number | null;
   fileName: string | null;
   expectedBytes: number | null;
+  expectedSha256: string | null;
   download: CatalogDownloadRef | null;
 };
 
