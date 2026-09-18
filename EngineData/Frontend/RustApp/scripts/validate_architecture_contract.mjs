@@ -57,6 +57,10 @@ const backendRequired = [
 ];
 const errors = [];
 
+// Executable source-architecture and IPC boundary invariants live here.
+// Repository layout, deterministic CI, and promotion/release hygiene live
+// in tools/verify_repository.py. Do not duplicate the same invariant in both.
+
 for (const path of required) {
   try { await access(resolve(appRoot, path)); } catch { errors.push(`missing required architecture path: ${path}`); }
 }

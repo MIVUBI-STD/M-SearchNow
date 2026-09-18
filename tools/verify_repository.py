@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,28 +50,6 @@ REQUIRED = [
 
 errors = [f"missing required path: {rel}" for rel in REQUIRED if not (ROOT / rel).exists()]
 
-checks = {
-    "README.md": ["develop", "Local", "main", "Context Recovery", "Stable Promotion"],
-    "AGENTS.md": ["first wrong owner", "develop", "Local", "main"],
-    "CONTEXT.md": ["Development branch: `develop`", "Verified integration baseline: `Local`", "Stable branch: `main`"],
-    "GITHUB_RULES.md": ["PIN", "READ MINIMUM", "WRITE ONCE", "STOP"],
-    "docs/foundation/06-backend-architecture.md": ["RustCore", "GDK", "read-only", "Tauri"],
-    "docs/foundation/07-catalog-architecture.md": ["CatalogProvider", "CatalogService", "ProviderResourceRef"],
-    "docs/foundation/08-provider-session-architecture.md": ["ProviderSessionSource", "ProviderSessionManager", "non-serializable", "refresh storm"],
-    "docs/foundation/09-provider-adapter-architecture.md": ["IntegratedProvider", "ProviderAdapterRuntime", "CatalogProvider", "ResourceResolver"],
-    "docs/foundation/10-application-runtime-architecture.md": ["SearchNowBackendRuntime", "one managed state", "ProviderResolvedTransport", "BackendRuntimeSnapshot"],
-    "docs/foundation/11-observability-windows-readiness.md": ["DiagnosticsBuffer", "bounded", "Windows RustCore + Tauri compile gate", "icons/icon.png", "icons/icon.ico", "AtomicFileStore"],
-}
-
-for rel, needles in checks.items():
-    path = ROOT / rel
-    if not path.exists():
-        continue
-    text = path.read_text(encoding="utf-8")
-    for needle in needles:
-        if needle not in text:
-            errors.append(f"{rel}: missing contract text {needle!r}")
-
 active_backend = ROOT / "EngineData" / "Backend" / "RustCore" / "src"
 for path in active_backend.rglob("*.rs") if active_backend.exists() else []:
     text = path.read_text(encoding="utf-8", errors="replace")
@@ -101,48 +78,10 @@ if session_runtime.exists():
         if forbidden in text:
             errors.append(f"{session_runtime.relative_to(ROOT)}: runtime session material must remain non-serializable/non-debug: {forbidden!r}")
 
-commands_root = ROOT / "EngineData/Frontend/RustApp/src-tauri/src/commands"
-for name in ["runtime.rs", "settings.rs", "minecraft.rs", "library.rs", "download.rs"]:
-    path = commands_root / name
-    if not path.exists():
-        continue
-    text = path.read_text(encoding="utf-8", errors="replace")
-    if "SearchNowBackendRuntime" not in text:
-        errors.append(f"{path.relative_to(ROOT)}: active Tauri feature command must delegate through SearchNowBackendRuntime")
-    for forbidden in ["SettingsStore", "PlatformContext", "DownloadExecutionRuntime", "DownloadTransportRegistry", "ResourceResolverRegistry", "HttpTransport", "ProviderAdapterRuntime", "IntegratedProvider"]:
-        if forbidden in text:
-            errors.append(f"{path.relative_to(ROOT)}: backend sub-runtime ownership belongs in SearchNowBackendRuntime, not Tauri command: {forbidden!r}")
-
-download_command = commands_root / "download.rs"
-if download_command.exists():
-    text = download_command.read_text(encoding="utf-8", errors="replace")
-    if re.search(r"\bDownloadRequest\b", text):
-        errors.append("download command must not expose raw DownloadRequest transport selection")
-    if "QueueCatalogDownloadRequest" not in text:
-        errors.append("download command must accept provider-neutral QueueCatalogDownloadRequest")
-
-bootstrap = ROOT / "EngineData/Frontend/RustApp/src-tauri/src/app_bootstrap.rs"
-if bootstrap.exists():
-    text = bootstrap.read_text(encoding="utf-8", errors="replace")
-    for needle in ["SearchNowBackendRuntime::new", "app.manage(runtime)"]:
-        if needle not in text:
-            errors.append(f"{bootstrap.relative_to(ROOT)}: missing consolidated backend bootstrap contract {needle!r}")
-
-app_runtime = ROOT / "EngineData/Backend/RustCore/src/app_runtime.rs"
-if app_runtime.exists():
-    text = app_runtime.read_text(encoding="utf-8", errors="replace")
-    for needle in ["SearchNowBackendRuntime", "ProviderAdapterRuntime::compose", "providers.resolvers()", "ProviderResolvedTransport::new", "DownloadExecutionRuntime::new", "SettingsStore::new", "BackendRuntimeSnapshot", "DiagnosticsBuffer", "QueueCatalogDownloadRequest"]:
-        if needle not in text:
-            errors.append(f"{app_runtime.relative_to(ROOT)}: missing application composition/observability contract {needle!r}")
-    if "DownloadTransportRegistry::with_local_file" in text:
-        errors.append(f"{app_runtime.relative_to(ROOT)}: production runtime must not register local-file fixture transport")
-
-storage = ROOT / "EngineData/Backend/RustCore/src/storage.rs"
-if storage.exists():
-    text = storage.read_text(encoding="utf-8", errors="replace")
-    for needle in ["AtomicFileStore", "recover_primary", "sync_all", "cleanup_stale_temps"]:
-        if needle not in text:
-            errors.append(f"{storage.relative_to(ROOT)}: missing atomic persistence/recovery contract {needle!r}")
+# Source architecture and IPC ownership are validated by
+# EngineData/Frontend/RustApp/scripts/validate_architecture_contract.mjs.
+# Keep this verifier focused on repository layout, safety boundaries,
+# deterministic CI, and promotion/release hygiene.
 
 build_rs = ROOT / "EngineData/Frontend/RustApp/src-tauri/build.rs"
 if build_rs.exists():
