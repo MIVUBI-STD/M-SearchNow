@@ -44,7 +44,7 @@
   }
 
   function revertChanges(): void {
-    if (!baselineSettings) return;
+    if (!baselineSettings || saving || scanning) return;
     applySettings(baselineSettings);
     error = "";
     saved = false;
@@ -62,7 +62,7 @@
   }
 
   async function save(): Promise<void> {
-    if (!active || !snapshot?.ready || saving || !dirty) return;
+    if (!active || !snapshot?.ready || saving || scanning || !dirty) return;
     saving = true;
     saved = false;
     error = "";
@@ -85,7 +85,7 @@
   }
 
   async function rescan(): Promise<void> {
-    if (!active || !snapshot?.ready || scanning || dirty) return;
+    if (!active || !snapshot?.ready || scanning || saving || dirty) return;
     scanning = true;
     error = "";
     const result = await runtimeProductFacade.discoverMinecraft();
@@ -126,7 +126,7 @@
       <h1>Settings</h1>
       <p>Choose where SearchNow looks for Minecraft content.</p>
     </div>
-    <button class="button button--primary" type="button" onclick={save} disabled={!active || !snapshot?.ready || loading || saving || !dirty}>
+    <button class="button button--primary" type="button" onclick={save} disabled={!active || !snapshot?.ready || loading || saving || scanning || !dirty}>
       {#if saved && !saving}<Check size={15} aria-hidden="true" />{:else}<Save size={15} aria-hidden="true" />{/if}
       {saving ? "Saving" : saved ? "Saved" : "Save changes"}
     </button>
@@ -140,6 +140,7 @@
       title="Unsaved changes"
       message="Save or revert your changes before scanning again."
       actionLabel="Revert"
+      actionDisabled={saving || scanning}
       onAction={revertChanges}
     />
   {:else if saved}
@@ -156,7 +157,7 @@
             type="button"
             title={dirty ? "Save changes before scanning again" : "Scan Minecraft locations again"}
             onclick={rescan}
-            disabled={!active || !snapshot?.ready || scanning || dirty}
+            disabled={!active || !snapshot?.ready || scanning || saving || dirty}
           >
             <RefreshCw size={14} class={scanning ? "spin" : ""} aria-hidden="true" />{scanning ? "Scanning" : "Scan again"}
           </button>
@@ -164,22 +165,22 @@
 
         <label class="field">
           <span>Minecraft data folder (optional)</span>
-          <input bind:value={rootOverride} type="text" placeholder="Leave empty for automatic detection" disabled={!active || !snapshot?.ready || loading} />
+          <input bind:value={rootOverride} type="text" placeholder="Leave empty for automatic detection" disabled={!active || !snapshot?.ready || loading || saving || scanning} />
           <small>Use this only if SearchNow cannot find your Minecraft data automatically.</small>
         </label>
 
         <div class="toggle-list">
           <label class="toggle-row">
             <div><strong>Include Minecraft Preview</strong><span>Also check Minecraft Preview content.</span></div>
-            <input bind:checked={includePreview} type="checkbox" disabled={!active || !snapshot?.ready || loading} />
+            <input bind:checked={includePreview} type="checkbox" disabled={!active || !snapshot?.ready || loading || saving || scanning} />
           </label>
           <label class="toggle-row">
             <div><strong>Check older Minecraft locations</strong><span>Also look in legacy Windows storage locations.</span></div>
-            <input bind:checked={includeLegacyUwp} type="checkbox" disabled={!active || !snapshot?.ready || loading} />
+            <input bind:checked={includeLegacyUwp} type="checkbox" disabled={!active || !snapshot?.ready || loading || saving || scanning} />
           </label>
           <label class="toggle-row">
             <div><strong>Include development folders</strong><span>Also include development behavior, resource, and skin-pack folders.</span></div>
-            <input bind:checked={includeDevelopmentContent} type="checkbox" disabled={!active || !snapshot?.ready || loading} />
+            <input bind:checked={includeDevelopmentContent} type="checkbox" disabled={!active || !snapshot?.ready || loading || saving || scanning} />
           </label>
         </div>
       </article>
