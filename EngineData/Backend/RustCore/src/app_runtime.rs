@@ -6,7 +6,7 @@ use crate::{
     },
     download::{
         default_download_paths, DownloadExecutionRuntime, DownloadJob, DownloadJobState,
-        DownloadManagerSnapshot, DownloadPolicy, DownloadRequest, DownloadStore,
+        DownloadManagerSnapshot, DownloadPolicy, DownloadQueueMove, DownloadRequest, DownloadStore,
         DownloadTransportRegistry, HttpTransport, HttpTransportPolicy, ProviderResolvedTransport,
     },
     error::{BackendError, BackendResult},
@@ -909,6 +909,26 @@ impl SearchNowBackendRuntime {
                 "This download does not have a user-selected destination folder.",
             )
         })
+    }
+
+    pub fn move_download_in_queue(
+        &self,
+        job_id: &str,
+        direction: DownloadQueueMove,
+    ) -> BackendResult<DownloadJob> {
+        let started = Instant::now();
+        let result = self.downloads.move_queued(job_id, direction);
+        self.diagnostics.record_outcome(
+            DiagnosticComponent::Download,
+            started,
+            result.is_ok(),
+            "download_queue_move_ok",
+            "Download queue order updated.",
+            "download_queue_move_failed",
+            "Download queue order could not be updated.",
+            DiagnosticSeverity::Warning,
+        );
+        result
     }
 
     pub fn pause_download(&self, job_id: &str) -> BackendResult<DownloadJob> {

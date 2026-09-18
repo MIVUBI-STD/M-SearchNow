@@ -1,7 +1,8 @@
 use super::{
     model::{
         DownloadFailure, DownloadJob, DownloadJobState, DownloadManagerSnapshot, DownloadPolicy,
-        DownloadProgress, DownloadRequest, PersistedDownloadState, DOWNLOAD_SCHEMA_VERSION,
+        DownloadProgress, DownloadQueueMove, DownloadRequest, PersistedDownloadState,
+        DOWNLOAD_SCHEMA_VERSION,
     },
     workspace::{validate_destination_file_name, validate_job_id},
 };
@@ -458,6 +459,41 @@ impl DownloadManager {
         job.last_error = None;
         job.updated_at_ms = now_ms();
         Ok(job.clone())
+    }
+
+    pub fn move_queued(
+        &mut self,
+        job_id: &str,
+        direction: DownloadQueueMove,
+    ) -> BackendResult<DownloadJob> {
+        let current_index = self
+            .jobs
+            .iter()
+            .position(|job| job.id == job_id)
+            .ok_or_else(|| {
+                BackendError::new("download_job_not_found", "Download job was not found.")
+            })?;
+        if self.jobs[current_index].state != DownloadJobState::Queued {
+            return Err(BackendError::new(
+                "download_queue_move_state_invalid",
+                "Only queued downloads can be reordered.",
+            ));
+        }
+
+        let target_index = match direction {
+            DownloadQueueMove::Earlier => self.jobs[..current_index]
+                .iter()
+                .rposition(|job| job.state == DownloadJobState::Queued),
+            DownloadQueueMove::Later => self.jobs[current_index + 1..]
+                .iter()
+                .position(|job| job.state == DownloadJobState::Queued)
+                .map(|offset| current_index + 1 + offset),
+        };
+
+        if let Some(target_index) = target_index {
+            self.jobs.swap(current_index, target_index);
+        }
+        self.download_job(job_id)
     }
 
     pub fn remove_terminal(&mut self, job_id: &str) -> BackendResult<()> {

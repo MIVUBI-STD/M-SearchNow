@@ -1,8 +1,8 @@
 use super::{
     cleanup_finalization_stage, cleanup_workspace, ensure_workspace, finalize_payload,
     finalized_file_matches, plan_workspace, prepare_payload_file, DownloadFailure, DownloadJob,
-    DownloadJobState, DownloadManager, DownloadManagerSnapshot, DownloadPolicy, DownloadRequest,
-    DownloadStore, DownloadTransportRegistry, PersistedDownloadState,
+    DownloadJobState, DownloadManager, DownloadManagerSnapshot, DownloadPolicy, DownloadQueueMove,
+    DownloadRequest, DownloadStore, DownloadTransportRegistry, PersistedDownloadState,
 };
 use crate::error::{BackendError, BackendResult};
 use ring::digest::{Context, SHA256};
@@ -102,6 +102,14 @@ impl DownloadExecutionRuntime {
             self.mutate_persist(|manager| manager.enqueue_to(request, destination_directory))?;
         self.pump_best_effort();
         Ok(job)
+    }
+
+    pub fn move_queued(
+        &self,
+        job_id: &str,
+        direction: DownloadQueueMove,
+    ) -> BackendResult<DownloadJob> {
+        self.mutate_persist(|manager| manager.move_queued(job_id, direction))
     }
 
     pub fn pause(&self, job_id: &str) -> BackendResult<DownloadJob> {

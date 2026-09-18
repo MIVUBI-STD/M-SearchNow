@@ -20,6 +20,7 @@ pub fn register<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         crate::commands::desktop::open_download_directory,
         crate::commands::download::get_download_snapshot,
         crate::commands::download::queue_catalog_download,
+        crate::commands::download::move_download_in_queue,
         crate::commands::download::pause_download,
         crate::commands::download::resume_download,
         crate::commands::download::cancel_download,

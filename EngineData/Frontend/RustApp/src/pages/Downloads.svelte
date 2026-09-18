@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FolderOpen, Pause, Play, RefreshCw, RotateCcw, Search, Trash2, X } from "@lucide/svelte";
+  import { ArrowDown, ArrowUp, FolderOpen, Pause, Play, RefreshCw, RotateCcw, Search, Trash2, X } from "@lucide/svelte";
   import { runtimeProductFacade } from "../app/bridge/runtimeProductFacade";
   import {
     downloadStateLabel,
@@ -37,10 +37,41 @@
   let refreshSequence = 0;
   const transferSamples = new Map<string, TransferSample>();
 
-  let jobs = $derived((snapshot?.jobs ?? []).slice().sort((a, b) => b.updatedAtMs - a.updatedAtMs));
+  let queuedJobs = $derived((snapshot?.jobs ?? []).filter((job) => job.state === "queued"));
+  let jobs = $derived(
+    (snapshot?.jobs ?? []).slice().sort((a, b) => {
+      const aRank = displayRank(a);
+      const bRank = displayRank(b);
+      if (aRank !== bRank) return aRank - bRank;
+      if (a.state === "queued" && b.state === "queued") {
+        return queueIndex(a) - queueIndex(b);
+      }
+      return b.updatedAtMs - a.updatedAtMs;
+    }),
+  );
   let visibleJobs = $derived(jobs.filter((job) => matchesFilter(job)));
   let completedJobs = $derived(jobs.filter((job) => job.state === "completed").length);
   let controlsChanged = $derived(query.trim().length > 0 || filter !== "all");
+
+  function displayRank(job: DownloadJob): number {
+    if (["preparing", "transferring", "pauseRequested", "finalizing", "cancelRequested"].includes(job.state)) return 0;
+    if (job.state === "queued") return 1;
+    if (["paused", "interrupted"].includes(job.state)) return 2;
+    return 3;
+  }
+
+  function queueIndex(job: DownloadJob): number {
+    return queuedJobs.findIndex((candidate) => candidate.id === job.id);
+  }
+
+  function canMoveEarlier(job: DownloadJob): boolean {
+    return job.state === "queued" && queueIndex(job) > 0;
+  }
+
+  function canMoveLater(job: DownloadJob): boolean {
+    const index = queueIndex(job);
+    return job.state === "queued" && index >= 0 && index < queuedJobs.length - 1;
+  }
 
   function matchesFilter(job: DownloadJob): boolean {
     if (
@@ -140,6 +171,14 @@
       error = result.error.message;
     }
     loading = false;
+  }
+
+  async function moveInQueue(job: DownloadJob, direction: "earlier" | "later"): Promise<void> {
+    actionJobId = job.id;
+    const result = await runtimeProductFacade.moveDownloadInQueue(job.id, direction);
+    if (!result.ok) error = result.error.message;
+    await refresh(false);
+    actionJobId = null;
   }
 
   async function pause(job: DownloadJob): Promise<void> {
@@ -384,6 +423,14 @@
               <button class="button button--secondary button--compact" type="button" onclick={() => openFolder(job)} disabled={actionJobId === job.id}>
                 <FolderOpen size={15} aria-hidden="true" />
                 Open folder
+              </button>
+            {/if}
+            {#if job.state === "queued"}
+              <button class="icon-button" type="button" title="Move earlier" aria-label={`Move ${job.displayName} earlier in queue`} onclick={() => moveInQueue(job, "earlier")} disabled={actionJobId === job.id || !canMoveEarlier(job)}>
+                <ArrowUp size={16} aria-hidden="true" />
+              </button>
+              <button class="icon-button" type="button" title="Move later" aria-label={`Move ${job.displayName} later in queue`} onclick={() => moveInQueue(job, "later")} disabled={actionJobId === job.id || !canMoveLater(job)}>
+                <ArrowDown size={16} aria-hidden="true" />
               </button>
             {/if}
             {#if canPause(job)}

@@ -93,6 +93,13 @@ pub struct DownloadJob {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+pub enum DownloadQueueMove {
+    Earlier,
+    Later,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct DownloadPolicy {
     pub max_active: usize,
     pub max_jobs: usize,

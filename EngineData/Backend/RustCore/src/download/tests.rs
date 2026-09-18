@@ -375,3 +375,36 @@ fn sha256_is_normalized_when_enqueued() {
     let expected = "ab".repeat(32);
     assert_eq!(job.expected_sha256.as_deref(), Some(expected.as_str()));
 }
+
+
+#[test]
+fn queued_jobs_can_be_reordered_without_mutating_nonqueued_jobs() {
+    let mut manager = DownloadManager::new(DownloadPolicy {
+        max_active: 1,
+        max_jobs: 10,
+    })
+    .expect("manager");
+    let first = manager.enqueue(request("first")).expect("first");
+    let second = manager.enqueue(request("second")).expect("second");
+    let third = manager.enqueue(request("third")).expect("third");
+
+    manager
+        .move_queued(&third.id, DownloadQueueMove::Earlier)
+        .expect("move third earlier");
+    manager
+        .move_queued(&third.id, DownloadQueueMove::Earlier)
+        .expect("move third first");
+
+    let claimed = manager.claim_ready_jobs();
+    assert_eq!(claimed.len(), 1);
+    assert_eq!(claimed[0].id, third.id);
+
+    manager
+        .move_queued(&second.id, DownloadQueueMove::Earlier)
+        .expect("move second earlier");
+    let snapshot = manager.snapshot();
+    assert_eq!(snapshot.jobs[0].id, third.id);
+    assert_eq!(snapshot.jobs[1].id, second.id);
+    assert_eq!(snapshot.jobs[2].id, first.id);
+    assert_eq!(snapshot.jobs[0].state, DownloadJobState::Preparing);
+}

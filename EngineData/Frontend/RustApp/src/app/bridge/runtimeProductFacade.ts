@@ -196,6 +196,16 @@ export const runtimeProductFacade = {
     );
   },
 
+  moveDownloadInQueue(
+    jobId: string,
+    direction: "earlier" | "later",
+  ): Promise<ProductResult<DownloadJob>> {
+    return productCall(
+      () => runtimeApi.moveDownloadInQueue(jobId, direction),
+      "SearchNow could not change this download's queue position.",
+    );
+  },
+
   pauseDownload(jobId: string): Promise<ProductResult<DownloadJob>> {
     return productCall(
       () => runtimeApi.pauseDownload(jobId),

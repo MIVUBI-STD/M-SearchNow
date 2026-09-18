@@ -1,7 +1,7 @@
 use super::error::CommandError;
 use searchnow_core::{
     app_runtime::{QueueCatalogDownloadRequest, SearchNowBackendRuntime},
-    download::{DownloadJob, DownloadManagerSnapshot},
+    download::{DownloadJob, DownloadManagerSnapshot, DownloadQueueMove},
 };
 use tauri::State;
 
@@ -19,6 +19,17 @@ pub fn queue_catalog_download(
 ) -> Result<DownloadJob, CommandError> {
     state
         .queue_catalog_download(request)
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub fn move_download_in_queue(
+    state: State<'_, SearchNowBackendRuntime>,
+    job_id: String,
+    direction: DownloadQueueMove,
+) -> Result<DownloadJob, CommandError> {
+    state
+        .move_download_in_queue(&job_id, direction)
         .map_err(CommandError::from)
 }
 
