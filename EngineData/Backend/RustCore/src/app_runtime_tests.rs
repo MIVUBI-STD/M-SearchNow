@@ -261,10 +261,7 @@ fn local_content_directory_rejects_stale_item_ids_after_content_is_removed() {
     .expect("manifest");
 
     let runtime = SearchNowBackendRuntime::compose(
-        SearchNowBackendPaths::from_roots(
-            temp.path().join("config"),
-            temp.path().join("data"),
-        ),
+        SearchNowBackendPaths::from_roots(temp.path().join("config"), temp.path().join("data")),
         PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
         Vec::new(),
         HttpTransport::new_test_http(test_http_policy()).expect("test HTTP"),
@@ -289,10 +286,7 @@ fn local_content_directory_rejects_stale_item_ids_after_content_is_removed() {
 fn completed_download_directory_rejects_unknown_job_ids() {
     let temp = tempfile::tempdir().expect("tempdir");
     let runtime = SearchNowBackendRuntime::compose(
-        SearchNowBackendPaths::from_roots(
-            temp.path().join("config"),
-            temp.path().join("data"),
-        ),
+        SearchNowBackendPaths::from_roots(temp.path().join("config"), temp.path().join("data")),
         PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
         Vec::new(),
         HttpTransport::new_test_http(test_http_policy()).expect("test HTTP"),
