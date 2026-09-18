@@ -33,14 +33,33 @@
     if (!open) confirmRemove = false;
   });
 
-  function dependencyLabel(uuid: string): string {
+  function compareVersionParts(left: number[], right: number[]): number {
+    const length = Math.max(left.length, right.length);
+    for (let index = 0; index < length; index += 1) {
+      const leftPart = left[index] ?? 0;
+      const rightPart = right[index] ?? 0;
+      if (leftPart > rightPart) return 1;
+      if (leftPart < rightPart) return -1;
+    }
+    return 0;
+  }
+
+  function dependencyLabel(uuid: string, requiredVersion: number[]): string {
     const match = libraryItems.find(
       (candidate) =>
         candidate.rootId === item?.rootId &&
         candidate.manifestUuid?.toLowerCase() === uuid.toLowerCase(),
     );
     if (!match) return "Missing";
-    return match.version.length ? `Installed · v${match.version.join(".")}` : "Installed";
+    const installed = match.version.length ? `v${match.version.join(".")}` : "version unknown";
+    if (
+      requiredVersion.length > 0 &&
+      match.version.length > 0 &&
+      compareVersionParts(match.version, requiredVersion) < 0
+    ) {
+      return `Outdated · ${installed}`;
+    }
+    return `Installed · ${installed}`;
   }
 
   function handleBackdrop(event: MouseEvent): void {
@@ -96,7 +115,7 @@
             <strong>Dependencies</strong>
             <span>
               {item.dependencies.map((dependency) =>
-                `${dependency.uuid}${dependency.version.length ? ` · requires v${dependency.version.join(".")}` : ""} · ${dependencyLabel(dependency.uuid)}`
+                `${dependency.uuid}${dependency.version.length ? ` · requires v${dependency.version.join(".")}` : ""} · ${dependencyLabel(dependency.uuid, dependency.version)}`
               ).join(" · ")}
             </span>
           </div>

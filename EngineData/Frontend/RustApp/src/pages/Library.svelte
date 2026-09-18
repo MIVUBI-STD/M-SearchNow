@@ -11,7 +11,13 @@
   import PageState from "../components/ui/PageState.svelte";
   import ResultsBar from "../components/ui/ResultsBar.svelte";
 
-  type LibraryFilter = "all" | LocalContentType | "issues" | "duplicates" | "missingDependencies";
+  type LibraryFilter =
+    | "all"
+    | LocalContentType
+    | "issues"
+    | "duplicates"
+    | "missingDependencies"
+    | "outdatedDependencies";
   type LibrarySort = "nameAsc" | "nameDesc" | "type" | "status";
 
   let { runtimeReady, active }: { runtimeReady: boolean; active: boolean } = $props();
@@ -35,6 +41,7 @@
 
   let duplicateIds = $derived(findDuplicateIds(snapshot?.library.items ?? []));
   let missingDependencyIds = $derived(findMissingDependencyIds(snapshot?.library.items ?? []));
+  let outdatedDependencyIds = $derived(findOutdatedDependencyIds(snapshot?.library.items ?? []));
   let selectedDuplicates = $derived(findDuplicatesForItem(selectedItem, snapshot?.library.items ?? []));
   let filteredItems = $derived(
     (snapshot?.library.items ?? [])
@@ -66,6 +73,44 @@
         item.manifestUuid !== null &&
         item.manifestUuid.toLowerCase() === uuid,
     );
+  }
+
+  function compareVersionParts(left: number[], right: number[]): number {
+    const length = Math.max(left.length, right.length);
+    for (let index = 0; index < length; index += 1) {
+      const leftPart = left[index] ?? 0;
+      const rightPart = right[index] ?? 0;
+      if (leftPart > rightPart) return 1;
+      if (leftPart < rightPart) return -1;
+    }
+    return 0;
+  }
+
+  function findOutdatedDependencyIds(items: LocalContentItem[]): Set<string> {
+    const installedByRoot = new Map<string, Map<string, LocalContentItem>>();
+    for (const item of items) {
+      if (!item.manifestUuid) continue;
+      const byUuid = installedByRoot.get(item.rootId) ?? new Map<string, LocalContentItem>();
+      byUuid.set(item.manifestUuid.toLowerCase(), item);
+      installedByRoot.set(item.rootId, byUuid);
+    }
+
+    const outdated = new Set<string>();
+    for (const item of items) {
+      const installed = installedByRoot.get(item.rootId);
+      if (!installed) continue;
+      if (
+        item.dependencies.some((dependency) => {
+          if (dependency.version.length === 0) return false;
+          const target = installed.get(dependency.uuid.toLowerCase());
+          if (!target || target.version.length === 0) return false;
+          return compareVersionParts(target.version, dependency.version) < 0;
+        })
+      ) {
+        outdated.add(item.id);
+      }
+    }
+    return outdated;
   }
 
   function findMissingDependencyIds(items: LocalContentItem[]): Set<string> {
@@ -115,11 +160,13 @@
     if (filter === "issues" && item.status !== "invalidMetadata") return false;
     if (filter === "duplicates" && !duplicateIds.has(item.id)) return false;
     if (filter === "missingDependencies" && !missingDependencyIds.has(item.id)) return false;
+    if (filter === "outdatedDependencies" && !outdatedDependencyIds.has(item.id)) return false;
     if (
       filter !== "all" &&
       filter !== "issues" &&
       filter !== "duplicates" &&
       filter !== "missingDependencies" &&
+      filter !== "outdatedDependencies" &&
       item.contentType !== filter
     ) return false;
     const needle = query.trim().toLowerCase();
@@ -385,6 +432,7 @@
         <option value="skinPack">Skin packs</option>
         <option value="duplicates">Duplicate UUIDs</option>
         <option value="missingDependencies">Missing dependencies</option>
+        <option value="outdatedDependencies">Outdated dependencies</option>
         <option value="issues">Needs review</option>
       </select>
       {#if snapshot.minecraft.roots.length > 1}
@@ -470,6 +518,7 @@
               {#if snapshot.minecraft.roots.length > 1}<span class="chip">{rootLabel(item.rootId)}</span>{/if}
               {#if duplicateIds.has(item.id)}<span class="chip">Duplicate UUID</span>{/if}
               {#if missingDependencyIds.has(item.id)}<span class="chip">Missing dependency</span>{/if}
+              {#if outdatedDependencyIds.has(item.id)}<span class="chip">Outdated dependency</span>{/if}
             </div>
             <h2 title={item.title}>{item.title}</h2>
             <div class="content-card__footer">
