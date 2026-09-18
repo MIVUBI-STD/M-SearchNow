@@ -10,6 +10,7 @@ fn request(name: &str) -> DownloadRequest {
         display_name: name.into(),
         destination_file_name: format!("{name}.mcaddon"),
         expected_bytes: Some(7),
+        expected_sha256: None,
     }
 }
 
