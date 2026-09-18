@@ -263,6 +263,7 @@ fn stalled_response_body_times_out_as_retryable() {
             display_name: "http-timeout".into(),
             destination_file_name: "http-timeout.mcpack".into(),
             expected_bytes: Some(payload.len() as u64),
+            expected_sha256: None,
         })
         .expect("queue");
 
@@ -314,6 +315,7 @@ fn http_executor_cancellation_is_cooperative() {
             display_name: "http-cancel".into(),
             destination_file_name: "http-cancel.mcpack".into(),
             expected_bytes: Some(payload.len() as u64),
+            expected_sha256: None,
         })
         .expect("queue");
 
