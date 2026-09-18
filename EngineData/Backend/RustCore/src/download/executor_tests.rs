@@ -351,7 +351,6 @@ fn startup_removes_stale_destination_stage_before_retry() {
     );
 }
 
-
 #[test]
 fn paused_download_resumes_from_partial_payload_without_redownloading_prefix() {
     let directory = tempfile::tempdir().expect("tempdir");
@@ -387,9 +386,10 @@ fn paused_download_resumes_from_partial_payload_without_redownloading_prefix() {
     runtime.pause(&job.id).expect("pause");
 
     let paused_snapshot = wait_for(&runtime, |snapshot| {
-        snapshot.jobs.iter().any(|candidate| {
-            candidate.id == job.id && candidate.state == DownloadJobState::Paused
-        })
+        snapshot
+            .jobs
+            .iter()
+            .any(|candidate| candidate.id == job.id && candidate.state == DownloadJobState::Paused)
     });
     let paused = paused_snapshot
         .jobs

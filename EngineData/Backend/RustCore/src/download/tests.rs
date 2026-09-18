@@ -327,7 +327,6 @@ fn store_rejects_unknown_nested_persisted_fields() {
     assert_eq!(error.code(), "download_state_invalid_json");
 }
 
-
 #[test]
 fn pause_and_resume_preserve_partial_progress() {
     let mut manager = DownloadManager::new(DownloadPolicy::default()).expect("manager");
