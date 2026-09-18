@@ -260,7 +260,6 @@ mod tests {
     }
 }
 
-
 #[cfg(test)]
 mod download_setting_tests {
     use super::*;
