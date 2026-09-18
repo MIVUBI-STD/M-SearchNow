@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -142,4 +142,27 @@ pub struct PackageInspection {
     pub relationships: Vec<PackageRelationship>,
     pub issues: Vec<PackageIssue>,
     pub archive: Option<ArchiveSummary>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PackageImportRequest {
+    pub source_path: PathBuf,
+    pub root_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportedPack {
+    pub name: String,
+    pub kind: PackKind,
+    pub destination_path: PathBuf,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageImportResult {
+    pub source_path: PathBuf,
+    pub root_id: String,
+    pub imported: Vec<ImportedPack>,
 }

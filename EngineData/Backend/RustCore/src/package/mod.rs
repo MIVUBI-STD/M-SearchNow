@@ -1,5 +1,6 @@
 mod archive;
 mod folder;
+mod import;
 mod manifest;
 pub mod model;
 
@@ -202,3 +203,5 @@ fn detect_relationships(packs: &[PackManifestSummary]) -> Vec<PackageRelationshi
 
 #[cfg(test)]
 mod tests;
+
+pub(crate) use import::import_archive;

@@ -139,3 +139,50 @@ fn resource_manifest(uuid: &str) -> String {
 }}"#
     )
 }
+
+#[test]
+fn safe_mcpack_import_extracts_into_matching_container_without_overwrite() {
+    let directory = tempfile::tempdir().expect("tempdir");
+    let source = directory.path().join("sample.mcpack");
+    let minecraft = directory.path().join("minecraft");
+    let manifest = resource_manifest(RP_UUID);
+    write_archive(
+        &source,
+        &[
+            ("manifest.json", manifest.as_bytes()),
+            ("textures/example.txt", b"texture"),
+        ],
+    );
+
+    let first = import_archive(&source, &minecraft, "root-fixture").expect("first import");
+    assert_eq!(first.imported.len(), 1);
+    assert!(first.imported[0].destination_path.join("manifest.json").is_file());
+    assert_eq!(
+        fs::read(first.imported[0].destination_path.join("textures/example.txt")).expect("texture"),
+        b"texture"
+    );
+
+    let second = import_archive(&source, &minecraft, "root-fixture").expect("second import");
+    assert_ne!(
+        first.imported[0].destination_path,
+        second.imported[0].destination_path
+    );
+}
+
+#[test]
+fn package_with_findings_is_not_auto_imported() {
+    let directory = tempfile::tempdir().expect("tempdir");
+    let source = directory.path().join("unsafe.mcpack");
+    let manifest = resource_manifest(RP_UUID);
+    write_archive(
+        &source,
+        &[
+            ("manifest.json", manifest.as_bytes()),
+            ("../../escape.txt", b"unsafe"),
+        ],
+    );
+
+    let error = import_archive(&source, &directory.path().join("minecraft"), "root-fixture")
+        .expect_err("unsafe package must not import");
+    assert_eq!(error.code(), "package_import_not_ready");
+}

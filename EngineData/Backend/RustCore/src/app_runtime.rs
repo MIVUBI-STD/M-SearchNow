@@ -12,7 +12,10 @@ use crate::{
     error::{BackendError, BackendResult},
     library::valid_local_content_id,
     minecraft::{discover_minecraft_storage, MinecraftDiscoverySnapshot},
-    package::{inspect_package, PackageInspection},
+    package::{
+        import_archive, inspect_package, PackageImportRequest, PackageImportResult,
+        PackageInspection,
+    },
     platform::PlatformContext,
     provider_adapter::{IntegratedProvider, ProviderAdapterRuntime, ProviderRuntimeStatus},
     runtime::{runtime_status, RuntimeStatus},
@@ -305,6 +308,25 @@ impl SearchNowBackendRuntime {
 
     pub fn inspect_package(&self, path: &Path) -> BackendResult<PackageInspection> {
         inspect_package(path)
+    }
+
+    pub fn import_package(
+        &self,
+        request: PackageImportRequest,
+    ) -> BackendResult<PackageImportResult> {
+        let settings = self.settings.load()?;
+        let discovery = discover_minecraft_storage(&settings.minecraft, &self.platform);
+        let root = discovery
+            .roots
+            .iter()
+            .find(|root| root.id == request.root_id)
+            .ok_or_else(|| {
+                BackendError::new(
+                    "package_import_root_unavailable",
+                    "The selected Minecraft storage root is no longer available.",
+                )
+            })?;
+        import_archive(&request.source_path, &root.root, &root.id)
     }
 
     pub fn local_content_directory(&self, item_id: &str) -> BackendResult<PathBuf> {
