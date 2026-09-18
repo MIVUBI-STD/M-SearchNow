@@ -2,8 +2,8 @@ use super::{
     archive::{MAX_SINGLE_ENTRY_BYTES, MAX_TOTAL_UNCOMPRESSED_BYTES},
     inspect_package,
     model::{
-        ImportedPack, PackKind, PackManifestSummary, PackageImportResult, PackageInputKind,
-        PackageInspectionStatus, PackageSafety,
+        ImportedPack, ImportedWorld, PackKind, PackageImportResult, PackageInputKind,
+        PackageInspectionStatus, PackageSafety, WorldSummary,
     },
 };
 use crate::error::{BackendError, BackendResult};
@@ -30,13 +30,22 @@ pub(crate) fn import_archive(
             "Only packages that pass inspection without findings can be imported.",
         ));
     }
+    if inspection.input_kind == PackageInputKind::McWorld {
+        let world = inspection.world.ok_or_else(|| {
+            BackendError::new(
+                "package_import_world_missing",
+                "The inspected .mcworld no longer contains a valid world root.",
+            )
+        })?;
+        return import_world(source, minecraft_root, root_id, &world);
+    }
     if !matches!(
         inspection.input_kind,
         PackageInputKind::McPack | PackageInputKind::McAddon
     ) {
         return Err(BackendError::new(
             "package_import_input_unsupported",
-            "Safe import currently supports .mcpack and .mcaddon archives.",
+            "Safe import currently supports .mcpack, .mcaddon, and .mcworld archives.",
         ));
     }
 
@@ -78,7 +87,11 @@ pub(crate) fn import_archive(
     })?;
 
     let result = (|| {
-        extract_plans(source, &staging_root, &plans)?;
+        let source_roots = plans
+            .iter()
+            .map(|(pack, _)| pack.pack_root.clone())
+            .collect::<Vec<_>>();
+        extract_roots(source, &staging_root, &source_roots)?;
         let mut imported = Vec::new();
         let mut committed = Vec::new();
         for (index, (pack, destination)) in plans.iter().enumerate() {
@@ -104,6 +117,7 @@ pub(crate) fn import_archive(
             source_path: source.to_path_buf(),
             root_id: root_id.to_string(),
             imported,
+            world: None,
         })
     })();
 
@@ -111,10 +125,10 @@ pub(crate) fn import_archive(
     result
 }
 
-fn extract_plans(
+fn extract_roots(
     source: &Path,
     staging_root: &Path,
-    plans: &[(PackManifestSummary, PathBuf)],
+    source_roots: &[String],
 ) -> BackendResult<()> {
     let file = File::open(source).map_err(|error| {
         BackendError::from_io(
@@ -165,8 +179,8 @@ fn extract_plans(
             ));
         }
 
-        for (plan_index, (pack, _)) in plans.iter().enumerate() {
-            let Some(relative) = relative_to_pack(&safe_path, &pack.pack_root) else {
+        for (plan_index, source_root) in source_roots.iter().enumerate() {
+            let Some(relative) = relative_to_root(&safe_path, source_root) else {
                 continue;
             };
             if relative.as_os_str().is_empty() {
@@ -183,7 +197,7 @@ fn extract_plans(
                 fs::create_dir_all(&target).map_err(|error| {
                     BackendError::from_io(
                         "package_import_write_failed",
-                        "SearchNow could not create an imported package folder.",
+                        "SearchNow could not create an imported content folder.",
                         error,
                     )
                 })?;
@@ -192,7 +206,7 @@ fn extract_plans(
                     fs::create_dir_all(parent).map_err(|error| {
                         BackendError::from_io(
                             "package_import_write_failed",
-                            "SearchNow could not prepare an imported package folder.",
+                            "SearchNow could not prepare an imported content folder.",
                             error,
                         )
                     })?;
@@ -200,14 +214,14 @@ fn extract_plans(
                 let mut output = File::create(&target).map_err(|error| {
                     BackendError::from_io(
                         "package_import_write_failed",
-                        "SearchNow could not create an imported package file.",
+                        "SearchNow could not create an imported content file.",
                         error,
                     )
                 })?;
                 io::copy(&mut entry, &mut output).map_err(|error| {
                     BackendError::from_io(
                         "package_import_write_failed",
-                        "SearchNow could not extract an inspected package file.",
+                        "SearchNow could not extract inspected Minecraft content.",
                         error,
                     )
                 })?;
@@ -216,24 +230,87 @@ fn extract_plans(
         }
     }
 
-    for (index, _) in plans.iter().enumerate() {
+    for (index, _) in source_roots.iter().enumerate() {
         if !staging_root.join(index.to_string()).is_dir() {
             return Err(BackendError::new(
-                "package_import_pack_missing",
-                "The inspected package contents no longer match the archive being imported.",
+                "package_import_content_missing",
+                "The inspected content no longer matches the archive being imported.",
             ));
         }
     }
     Ok(())
 }
 
-fn relative_to_pack(path: &Path, pack_root: &str) -> Option<PathBuf> {
-    if pack_root == "." {
+fn relative_to_root(path: &Path, source_root: &str) -> Option<PathBuf> {
+    if source_root == "." {
         return Some(path.to_path_buf());
     }
-    path.strip_prefix(Path::new(pack_root))
+    path.strip_prefix(Path::new(source_root))
         .ok()
         .map(Path::to_path_buf)
+}
+
+fn import_world(
+    source: &Path,
+    minecraft_root: &Path,
+    root_id: &str,
+    world: &WorldSummary,
+) -> BackendResult<PackageImportResult> {
+    let container = minecraft_root.join("minecraftWorlds");
+    fs::create_dir_all(&container).map_err(|error| {
+        BackendError::from_io(
+            "package_import_destination_failed",
+            "SearchNow could not prepare the Minecraft worlds folder.",
+            error,
+        )
+    })?;
+    let mut reserved = HashSet::new();
+    let base_name = safe_folder_name(&world.name, "Imported world");
+    let destination = next_available_destination(&container, &base_name, &mut reserved)?;
+    let staging_root = minecraft_root.join(format!(
+        ".searchnow-world-import-{}",
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis()
+    ));
+    fs::create_dir(&staging_root).map_err(|error| {
+        BackendError::from_io(
+            "package_import_staging_failed",
+            "SearchNow could not create a temporary world import workspace.",
+            error,
+        )
+    })?;
+
+    let result = (|| {
+        extract_roots(source, &staging_root, std::slice::from_ref(&world.world_root))?;
+        let staged = staging_root.join("0");
+        if !staged.join("level.dat").is_file() {
+            return Err(BackendError::new(
+                "package_import_world_invalid",
+                "The inspected world no longer contains level.dat.",
+            ));
+        }
+        fs::rename(&staged, &destination).map_err(|error| {
+            BackendError::from_io(
+                "package_import_commit_failed",
+                "SearchNow could not move the inspected world into Minecraft storage.",
+                error,
+            )
+        })?;
+        Ok(PackageImportResult {
+            source_path: source.to_path_buf(),
+            root_id: root_id.to_string(),
+            imported: Vec::new(),
+            world: Some(ImportedWorld {
+                name: world.name.clone(),
+                destination_path: destination,
+            }),
+        })
+    })();
+
+    let _ = fs::remove_dir_all(&staging_root);
+    result
 }
 
 fn container_for(kind: PackKind) -> Option<&'static str> {
@@ -246,6 +323,15 @@ fn container_for(kind: PackKind) -> Option<&'static str> {
 }
 
 fn destination_name(name: &str, uuid: Option<&str>) -> String {
+    let base = safe_folder_name(name, "Imported pack");
+    let suffix = uuid
+        .and_then(|value| value.split('-').next())
+        .filter(|value| !value.is_empty())
+        .unwrap_or("pack");
+    format!("{base} [{suffix}]")
+}
+
+fn safe_folder_name(name: &str, fallback: &str) -> String {
     let mut safe = String::with_capacity(name.len());
     for character in name.trim().chars() {
         if character.is_ascii_alphanumeric() || matches!(character, ' ' | '-' | '_' | '.') {
@@ -255,16 +341,11 @@ fn destination_name(name: &str, uuid: Option<&str>) -> String {
         }
     }
     let safe = safe.trim_matches([' ', '.']).trim();
-    let base = if safe.is_empty() {
-        "Imported pack"
+    if safe.is_empty() {
+        fallback.to_string()
     } else {
-        safe
-    };
-    let suffix = uuid
-        .and_then(|value| value.split('-').next())
-        .filter(|value| !value.is_empty())
-        .unwrap_or("pack");
-    format!("{base} [{suffix}]")
+        safe.to_string()
+    }
 }
 
 fn next_available_destination(

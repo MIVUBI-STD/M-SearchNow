@@ -194,3 +194,34 @@ fn package_with_findings_is_not_auto_imported() {
         .expect_err("unsafe package must not import");
     assert_eq!(error.code(), "package_import_not_ready");
 }
+
+#[test]
+fn safe_mcworld_import_extracts_into_minecraft_worlds() {
+    let directory = tempfile::tempdir().expect("tempdir");
+    let source = directory.path().join("world.mcworld");
+    let minecraft = directory.path().join("minecraft");
+    write_archive(
+        &source,
+        &[
+            ("level.dat", b"level-data"),
+            ("levelname.txt", b"Imported Test World"),
+            ("db/000001.ldb", b"db-data"),
+        ],
+    );
+
+    let inspection = inspect_package(&source).expect("world inspection");
+    assert_eq!(inspection.input_kind, PackageInputKind::McWorld);
+    assert_eq!(inspection.status, PackageInspectionStatus::Ready);
+    assert_eq!(
+        inspection.world.as_ref().map(|world| world.name.as_str()),
+        Some("Imported Test World")
+    );
+
+    let imported = import_archive(&source, &minecraft, "root-fixture").expect("world import");
+    let world = imported.world.expect("imported world");
+    assert!(world.destination_path.join("level.dat").is_file());
+    assert_eq!(
+        fs::read(world.destination_path.join("db/000001.ldb")).expect("world db"),
+        b"db-data"
+    );
+}

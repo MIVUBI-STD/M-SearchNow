@@ -172,8 +172,16 @@ pub struct ImportedPack {
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+pub struct ImportedWorld {
+    pub name: String,
+    pub destination_path: PathBuf,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct PackageImportResult {
     pub source_path: PathBuf,
     pub root_id: String,
     pub imported: Vec<ImportedPack>,
+    pub world: Option<ImportedWorld>,
 }

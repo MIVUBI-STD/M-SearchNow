@@ -361,8 +361,14 @@ export type ImportedPack = {
   destinationPath: string;
 };
 
+export type ImportedWorld = {
+  name: string;
+  destinationPath: string;
+};
+
 export type PackageImportResult = {
   sourcePath: string;
   rootId: string;
   imported: ImportedPack[];
+  world: ImportedWorld | null;
 };
