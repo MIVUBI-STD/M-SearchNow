@@ -125,11 +125,7 @@ pub(crate) fn import_archive(
     result
 }
 
-fn extract_roots(
-    source: &Path,
-    staging_root: &Path,
-    source_roots: &[String],
-) -> BackendResult<()> {
+fn extract_roots(source: &Path, staging_root: &Path, source_roots: &[String]) -> BackendResult<()> {
     let file = File::open(source).map_err(|error| {
         BackendError::from_io(
             "package_import_open_failed",
@@ -283,7 +279,11 @@ fn import_world(
     })?;
 
     let result = (|| {
-        extract_roots(source, &staging_root, std::slice::from_ref(&world.world_root))?;
+        extract_roots(
+            source,
+            &staging_root,
+            std::slice::from_ref(&world.world_root),
+        )?;
         let staged = staging_root.join("0");
         if !staged.join("level.dat").is_file() {
             return Err(BackendError::new(
