@@ -140,6 +140,7 @@ const appRuntime = await readFile(resolve(backendRoot, "src/app_runtime.rs"), "u
 const frontendTypes = await readFile(resolve(appRoot, "src/app/shared/types.ts"), "utf8");
 const settingsModel = await readFile(resolve(backendRoot, "src/settings.rs"), "utf8");
 const catalogModel = await readFile(resolve(backendRoot, "src/catalog/model.rs"), "utf8");
+const downloadModule = await readFile(resolve(backendRoot, "src/download/mod.rs"), "utf8");
 for (const needle of [
   "SearchNowBackendRuntime",
   "SettingsStore::new",
@@ -185,6 +186,16 @@ for (const needle of [
   const index = catalogModel.indexOf(needle);
   const prefix = index >= 0 ? catalogModel.slice(Math.max(0, index - 160), index) : "";
   if (index < 0 || !prefix.includes("deny_unknown_fields")) errors.push(`catalog input contract must fail closed for unknown fields near ${needle}`);
+}
+
+for (const needle of [
+  'pub(crate) use executor::{default_download_paths, DownloadExecutionRuntime};',
+  'pub(crate) use manager::DownloadManager;',
+  'pub(crate) use store::DownloadStore;',
+  'pub(crate) use transport::{',
+  'pub(crate) use workspace::{',
+]) {
+  if (!downloadModule.includes(needle)) errors.push(`download implementation plumbing must remain crate-private: ${needle}`);
 }
 
 if (errors.length) {

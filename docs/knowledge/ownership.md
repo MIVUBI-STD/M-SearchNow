@@ -49,10 +49,10 @@ Use only to answer **who owns what**. Exact procedures remain in the named owner
 | safe integrated-provider capability/status DTOs | `EngineData/Backend/RustCore/src/provider_adapter/model.rs` |
 | integrated provider composition + canonical key/registry wiring | `EngineData/Backend/RustCore/src/provider_adapter/runtime.rs` |
 | persisted download DTO/state contract | `EngineData/Backend/RustCore/src/download/model.rs` |
-| download lifecycle/state machine/concurrency | `EngineData/Backend/RustCore/src/download/manager.rs` |
-| download persistence/recovery | `EngineData/Backend/RustCore/src/download/store.rs` |
-| download workspace + atomic finalization | `EngineData/Backend/RustCore/src/download/workspace.rs` |
-| generic transport registry + local-file transport | `EngineData/Backend/RustCore/src/download/transport.rs` |
+| download lifecycle/state machine/concurrency (crate-private implementation) | `EngineData/Backend/RustCore/src/download/manager.rs` |
+| download persistence/recovery (crate-private implementation) | `EngineData/Backend/RustCore/src/download/store.rs` |
+| download workspace + atomic finalization (crate-private implementation) | `EngineData/Backend/RustCore/src/download/workspace.rs` |
+| generic transport registry + local-file fixture (crate-private implementation) | `EngineData/Backend/RustCore/src/download/transport.rs` |
 | scheduler/executor/progress checkpointing | `EngineData/Backend/RustCore/src/download/executor.rs` |
 | public HTTPS + ephemeral HTTP request mechanics/redirect/timeout/stream bounds | `EngineData/Backend/RustCore/src/download/http.rs` |
 | stable provider reference + runtime resolver registry + expiry/re-resolution + secret isolation | `EngineData/Backend/RustCore/src/download/resolver.rs` |

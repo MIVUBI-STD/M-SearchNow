@@ -40,7 +40,7 @@ EngineData/Frontend/RustApp/src-tauri/src/
 └─ commands/          Tauri IPC adaptation only
 ```
 
-Business/filesystem/archive/download/network/provider-resolution behavior must not accumulate in Tauri commands or Svelte pages.
+Business/filesystem/archive/download/network/provider-resolution behavior must not accumulate in Tauri commands or Svelte pages. Low-level download manager/store/transport/workspace/execution plumbing is crate-private; external consumers receive only the public DTO/provider contracts needed at real boundaries.
 
 ## Local Minecraft and library boundaries
 
