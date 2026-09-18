@@ -27,6 +27,13 @@ pub enum LocalContentStatus {
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+pub struct LocalContentDependency {
+    pub uuid: String,
+    pub version: Vec<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct LocalContentItem {
     pub id: String,
     pub title: String,
@@ -38,6 +45,7 @@ pub struct LocalContentItem {
     pub root_id: String,
     pub manifest_uuid: Option<String>,
     pub version: Vec<u32>,
+    pub dependencies: Vec<LocalContentDependency>,
     pub is_development: bool,
 }
 
@@ -208,6 +216,7 @@ fn index_item(root: &MinecraftStorageRoot, path: &Path, spec: ContainerSpec) -> 
             root_id: root.id.clone(),
             manifest_uuid: None,
             version: Vec::new(),
+            dependencies: Vec::new(),
             is_development: spec.development,
         };
     }
@@ -224,6 +233,19 @@ fn index_item(root: &MinecraftStorageRoot, path: &Path, spec: ContainerSpec) -> 
             root_id: root.id.clone(),
             manifest_uuid: manifest.header.uuid,
             version: manifest.header.version,
+            dependencies: manifest
+                .dependencies
+                .into_iter()
+                .filter_map(|dependency| {
+                    dependency
+                        .uuid
+                        .filter(|uuid| !uuid.trim().is_empty())
+                        .map(|uuid| LocalContentDependency {
+                            uuid,
+                            version: dependency.version,
+                        })
+                })
+                .collect(),
             is_development: spec.development,
         },
         Err(issue) => LocalContentItem {
@@ -237,6 +259,7 @@ fn index_item(root: &MinecraftStorageRoot, path: &Path, spec: ContainerSpec) -> 
             root_id: root.id.clone(),
             manifest_uuid: None,
             version: Vec::new(),
+            dependencies: Vec::new(),
             is_development: spec.development,
         },
     }
@@ -245,6 +268,8 @@ fn index_item(root: &MinecraftStorageRoot, path: &Path, spec: ContainerSpec) -> 
 #[derive(Debug, Deserialize)]
 struct ManifestDocument {
     header: ManifestHeader,
+    #[serde(default)]
+    dependencies: Vec<ManifestDependency>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -253,6 +278,14 @@ struct ManifestHeader {
     name: Option<String>,
     #[serde(default)]
     description: Option<String>,
+    #[serde(default)]
+    uuid: Option<String>,
+    #[serde(default)]
+    version: Vec<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ManifestDependency {
     #[serde(default)]
     uuid: Option<String>,
     #[serde(default)]
@@ -338,16 +371,28 @@ mod tests {
         let directory = tempfile::tempdir().expect("tempdir");
         let pack = directory.path().join("resource_packs/example");
         fs::create_dir_all(&pack).expect("pack");
-        fs::write(pack.join("manifest.json"), r#"{"header":{"name":"Example Pack","description":"Fixture","uuid":"abc","version":[1,2,3]}}"#).expect("manifest");
+        fs::write(
+            pack.join("manifest.json"),
+            r#"{"header":{"name":"Example Pack","description":"Fixture","uuid":"abc","version":[1,2,3]},"dependencies":[{"uuid":"dep-uuid","version":[2,0,0]}]}"#,
+        )
+        .expect("manifest");
         let world = directory.path().join("minecraftWorlds/world-one");
         fs::create_dir_all(&world).expect("world");
         fs::write(world.join("levelname.txt"), "My World").expect("level name");
         let snapshot = scan_library(&[root(directory.path())], false);
         assert_eq!(snapshot.summary.total, 2);
-        assert!(snapshot
+        let pack_item = snapshot
             .items
             .iter()
-            .any(|item| item.title == "Example Pack"));
+            .find(|item| item.title == "Example Pack")
+            .expect("pack item");
+        assert_eq!(
+            pack_item.dependencies,
+            vec![LocalContentDependency {
+                uuid: "dep-uuid".into(),
+                version: vec![2, 0, 0],
+            }]
+        );
         assert!(snapshot.items.iter().any(|item| item.title == "My World"));
     }
 

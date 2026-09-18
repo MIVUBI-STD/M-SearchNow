@@ -7,6 +7,7 @@
 
   let {
     item,
+    libraryItems,
     duplicates,
     open,
     onClose,
@@ -16,6 +17,7 @@
     actionBusy = false,
   }: {
     item: LocalContentItem | null;
+    libraryItems: LocalContentItem[];
     duplicates: LocalContentItem[];
     open: boolean;
     onClose: () => void;
@@ -30,6 +32,16 @@
   $effect(() => {
     if (!open) confirmRemove = false;
   });
+
+  function dependencyLabel(uuid: string): string {
+    const match = libraryItems.find(
+      (candidate) =>
+        candidate.rootId === item?.rootId &&
+        candidate.manifestUuid?.toLowerCase() === uuid.toLowerCase(),
+    );
+    if (!match) return "Missing";
+    return match.version.length ? `Installed · v${match.version.join(".")}` : "Installed";
+  }
 
   function handleBackdrop(event: MouseEvent): void {
     if (event.target === event.currentTarget && !actionBusy) onClose();
@@ -76,6 +88,17 @@
           <div class="catalog-modal__issue">
             <strong>Needs review</strong>
             <span>{item.issue}</span>
+          </div>
+        {/if}
+
+        {#if item.dependencies.length}
+          <div class="catalog-modal__issue">
+            <strong>Dependencies</strong>
+            <span>
+              {item.dependencies.map((dependency) =>
+                `${dependency.uuid}${dependency.version.length ? ` · requires v${dependency.version.join(".")}` : ""} · ${dependencyLabel(dependency.uuid)}`
+              ).join(" · ")}
+            </span>
           </div>
         {/if}
 

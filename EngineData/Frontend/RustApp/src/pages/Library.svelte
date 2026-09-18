@@ -11,7 +11,7 @@
   import PageState from "../components/ui/PageState.svelte";
   import ResultsBar from "../components/ui/ResultsBar.svelte";
 
-  type LibraryFilter = "all" | LocalContentType | "issues" | "duplicates";
+  type LibraryFilter = "all" | LocalContentType | "issues" | "duplicates" | "missingDependencies";
   type LibrarySort = "nameAsc" | "nameDesc" | "type" | "status";
 
   let { runtimeReady, active }: { runtimeReady: boolean; active: boolean } = $props();
@@ -34,6 +34,7 @@
   let sort = $state<LibrarySort>("nameAsc");
 
   let duplicateIds = $derived(findDuplicateIds(snapshot?.library.items ?? []));
+  let missingDependencyIds = $derived(findMissingDependencyIds(snapshot?.library.items ?? []));
   let selectedDuplicates = $derived(findDuplicatesForItem(selectedItem, snapshot?.library.items ?? []));
   let filteredItems = $derived(
     (snapshot?.library.items ?? [])
@@ -67,6 +68,25 @@
     );
   }
 
+  function findMissingDependencyIds(items: LocalContentItem[]): Set<string> {
+    const installedByRoot = new Map<string, Set<string>>();
+    for (const item of items) {
+      if (!item.manifestUuid) continue;
+      const uuids = installedByRoot.get(item.rootId) ?? new Set<string>();
+      uuids.add(item.manifestUuid.toLowerCase());
+      installedByRoot.set(item.rootId, uuids);
+    }
+
+    const missing = new Set<string>();
+    for (const item of items) {
+      const installed = installedByRoot.get(item.rootId) ?? new Set<string>();
+      if (item.dependencies.some((dependency) => !installed.has(dependency.uuid.toLowerCase()))) {
+        missing.add(item.id);
+      }
+    }
+    return missing;
+  }
+
   function findDuplicateIds(items: LocalContentItem[]): Set<string> {
     const byUuid = new Map<string, LocalContentItem[]>();
     for (const item of items) {
@@ -94,7 +114,14 @@
     if (rootFilter !== "all" && item.rootId !== rootFilter) return false;
     if (filter === "issues" && item.status !== "invalidMetadata") return false;
     if (filter === "duplicates" && !duplicateIds.has(item.id)) return false;
-    if (filter !== "all" && filter !== "issues" && filter !== "duplicates" && item.contentType !== filter) return false;
+    if (filter === "missingDependencies" && !missingDependencyIds.has(item.id)) return false;
+    if (
+      filter !== "all" &&
+      filter !== "issues" &&
+      filter !== "duplicates" &&
+      filter !== "missingDependencies" &&
+      item.contentType !== filter
+    ) return false;
     const needle = query.trim().toLowerCase();
     if (!needle) return true;
     return `${item.title} ${item.description ?? ""}`.toLowerCase().includes(needle);
@@ -357,6 +384,7 @@
         <option value="resourcePack">Resource packs</option>
         <option value="skinPack">Skin packs</option>
         <option value="duplicates">Duplicate UUIDs</option>
+        <option value="missingDependencies">Missing dependencies</option>
         <option value="issues">Needs review</option>
       </select>
       {#if snapshot.minecraft.roots.length > 1}
@@ -441,6 +469,7 @@
               {#if item.isDevelopment}<span class="chip">Development</span>{/if}
               {#if snapshot.minecraft.roots.length > 1}<span class="chip">{rootLabel(item.rootId)}</span>{/if}
               {#if duplicateIds.has(item.id)}<span class="chip">Duplicate UUID</span>{/if}
+              {#if missingDependencyIds.has(item.id)}<span class="chip">Missing dependency</span>{/if}
             </div>
             <h2 title={item.title}>{item.title}</h2>
             <div class="content-card__footer">
@@ -466,6 +495,7 @@
 
 <LocalContentDetailModal
   item={selectedItem}
+  libraryItems={snapshot?.library.items ?? []}
   duplicates={selectedDuplicates}
   open={selectedItem !== null}
   onClose={closeDetails}

@@ -46,6 +46,11 @@ export type MinecraftDiscoverySnapshot = {
 export type LocalContentType = "behaviorPack" | "resourcePack" | "skinPack" | "world";
 export type LocalContentStatus = "ready" | "invalidMetadata";
 
+export type LocalContentDependency = {
+  uuid: string;
+  version: number[];
+};
+
 export type LocalContentItem = {
   id: string;
   title: string;
@@ -57,6 +62,7 @@ export type LocalContentItem = {
   rootId: string;
   manifestUuid: string | null;
   version: number[];
+  dependencies: LocalContentDependency[];
   isDevelopment: boolean;
 };
 
