@@ -89,6 +89,7 @@ fn request(provider: &str, resource_id: &str, name: &str, bytes: usize) -> Downl
         display_name: name.to_string(),
         destination_file_name: format!("{name}.mcpack"),
         expected_bytes: Some(bytes as u64),
+        expected_sha256: None,
     }
 }
 
