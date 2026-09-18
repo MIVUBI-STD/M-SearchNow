@@ -152,6 +152,24 @@ const registry = await readFile(resolve(appRoot, "src-tauri/src/commands/registr
 if (!registry.includes("queue_catalog_download")) errors.push("Tauri registry must expose queue_catalog_download instead of raw transport queuing");
 if (!registry.includes("query_catalog")) errors.push("Tauri registry must expose the provider-neutral catalog query command");
 
+const runtimeApiSource = await readFile(resolve(appRoot, "src/app/bridge/runtimeApi.ts"), "utf8");
+const registeredCommands = new Set(
+  [...registry.matchAll(/crate::commands::[a-z_]+::([a-z_]+)/g)].map((match) => match[1]),
+);
+const invokedCommands = new Set(
+  [...runtimeApiSource.matchAll(/invoke(?:<[^>]+>)?\("([a-z_]+)"/g)].map((match) => match[1]),
+);
+for (const command of registeredCommands) {
+  if (!invokedCommands.has(command)) {
+    errors.push(`Tauri command is registered but has no runtimeApi bridge: ${command}`);
+  }
+}
+for (const command of invokedCommands) {
+  if (!registeredCommands.has(command)) {
+    errors.push(`runtimeApi invokes an unregistered Tauri command: ${command}`);
+  }
+}
+
 const bootstrap = await readFile(resolve(appRoot, "src-tauri/src/app_bootstrap.rs"), "utf8");
 if (!bootstrap.includes("SearchNowBackendRuntime::new")) errors.push("Tauri bootstrap must construct the consolidated SearchNowBackendRuntime");
 if (!bootstrap.includes("app.manage(runtime)")) errors.push("Tauri bootstrap must manage one consolidated backend runtime");
