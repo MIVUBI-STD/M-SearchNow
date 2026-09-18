@@ -19,6 +19,7 @@
   let actionJobId = $state<string | null>(null);
   let query = $state("");
   let filter = $state<DownloadFilter>("all");
+  let refreshSequence = 0;
 
   let jobs = $derived((snapshot?.jobs ?? []).slice().sort((a, b) => b.updatedAtMs - a.updatedAtMs));
   let visibleJobs = $derived(jobs.filter((job) => matchesFilter(job)));
@@ -54,9 +55,11 @@
   }
 
   async function refresh(showBusy = true): Promise<void> {
-    if (!runtimeReady || loading) return;
+    if (!runtimeReady || (showBusy && loading)) return;
+    const sequence = ++refreshSequence;
     if (showBusy) loading = true;
     const result = await runtimeProductFacade.loadDownloads();
+    if (sequence !== refreshSequence) return;
     if (result.ok) {
       snapshot = result.data;
       error = "";
@@ -101,6 +104,12 @@
     error = result.ok ? "" : result.error.message;
     actionJobId = null;
   }
+
+  $effect(() => {
+    if (runtimeReady) return;
+    refreshSequence += 1;
+    loading = false;
+  });
 
   $effect(() => {
     if (!active || !runtimeReady) return;
