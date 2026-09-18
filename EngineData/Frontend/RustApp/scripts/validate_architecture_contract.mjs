@@ -89,6 +89,22 @@ for (const path of await collect(resolve(appRoot, "src"))) {
 const tauriManifest = await readFile(resolve(appRoot, "src-tauri/Cargo.toml"), "utf8");
 if (!tauriManifest.includes('searchnow-core = { path = "../../../Backend/RustCore" }')) errors.push("Tauri runtime must link the in-process RustCore backend");
 
+const tauriConfig = JSON.parse(await readFile(resolve(appRoot, "src-tauri/tauri.conf.json"), "utf8"));
+const defaultCapability = JSON.parse(await readFile(resolve(appRoot, "src-tauri/capabilities/default.json"), "utf8"));
+const capabilityPermissions = defaultCapability.permissions ?? [];
+if (capabilityPermissions.length !== 1 || capabilityPermissions[0] !== "core:default") {
+  errors.push("default Tauri capability must remain minimal; frontend shell/filesystem/network permissions require explicit review");
+}
+const csp = tauriConfig?.app?.security?.csp ?? "";
+for (const directive of ["object-src 'none'", "frame-src 'none'", "base-uri 'none'", "form-action 'none'"]) {
+  if (!csp.includes(directive)) errors.push(`Tauri CSP must retain ${directive}`);
+}
+for (const forbidden of ["shell:", "filesystem:", "http:", "https:"]) {
+  if (capabilityPermissions.some((permission) => String(permission).includes(forbidden))) {
+    errors.push(`default Tauri capability must not expose broad frontend permission: ${forbidden}`);
+  }
+}
+
 const commandPaths = [
   "runtime.rs",
   "settings.rs",
