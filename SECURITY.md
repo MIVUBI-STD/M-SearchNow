@@ -21,3 +21,7 @@ Network actions involving user/account-derived data must be documented and visib
 ## Reporting
 
 For a security-sensitive issue, document the minimum reproducible evidence without publishing credentials or protected data. Fix the first canonical owner rather than masking the symptom downstream.
+
+## Dependency maintenance
+
+Committed lockfiles define reproducible dependency graphs. Dependabot checks npm, both Cargo manifests, and GitHub Actions weekly. Dependency PRs must pass the same repository verification gates as ordinary changes; do not auto-merge security or version updates without reviewing compatibility and release notes.
