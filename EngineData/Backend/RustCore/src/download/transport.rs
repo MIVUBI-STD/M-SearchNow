@@ -96,13 +96,6 @@ impl DownloadTransportRegistry {
         Ok(())
     }
 
-    pub fn open(
-        &self,
-        source: &DownloadSourceRef,
-    ) -> Result<DownloadTransportStream, DownloadTransportFailure> {
-        self.open_from(source, 0)
-    }
-
     pub fn open_from(
         &self,
         source: &DownloadSourceRef,

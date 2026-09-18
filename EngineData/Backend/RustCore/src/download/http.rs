@@ -153,29 +153,6 @@ impl HttpTransport {
         Self::build(policy, true)
     }
 
-    pub(crate) fn open_runtime_request(
-        &self,
-        url: &str,
-        headers: &[RuntimeHttpHeader],
-    ) -> Result<DownloadTransportStream, DownloadTransportFailure> {
-        if headers.len() > MAX_RUNTIME_HEADERS {
-            return Err(DownloadTransportFailure::new(
-                "download_http_runtime_headers_too_many",
-                "Resolved runtime HTTP request contains too many headers.",
-                false,
-            ));
-        }
-        let parsed = Url::parse(url).map_err(|_| {
-            DownloadTransportFailure::new(
-                "download_http_runtime_url_invalid",
-                "Resolved runtime HTTP URL is invalid.",
-                false,
-            )
-        })?;
-        validate_runtime_url(&parsed, self.allow_plain_http)?;
-        self.open_parsed_url(parsed, headers, true, 0)
-    }
-
     pub(crate) fn open_runtime_request_from(
         &self,
         url: &str,

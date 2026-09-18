@@ -155,7 +155,6 @@ pub fn prepare_payload_file(
             ));
         }
         let file = OpenOptions::new()
-            .write(true)
             .append(true)
             .open(&plan.payload_path)
             .map_err(|error| {
