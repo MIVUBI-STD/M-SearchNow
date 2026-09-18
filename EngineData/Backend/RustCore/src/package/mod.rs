@@ -219,6 +219,4 @@ fn detect_relationships(packs: &[PackManifestSummary]) -> Vec<PackageRelationshi
 #[cfg(test)]
 mod tests;
 
-pub(crate) use import::{
-    BundleReplacePlan, import_archive, replace_bundle, replace_single_pack,
-};
+pub(crate) use import::{import_archive, replace_bundle, replace_single_pack, BundleReplacePlan};
