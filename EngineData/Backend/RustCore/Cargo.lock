@@ -434,6 +434,7 @@ dependencies = [
 name = "searchnow-core"
 version = "0.1.0"
 dependencies = [
+ "ring",
  "serde",
  "serde_json",
  "tempfile",
