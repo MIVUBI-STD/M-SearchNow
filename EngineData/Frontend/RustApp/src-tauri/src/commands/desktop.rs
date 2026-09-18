@@ -52,9 +52,9 @@ fn open_directory(path: std::path::PathBuf) -> Result<(), CommandError> {
     }
 
     let mut command = platform_open_command(&path);
-    command
-        .spawn()
-        .map_err(|_| CommandError::new("directory_open_failed", "The folder could not be opened."))?;
+    command.spawn().map_err(|_| {
+        CommandError::new("directory_open_failed", "The folder could not be opened.")
+    })?;
     Ok(())
 }
 
