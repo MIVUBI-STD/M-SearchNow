@@ -9,6 +9,7 @@ use crate::{
     error::BackendResult,
     platform::PlatformContext,
     provider_adapter::IntegratedProvider,
+    package::PackageImportRequest,
 };
 use std::{
     fs,
@@ -18,6 +19,7 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+use zip::{write::SimpleFileOptions, CompressionMethod, ZipWriter};
 
 struct InvalidProvider;
 
@@ -297,4 +299,62 @@ fn completed_download_directory_rejects_unknown_job_ids() {
         .completed_download_directory("download-missing")
         .expect_err("unknown download id must fail closed");
     assert_eq!(error.code(), "download_job_not_found");
+}
+
+#[test]
+fn package_import_rejects_installed_manifest_uuid_conflict() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let root = temp.path().join("minecraft-root");
+    let installed = root.join("resource_packs/installed");
+    fs::create_dir_all(&installed).expect("installed pack");
+    let uuid = "11111111-1111-4111-8111-111111111111";
+    let manifest = format!(
+        r#"{{
+  "format_version": 2,
+  "header": {{"name":"Installed","uuid":"{uuid}","version":[1,0,0]}},
+  "modules": [{{"type":"resources","uuid":"44444444-4444-4444-8444-444444444444","version":[1,0,0]}}]
+}}"#
+    );
+    fs::write(installed.join("manifest.json"), &manifest).expect("installed manifest");
+
+    let source = temp.path().join("duplicate.mcpack");
+    let file = fs::File::create(&source).expect("archive");
+    let mut writer = ZipWriter::new(file);
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+    writer
+        .start_file("manifest.json", options)
+        .expect("archive manifest");
+    writer.write_all(manifest.as_bytes()).expect("manifest bytes");
+    writer.finish().expect("finish archive");
+
+    let runtime = SearchNowBackendRuntime::compose(
+        SearchNowBackendPaths::from_roots(
+            temp.path().join("config"),
+            temp.path().join("data"),
+        ),
+        PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
+        Vec::new(),
+        HttpTransport::new_test_http(test_http_policy()).expect("test HTTP"),
+    )
+    .expect("runtime");
+
+    let mut settings = runtime.load_settings().expect("settings");
+    settings.minecraft.root_override = Some(root.clone());
+    runtime.save_settings(&settings).expect("save settings");
+    let discovery = runtime.discover_minecraft().expect("discovery");
+    let root_id = discovery.roots.first().expect("custom root").id.clone();
+
+    let error = runtime
+        .import_package(PackageImportRequest {
+            source_path: source,
+            root_id,
+        })
+        .expect_err("duplicate UUID must fail closed");
+    assert_eq!(error.code(), "package_import_conflict");
+    assert_eq!(
+        fs::read_dir(root.join("resource_packs"))
+            .expect("resource packs")
+            .count(),
+        1
+    );
 }
