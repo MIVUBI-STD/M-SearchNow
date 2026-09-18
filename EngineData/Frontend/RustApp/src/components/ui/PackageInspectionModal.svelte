@@ -72,14 +72,37 @@
     );
   }
 
+  function compareVersions(incoming: string | null, installed: number[]): number | null {
+    if (!incoming || installed.length === 0) return null;
+    const incomingParts = incoming.split(".").map((part) => Number(part));
+    if (incomingParts.some((part) => !Number.isInteger(part) || part < 0)) return null;
+    const length = Math.max(incomingParts.length, installed.length);
+    for (let index = 0; index < length; index += 1) {
+      const incomingPart = incomingParts[index] ?? 0;
+      const installedPart = installed[index] ?? 0;
+      if (incomingPart > installedPart) return 1;
+      if (incomingPart < installedPart) return -1;
+    }
+    return 0;
+  }
+
   function updateTarget(): LocalContentItem | null {
     if (!inspection || inspection.inputKind !== "mcPack" || inspection.packs.length !== 1) return null;
     const conflicts = conflictingItems();
     if (conflicts.length !== 1) return null;
-    const incomingVersion = inspection.packs[0].version;
-    const installedVersion = conflicts[0].version.join(".");
-    if (!incomingVersion || incomingVersion === installedVersion) return null;
-    return conflicts[0];
+    const comparison = compareVersions(inspection.packs[0].version, conflicts[0].version);
+    return comparison === 1 ? conflicts[0] : null;
+  }
+
+  function conflictVersionState(): "newer" | "same" | "older" | "unknown" | null {
+    if (!inspection || inspection.inputKind !== "mcPack" || inspection.packs.length !== 1) return null;
+    const conflicts = conflictingItems();
+    if (conflicts.length !== 1) return null;
+    const comparison = compareVersions(inspection.packs[0].version, conflicts[0].version);
+    if (comparison === null) return "unknown";
+    if (comparison > 0) return "newer";
+    if (comparison < 0) return "older";
+    return "same";
   }
 
   function canAutoUpdate(): boolean {
@@ -103,6 +126,7 @@
     if (inspection.status === "rejected") return "Rejected";
     if (inspection.status === "issues") return "Needs review";
     if (canAutoUpdate()) return "Update available";
+    if (conflictVersionState() === "older") return "Older package";
     if (conflictingItems().length > 0) return "Already installed";
     return canAutoImport() ? "Ready to import" : "Inspection passed";
   }
@@ -159,9 +183,11 @@
 
         {#if conflictingItems().length}
           <div class="catalog-modal__issue">
-            <strong>{canAutoUpdate() ? "Update available" : "Already installed"}</strong>
+            <strong>{canAutoUpdate() ? "Update available" : conflictVersionState() === "older" ? "Older package" : "Already installed"}</strong>
             {#if canAutoUpdate() && updateTarget()}
               <span>{updateTarget()!.title}: v{updateTarget()!.version.join(".")} → v{inspection.packs[0].version}</span>
+            {:else if conflictVersionState() === "older"}
+              <span>The installed version is newer than v{inspection.packs[0].version}; automatic downgrade is disabled.</span>
             {:else}
               <span>{conflictingItems().map((item) => item.title).join(", ")} uses the same manifest UUID in this Minecraft storage.</span>
             {/if}

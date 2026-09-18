@@ -71,6 +71,30 @@ pub struct QueueCatalogDownloadRequest {
     pub expected_bytes: Option<u64>,
 }
 
+fn parse_numeric_version(value: &str) -> Option<Vec<u32>> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    trimmed
+        .split('.')
+        .map(|part| part.parse::<u32>().ok())
+        .collect()
+}
+
+fn compare_numeric_versions(left: &[u32], right: &[u32]) -> std::cmp::Ordering {
+    let length = left.len().max(right.len());
+    for index in 0..length {
+        let left_part = left.get(index).copied().unwrap_or(0);
+        let right_part = right.get(index).copied().unwrap_or(0);
+        match left_part.cmp(&right_part) {
+            std::cmp::Ordering::Equal => {}
+            ordering => return ordering,
+        }
+    }
+    std::cmp::Ordering::Equal
+}
+
 #[derive(Clone)]
 pub struct SearchNowBackendRuntime {
     settings: SettingsStore,
@@ -428,7 +452,12 @@ impl SearchNowBackendRuntime {
                 "Automatic update supports one inspected .mcpack at a time.",
             ));
         }
-        let incoming = inspection.packs.first().expect("single pack inspection");
+        let incoming = inspection.packs.first().ok_or_else(|| {
+            BackendError::new(
+                "package_replace_not_supported",
+                "Automatic update requires exactly one inspected pack.",
+            )
+        })?;
         let incoming_uuid = incoming.uuid.as_deref().ok_or_else(|| {
             BackendError::new(
                 "package_replace_uuid_missing",
@@ -473,17 +502,36 @@ impl SearchNowBackendRuntime {
                 "The installed content type does not match the incoming pack.",
             ));
         }
-        let installed_version = existing
+        let incoming_version = incoming
             .version
-            .iter()
-            .map(u32::to_string)
-            .collect::<Vec<_>>()
-            .join(".");
-        if incoming.version.as_deref() == Some(installed_version.as_str()) {
+            .as_deref()
+            .and_then(parse_numeric_version)
+            .ok_or_else(|| {
+                BackendError::new(
+                    "package_replace_version_invalid",
+                    "The incoming pack version is missing or not numeric.",
+                )
+            })?;
+        if existing.version.is_empty() {
             return Err(BackendError::new(
-                "package_replace_same_version",
-                "This exact pack version is already installed.",
+                "package_replace_installed_version_missing",
+                "The installed pack version is unavailable, so SearchNow will not replace it automatically.",
             ));
+        }
+        match compare_numeric_versions(&incoming_version, &existing.version) {
+            std::cmp::Ordering::Equal => {
+                return Err(BackendError::new(
+                    "package_replace_same_version",
+                    "This exact pack version is already installed.",
+                ));
+            }
+            std::cmp::Ordering::Less => {
+                return Err(BackendError::new(
+                    "package_replace_older_version",
+                    "The incoming pack is older than the installed version.",
+                ));
+            }
+            std::cmp::Ordering::Greater => {}
         }
         if !existing.path.starts_with(&root.root) || existing.path == root.root {
             return Err(BackendError::new(
