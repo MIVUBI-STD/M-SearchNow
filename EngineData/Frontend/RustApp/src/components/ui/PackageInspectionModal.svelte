@@ -1,24 +1,37 @@
 <script lang="ts">
   import { FileArchive, X } from "@lucide/svelte";
-  import type { PackageInspection, PackKind } from "../../app/shared/types";
+  import type { MinecraftStorageRoot, PackageInspection, PackKind } from "../../app/shared/types";
   import TechnicalDetails from "./TechnicalDetails.svelte";
 
   let {
     inspection,
     open,
+    roots,
     onClose,
+    onImport,
+    importBusy = false,
   }: {
     inspection: PackageInspection | null;
     open: boolean;
+    roots: MinecraftStorageRoot[];
     onClose: () => void;
+    onImport: (rootId: string) => void;
+    importBusy?: boolean;
   } = $props();
 
+  let selectedRootId = $state("");
+
+  $effect(() => {
+    if (!open || roots.length === 0) return;
+    if (!roots.some((root) => root.id === selectedRootId)) selectedRootId = roots[0].id;
+  });
+
   function handleBackdrop(event: MouseEvent): void {
-    if (event.target === event.currentTarget) onClose();
+    if (event.target === event.currentTarget && !importBusy) onClose();
   }
 
   function handleKeydown(event: KeyboardEvent): void {
-    if (open && event.key === "Escape") onClose();
+    if (open && event.key === "Escape" && !importBusy) onClose();
   }
 
   function inputKindLabel(): string {
@@ -52,7 +65,7 @@
 {#if open && inspection}
   <div class="catalog-modal__backdrop" role="presentation" onclick={handleBackdrop}>
     <div class="catalog-modal" role="dialog" aria-modal="true" aria-labelledby="package-inspection-title">
-      <button class="catalog-modal__close" type="button" aria-label="Close package inspection" onclick={onClose}>
+      <button class="catalog-modal__close" type="button" aria-label="Close package inspection" onclick={onClose} disabled={importBusy}>
         <X size={18} aria-hidden="true" />
       </button>
 
@@ -89,6 +102,17 @@
           </div>
         {/if}
 
+        {#if roots.length > 1}
+          <label>
+            <span>Import target</span>
+            <select class="select-field" bind:value={selectedRootId} disabled={importBusy}>
+              {#each roots as root}
+                <option value={root.id}>{root.accountHint ?? root.storageKind} · {root.root}</option>
+              {/each}
+            </select>
+          </label>
+        {/if}
+
         <TechnicalDetails
           items={[
             { label: "Source", value: inspection.sourcePath },
@@ -98,6 +122,17 @@
             { label: "Uncompressed bytes", value: inspection.archive ? String(inspection.archive.uncompressedBytes) : null },
           ]}
         />
+
+        <div class="catalog-modal__footer">
+          <button
+            class="button button--primary"
+            type="button"
+            disabled={inspection.status !== "ready" || roots.length === 0 || importBusy}
+            onclick={() => onImport(selectedRootId)}
+          >
+            {importBusy ? "Importing…" : "Import package"}
+          </button>
+        </div>
       </div>
     </div>
   </div>

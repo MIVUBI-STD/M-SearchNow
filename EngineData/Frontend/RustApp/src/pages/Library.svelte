@@ -22,6 +22,7 @@
   let actionBusy = $state(false);
   let inspectionBusy = $state(false);
   let packageInspection = $state<PackageInspection | null>(null);
+  let importBusy = $state(false);
   let error = $state("");
   let query = $state("");
   let filter = $state<LibraryFilter>("all");
@@ -95,6 +96,25 @@
     inspectionBusy = false;
   }
 
+  async function importInspectedPackage(rootId: string): Promise<void> {
+    const inspection = packageInspection;
+    if (!inspection || importBusy) return;
+    importBusy = true;
+    error = "";
+    const result = await runtimeProductFacade.importPackage({
+      sourcePath: inspection.sourcePath,
+      rootId,
+    });
+    if (result.ok) {
+      packageInspection = null;
+      loaded = false;
+      await refresh();
+    } else {
+      error = result.error.message;
+    }
+    importBusy = false;
+  }
+
   async function refresh(): Promise<void> {
     if (!runtimeReady || loading) return;
     loading = true;
@@ -114,6 +134,7 @@
     selectedItem = null;
     packageInspection = null;
     inspectionBusy = false;
+    importBusy = false;
   });
 
   $effect(() => {
@@ -237,6 +258,11 @@
 
 <PackageInspectionModal
   inspection={packageInspection}
+  roots={snapshot?.minecraft.roots ?? []}
   open={packageInspection !== null}
-  onClose={() => (packageInspection = null)}
+  onClose={() => {
+    if (!importBusy) packageInspection = null;
+  }}
+  onImport={importInspectedPackage}
+  {importBusy}
 />
