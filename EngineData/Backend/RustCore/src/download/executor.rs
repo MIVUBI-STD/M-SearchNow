@@ -531,15 +531,6 @@ fn transfer_read_failure(kind: ErrorKind) -> (&'static str, bool) {
     }
 }
 
-fn find_job(snapshot: &DownloadManagerSnapshot, job_id: &str) -> BackendResult<DownloadJob> {
-    snapshot
-        .jobs
-        .iter()
-        .find(|job| job.id == job_id)
-        .cloned()
-        .ok_or_else(|| BackendError::new("download_job_not_found", "Download job was not found."))
-}
-
 fn now_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
