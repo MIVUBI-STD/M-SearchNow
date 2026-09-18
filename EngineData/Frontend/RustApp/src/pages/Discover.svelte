@@ -183,6 +183,23 @@
     const text = query;
     const filter = contentFilter;
     const selectedSort = sort;
+    const canQuery = active && runtimeReady && provider.length > 0;
+
+    requestSequence += 1;
+    loading = false;
+    loadingMore = false;
+    if (!canQuery) error = "";
+
+    void text;
+    void filter;
+    void selectedSort;
+  });
+
+  $effect(() => {
+    const provider = selectedProvider;
+    const text = query;
+    const filter = contentFilter;
+    const selectedSort = sort;
     if (!active || !runtimeReady || !provider) return;
     const timer = setTimeout(() => {
       void queryCatalog(provider, text, filter, selectedSort);
