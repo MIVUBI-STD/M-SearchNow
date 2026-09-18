@@ -103,6 +103,16 @@ impl DownloadExecutionRuntime {
         Ok(job)
     }
 
+    pub fn pause(&self, job_id: &str) -> BackendResult<DownloadJob> {
+        self.mutate_persist(|manager| manager.request_pause(job_id))
+    }
+
+    pub fn resume(&self, job_id: &str) -> BackendResult<DownloadJob> {
+        let job = self.mutate_persist(|manager| manager.resume(job_id))?;
+        self.pump_best_effort();
+        Ok(job)
+    }
+
     pub fn cancel(&self, job_id: &str) -> BackendResult<DownloadJob> {
         self.mutate_persist(|manager| manager.request_cancel(job_id))
     }
@@ -205,7 +215,12 @@ impl DownloadExecutionRuntime {
             return Ok(());
         }
 
-        let mut stream = match self.inner.transports.open(&job.source) {
+        if self.acknowledge_pause_if_requested(job_id)? {
+            return Ok(());
+        }
+
+        let resume_offset = job.progress.downloaded_bytes;
+        let mut stream = match self.inner.transports.open_from(&job.source, resume_offset) {
             Ok(stream) => stream,
             Err(failure) => {
                 self.fail_job(
@@ -222,9 +237,12 @@ impl DownloadExecutionRuntime {
         if self.acknowledge_cancel_if_requested(job_id, &plan)? {
             return Ok(());
         }
+        if self.acknowledge_pause_if_requested(job_id)? {
+            return Ok(());
+        }
 
         ensure_workspace(&plan)?;
-        let mut payload = prepare_payload_file(&plan)?;
+        let mut payload = prepare_payload_file(&plan, resume_offset)?;
 
         let transition = self.mutate_persist(|manager| {
             manager.mark_transferring(job_id)?;
@@ -239,10 +257,21 @@ impl DownloadExecutionRuntime {
         }
 
         let mut buffer = vec![0_u8; TRANSFER_BUFFER_BYTES];
-        let mut downloaded = 0_u64;
+        let mut downloaded = resume_offset;
 
         loop {
             if self.acknowledge_cancel_if_requested(job_id, &plan)? {
+                return Ok(());
+            }
+            if self.pause_requested(job_id)? {
+                payload.sync_all().map_err(|error| {
+                    BackendError::from_io(
+                        "download_payload_sync_failed",
+                        "SearchNow could not sync the partial download payload before pausing.",
+                        error,
+                    )
+                })?;
+                self.mutate_persist(|manager| manager.acknowledge_pause(job_id))?;
                 return Ok(());
             }
 
@@ -280,6 +309,18 @@ impl DownloadExecutionRuntime {
                 self.fail_job(job_id, &plan, error.code(), error.message(), false)?;
                 return Ok(());
             }
+        }
+
+        if self.pause_requested(job_id)? {
+            payload.sync_all().map_err(|error| {
+                BackendError::from_io(
+                    "download_payload_sync_failed",
+                    "SearchNow could not sync the partial download payload before pausing.",
+                    error,
+                )
+            })?;
+            self.mutate_persist(|manager| manager.acknowledge_pause(job_id))?;
+            return Ok(());
         }
 
         if let Err(error) = payload.sync_all() {
@@ -356,6 +397,18 @@ impl DownloadExecutionRuntime {
         drop(manager);
         self.notify_progress_change();
         Ok(output)
+    }
+
+    fn pause_requested(&self, job_id: &str) -> BackendResult<bool> {
+        Ok(self.current_job(job_id)?.state == DownloadJobState::PauseRequested)
+    }
+
+    fn acknowledge_pause_if_requested(&self, job_id: &str) -> BackendResult<bool> {
+        if !self.pause_requested(job_id)? {
+            return Ok(false);
+        }
+        self.mutate_persist(|manager| manager.acknowledge_pause(job_id))?;
+        Ok(true)
     }
 
     fn acknowledge_cancel_if_requested(

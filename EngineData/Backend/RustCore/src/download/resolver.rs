@@ -166,6 +166,7 @@ impl ProviderResolvedTransport {
     fn resolve_and_open(
         &self,
         source: &DownloadSourceRef,
+        offset: u64,
     ) -> Result<DownloadTransportStream, DownloadTransportFailure> {
         if source.transport != RESOLVED_PROVIDER_TRANSPORT_KEY {
             return Err(DownloadTransportFailure::new(
@@ -208,7 +209,9 @@ impl ProviderResolvedTransport {
                 .into_iter()
                 .map(|header| RuntimeHttpHeader::new(header.name, header.value))
                 .collect::<Result<Vec<_>, _>>()?;
-            let stream = self.http.open_runtime_request(&resolved.url, &headers)?;
+            let stream = self
+                .http
+                .open_runtime_request_from(&resolved.url, &headers, offset)?;
             return Ok(sanitize_stream_errors(stream));
         }
 
@@ -229,7 +232,15 @@ impl DownloadTransport for ProviderResolvedTransport {
         &self,
         source: &DownloadSourceRef,
     ) -> Result<DownloadTransportStream, DownloadTransportFailure> {
-        self.resolve_and_open(source)
+        self.resolve_and_open(source, 0)
+    }
+
+    fn open_from(
+        &self,
+        source: &DownloadSourceRef,
+        offset: u64,
+    ) -> Result<DownloadTransportStream, DownloadTransportFailure> {
+        self.resolve_and_open(source, offset)
     }
 }
 

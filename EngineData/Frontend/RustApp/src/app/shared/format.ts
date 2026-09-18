@@ -91,6 +91,8 @@ export function downloadStateLabel(state: DownloadJobState): string {
     queued: "Queued",
     preparing: "Preparing",
     transferring: "Downloading",
+    pauseRequested: "Pausing",
+    paused: "Paused",
     finalizing: "Finalizing",
     cancelRequested: "Cancelling",
     completed: "Finished",

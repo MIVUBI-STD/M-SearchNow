@@ -109,6 +109,8 @@ export type DownloadJobState =
   | "queued"
   | "preparing"
   | "transferring"
+  | "pauseRequested"
+  | "paused"
   | "finalizing"
   | "cancelRequested"
   | "completed"

@@ -226,7 +226,10 @@ impl DownloadManager {
         let job = self.job_mut(job_id)?;
         require_state(
             job,
-            &[DownloadJobState::Transferring],
+            &[
+                DownloadJobState::Transferring,
+                DownloadJobState::PauseRequested,
+            ],
             "download_progress_state_invalid",
         )?;
         if downloaded_bytes < job.progress.downloaded_bytes {
@@ -337,11 +340,65 @@ impl DownloadManager {
         Ok(job.clone())
     }
 
+    pub fn request_pause(&mut self, job_id: &str) -> BackendResult<DownloadJob> {
+        let job = self.job_mut(job_id)?;
+        match job.state {
+            DownloadJobState::Queued => job.state = DownloadJobState::Paused,
+            DownloadJobState::Preparing | DownloadJobState::Transferring => {
+                job.state = DownloadJobState::PauseRequested;
+            }
+            DownloadJobState::PauseRequested | DownloadJobState::Paused => {}
+            DownloadJobState::Finalizing => {
+                return Err(BackendError::new(
+                    "download_pause_too_late",
+                    "Download is already finalizing and can no longer be paused safely.",
+                ));
+            }
+            _ => {
+                return Err(BackendError::new(
+                    "download_pause_state_invalid",
+                    "Download cannot be paused from its current state.",
+                ));
+            }
+        }
+        job.updated_at_ms = now_ms();
+        Ok(job.clone())
+    }
+
+    pub fn acknowledge_pause(&mut self, job_id: &str) -> BackendResult<DownloadJob> {
+        let job = self.job_mut(job_id)?;
+        require_state(
+            job,
+            &[DownloadJobState::PauseRequested],
+            "download_pause_ack_invalid",
+        )?;
+        job.state = DownloadJobState::Paused;
+        job.updated_at_ms = now_ms();
+        Ok(job.clone())
+    }
+
+    pub fn resume(&mut self, job_id: &str) -> BackendResult<DownloadJob> {
+        let job = self.job_mut(job_id)?;
+        require_state(
+            job,
+            &[DownloadJobState::Paused, DownloadJobState::Interrupted],
+            "download_resume_state_invalid",
+        )?;
+        job.state = DownloadJobState::Queued;
+        job.last_error = None;
+        job.updated_at_ms = now_ms();
+        Ok(job.clone())
+    }
+
     pub fn request_cancel(&mut self, job_id: &str) -> BackendResult<DownloadJob> {
         let job = self.job_mut(job_id)?;
         match job.state {
-            DownloadJobState::Queued => job.state = DownloadJobState::Cancelled,
-            DownloadJobState::Preparing | DownloadJobState::Transferring => {
+            DownloadJobState::Queued | DownloadJobState::Paused => {
+                job.state = DownloadJobState::Cancelled;
+            }
+            DownloadJobState::Preparing
+            | DownloadJobState::Transferring
+            | DownloadJobState::PauseRequested => {
                 job.state = DownloadJobState::CancelRequested;
             }
             DownloadJobState::CancelRequested => {}

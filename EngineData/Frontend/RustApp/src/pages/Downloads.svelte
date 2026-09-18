@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FolderOpen, RefreshCw, RotateCcw, Search, Trash2, X } from "@lucide/svelte";
+  import { FolderOpen, Pause, Play, RefreshCw, RotateCcw, Search, Trash2, X } from "@lucide/svelte";
   import { runtimeProductFacade } from "../app/bridge/runtimeProductFacade";
   import {
     downloadStateLabel,
@@ -43,7 +43,10 @@
   let controlsChanged = $derived(query.trim().length > 0 || filter !== "all");
 
   function matchesFilter(job: DownloadJob): boolean {
-    if (filter === "active" && !["queued", "preparing", "transferring", "finalizing", "cancelRequested"].includes(job.state)) return false;
+    if (
+      filter === "active" &&
+      !["queued", "preparing", "transferring", "pauseRequested", "paused", "finalizing", "cancelRequested"].includes(job.state)
+    ) return false;
     if (filter === "completed" && job.state !== "completed") return false;
     if (filter === "issues" && !["failed", "interrupted", "cancelled"].includes(job.state)) return false;
     const needle = query.trim().toLowerCase();
@@ -56,13 +59,21 @@
     filter = "all";
   }
 
-  function canCancel(job: DownloadJob): boolean {
+  function canPause(job: DownloadJob): boolean {
     return ["queued", "preparing", "transferring"].includes(job.state);
+  }
+
+  function canResume(job: DownloadJob): boolean {
+    return job.state === "paused" || job.state === "interrupted";
+  }
+
+  function canCancel(job: DownloadJob): boolean {
+    return ["queued", "preparing", "transferring", "pauseRequested", "paused"].includes(job.state);
   }
 
   function canRetry(job: DownloadJob): boolean {
     if (job.state === "failed") return job.lastError?.retryable ?? false;
-    return job.state === "cancelled" || job.state === "interrupted";
+    return job.state === "cancelled";
   }
 
   function canRemove(job: DownloadJob): boolean {
@@ -129,6 +140,22 @@
       error = result.error.message;
     }
     loading = false;
+  }
+
+  async function pause(job: DownloadJob): Promise<void> {
+    actionJobId = job.id;
+    const result = await runtimeProductFacade.pauseDownload(job.id);
+    if (!result.ok) error = result.error.message;
+    await refresh(false);
+    actionJobId = null;
+  }
+
+  async function resume(job: DownloadJob): Promise<void> {
+    actionJobId = job.id;
+    const result = await runtimeProductFacade.resumeDownload(job.id);
+    if (!result.ok) error = result.error.message;
+    await refresh(false);
+    actionJobId = null;
   }
 
   async function cancel(job: DownloadJob): Promise<void> {
@@ -308,7 +335,7 @@
             </div>
 
             <div
-              class:progress-track--indeterminate={percent === null && ["preparing", "transferring", "finalizing"].includes(job.state)}
+              class:progress-track--indeterminate={percent === null && ["preparing", "transferring", "pauseRequested", "finalizing"].includes(job.state)}
               class="progress-track"
               role="progressbar"
               aria-label={`${job.displayName} progress`}
@@ -356,6 +383,16 @@
               <button class="button button--secondary button--compact" type="button" onclick={() => openFolder(job)} disabled={actionJobId === job.id}>
                 <FolderOpen size={15} aria-hidden="true" />
                 Open folder
+              </button>
+            {/if}
+            {#if canPause(job)}
+              <button class="icon-button" type="button" title="Pause" aria-label={`Pause ${job.displayName}`} onclick={() => pause(job)} disabled={actionJobId === job.id}>
+                <Pause size={16} aria-hidden="true" />
+              </button>
+            {/if}
+            {#if canResume(job)}
+              <button class="icon-button" type="button" title="Resume" aria-label={`Resume ${job.displayName}`} onclick={() => resume(job)} disabled={actionJobId === job.id}>
+                <Play size={16} aria-hidden="true" />
               </button>
             {/if}
             {#if canCancel(job)}

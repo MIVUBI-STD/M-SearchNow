@@ -196,6 +196,20 @@ export const runtimeProductFacade = {
     );
   },
 
+  pauseDownload(jobId: string): Promise<ProductResult<DownloadJob>> {
+    return productCall(
+      () => runtimeApi.pauseDownload(jobId),
+      "SearchNow could not pause this download.",
+    );
+  },
+
+  resumeDownload(jobId: string): Promise<ProductResult<DownloadJob>> {
+    return productCall(
+      () => runtimeApi.resumeDownload(jobId),
+      "SearchNow could not resume this download.",
+    );
+  },
+
   cancelDownload(jobId: string): Promise<ProductResult<DownloadJob>> {
     return productCall(
       () => runtimeApi.cancelDownload(jobId),

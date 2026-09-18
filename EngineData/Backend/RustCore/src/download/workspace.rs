@@ -105,10 +105,13 @@ pub fn ensure_workspace(plan: &DownloadWorkspacePlan) -> BackendResult<()> {
     })
 }
 
-pub fn prepare_payload_file(plan: &DownloadWorkspacePlan) -> BackendResult<File> {
+pub fn prepare_payload_file(
+    plan: &DownloadWorkspacePlan,
+    resume_offset: u64,
+) -> BackendResult<File> {
     ensure_workspace(plan)?;
 
-    if plan.payload_path.exists() {
+    if resume_offset == 0 && plan.payload_path.exists() {
         let metadata = fs::symlink_metadata(&plan.payload_path).map_err(|error| {
             BackendError::from_io(
                 "download_payload_metadata_failed",
@@ -129,6 +132,49 @@ pub fn prepare_payload_file(plan: &DownloadWorkspacePlan) -> BackendResult<File>
                 error,
             )
         })?;
+    }
+
+    if resume_offset > 0 {
+        let metadata = fs::symlink_metadata(&plan.payload_path).map_err(|error| {
+            BackendError::from_io(
+                "download_resume_payload_missing",
+                "SearchNow could not inspect the partial download payload.",
+                error,
+            )
+        })?;
+        if metadata.file_type().is_symlink() || !metadata.file_type().is_file() {
+            return Err(BackendError::new(
+                "download_resume_payload_invalid",
+                "Partial download payload must be a regular non-symlink file.",
+            ));
+        }
+        if metadata.len() < resume_offset {
+            return Err(BackendError::new(
+                "download_resume_payload_short",
+                "Partial download payload is shorter than its persisted progress.",
+            ));
+        }
+        let file = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open(&plan.payload_path)
+            .map_err(|error| {
+                BackendError::from_io(
+                    "download_resume_payload_open_failed",
+                    "SearchNow could not reopen the partial download payload.",
+                    error,
+                )
+            })?;
+        if metadata.len() > resume_offset {
+            file.set_len(resume_offset).map_err(|error| {
+                BackendError::from_io(
+                    "download_resume_payload_truncate_failed",
+                    "SearchNow could not reconcile the partial download payload.",
+                    error,
+                )
+            })?;
+        }
+        return Ok(file);
     }
 
     OpenOptions::new()

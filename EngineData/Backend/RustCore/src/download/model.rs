@@ -25,6 +25,8 @@ pub enum DownloadJobState {
     Queued,
     Preparing,
     Transferring,
+    PauseRequested,
+    Paused,
     Finalizing,
     CancelRequested,
     Completed,
@@ -37,7 +39,11 @@ impl DownloadJobState {
     pub fn is_active(self) -> bool {
         matches!(
             self,
-            Self::Preparing | Self::Transferring | Self::Finalizing | Self::CancelRequested
+            Self::Preparing
+                | Self::Transferring
+                | Self::PauseRequested
+                | Self::Finalizing
+                | Self::CancelRequested
         )
     }
 

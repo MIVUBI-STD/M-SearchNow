@@ -103,6 +103,7 @@ impl RuntimeHttpHeader {
             "connection",
             "transfer-encoding",
             "proxy-authorization",
+            "range",
         ]
         .iter()
         .any(|name| self.name.eq_ignore_ascii_case(name));
@@ -172,7 +173,31 @@ impl HttpTransport {
             )
         })?;
         validate_runtime_url(&parsed, self.allow_plain_http)?;
-        self.open_parsed_url(parsed, headers, true)
+        self.open_parsed_url(parsed, headers, true, 0)
+    }
+
+    pub(crate) fn open_runtime_request_from(
+        &self,
+        url: &str,
+        headers: &[RuntimeHttpHeader],
+        offset: u64,
+    ) -> Result<DownloadTransportStream, DownloadTransportFailure> {
+        if headers.len() > MAX_RUNTIME_HEADERS {
+            return Err(DownloadTransportFailure::new(
+                "download_http_runtime_headers_too_many",
+                "Resolved runtime HTTP request contains too many headers.",
+                false,
+            ));
+        }
+        let parsed = Url::parse(url).map_err(|_| {
+            DownloadTransportFailure::new(
+                "download_http_runtime_url_invalid",
+                "Resolved runtime HTTP URL is invalid.",
+                false,
+            )
+        })?;
+        validate_runtime_url(&parsed, self.allow_plain_http)?;
+        self.open_parsed_url(parsed, headers, true, offset)
     }
 
     fn open_url(
@@ -188,7 +213,23 @@ impl HttpTransport {
         }
 
         let current = parse_source_url(&source.resource_id, self.allow_plain_http)?;
-        self.open_parsed_url(current, &[], false)
+        self.open_parsed_url(current, &[], false, 0)
+    }
+
+    fn open_url_from(
+        &self,
+        source: &DownloadSourceRef,
+        offset: u64,
+    ) -> Result<DownloadTransportStream, DownloadTransportFailure> {
+        if source.transport != PUBLIC_HTTPS_TRANSPORT_KEY {
+            return Err(DownloadTransportFailure::new(
+                "download_http_transport_key_invalid",
+                "HTTP transport received a job for a different transport key.",
+                false,
+            ));
+        }
+        let current = parse_source_url(&source.resource_id, self.allow_plain_http)?;
+        self.open_parsed_url(current, &[], false, offset)
     }
 
     fn open_parsed_url(
@@ -196,6 +237,7 @@ impl HttpTransport {
         mut current: Url,
         headers: &[RuntimeHttpHeader],
         sensitive_runtime_material: bool,
+        offset: u64,
     ) -> Result<DownloadTransportStream, DownloadTransportFailure> {
         let started_at = Instant::now();
         let mut redirects = 0_u32;
@@ -205,6 +247,9 @@ impl HttpTransport {
             let mut request = self.agent.get(current.as_str());
             for header in headers {
                 request = request.set(&header.name, &header.value);
+            }
+            if offset > 0 {
+                request = request.set("Range", &format!("bytes={offset}-"));
             }
             let response = match request.call() {
                 Ok(response) => response,
@@ -253,11 +298,22 @@ impl HttpTransport {
                 continue;
             }
 
+            if offset > 0 && status != 206 {
+                return Err(DownloadTransportFailure::new(
+                    "download_http_resume_unsupported",
+                    "The server did not honor the requested byte range.",
+                    false,
+                ));
+            }
             if !(200..300).contains(&status) {
                 return Err(status_failure(status));
             }
 
-            let total_bytes = parse_content_length(&response)?;
+            let total_bytes = if offset > 0 {
+                parse_content_range_total(&response, offset)?
+            } else {
+                parse_content_length(&response)?
+            };
             if total_bytes.is_some_and(|value| value > self.policy.max_response_bytes) {
                 return Err(DownloadTransportFailure::new(
                     "download_http_response_too_large",
@@ -269,8 +325,8 @@ impl HttpTransport {
                 ));
             }
 
-            let limited =
-                ResponseLimitReader::new(response.into_reader(), self.policy.max_response_bytes);
+            let response_limit = self.policy.max_response_bytes.saturating_sub(offset);
+            let limited = ResponseLimitReader::new(response.into_reader(), response_limit);
             let reader =
                 OverallDeadlineReader::new(limited, started_at, self.policy.overall_timeout);
             return Ok(DownloadTransportStream {
@@ -291,6 +347,14 @@ impl DownloadTransport for HttpTransport {
         source: &DownloadSourceRef,
     ) -> Result<DownloadTransportStream, DownloadTransportFailure> {
         self.open_url(source)
+    }
+
+    fn open_from(
+        &self,
+        source: &DownloadSourceRef,
+        offset: u64,
+    ) -> Result<DownloadTransportStream, DownloadTransportFailure> {
+        self.open_url_from(source, offset)
     }
 }
 
@@ -356,6 +420,64 @@ fn parse_content_length(
         DownloadTransportFailure::new(
             "download_http_content_length_invalid",
             format!("HTTP Content-Length is invalid: {error}"),
+            false,
+        )
+    })
+}
+
+fn parse_content_range_total(
+    response: &ureq::Response,
+    expected_start: u64,
+) -> Result<Option<u64>, DownloadTransportFailure> {
+    let value = response.header("Content-Range").ok_or_else(|| {
+        DownloadTransportFailure::new(
+            "download_http_content_range_missing",
+            "Partial HTTP response did not include Content-Range.",
+            false,
+        )
+    })?;
+    let range = value.strip_prefix("bytes ").ok_or_else(|| {
+        DownloadTransportFailure::new(
+            "download_http_content_range_invalid",
+            "Partial HTTP response included an invalid Content-Range.",
+            false,
+        )
+    })?;
+    let (bounds, total) = range.split_once('/').ok_or_else(|| {
+        DownloadTransportFailure::new(
+            "download_http_content_range_invalid",
+            "Partial HTTP response included an invalid Content-Range.",
+            false,
+        )
+    })?;
+    let (start, _) = bounds.split_once('-').ok_or_else(|| {
+        DownloadTransportFailure::new(
+            "download_http_content_range_invalid",
+            "Partial HTTP response included an invalid Content-Range.",
+            false,
+        )
+    })?;
+    let start = start.parse::<u64>().map_err(|_| {
+        DownloadTransportFailure::new(
+            "download_http_content_range_invalid",
+            "Partial HTTP response included an invalid Content-Range.",
+            false,
+        )
+    })?;
+    if start != expected_start {
+        return Err(DownloadTransportFailure::new(
+            "download_http_content_range_mismatch",
+            "Partial HTTP response started at an unexpected byte offset.",
+            false,
+        ));
+    }
+    if total == "*" {
+        return Ok(None);
+    }
+    total.parse::<u64>().map(Some).map_err(|_| {
+        DownloadTransportFailure::new(
+            "download_http_content_range_invalid",
+            "Partial HTTP response included an invalid total size.",
             false,
         )
     })

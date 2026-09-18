@@ -23,6 +23,22 @@ pub fn queue_catalog_download(
 }
 
 #[tauri::command]
+pub fn pause_download(
+    state: State<'_, SearchNowBackendRuntime>,
+    job_id: String,
+) -> Result<DownloadJob, CommandError> {
+    state.pause_download(&job_id).map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub fn resume_download(
+    state: State<'_, SearchNowBackendRuntime>,
+    job_id: String,
+) -> Result<DownloadJob, CommandError> {
+    state.resume_download(&job_id).map_err(CommandError::from)
+}
+
+#[tauri::command]
 pub fn cancel_download(
     state: State<'_, SearchNowBackendRuntime>,
     job_id: String,

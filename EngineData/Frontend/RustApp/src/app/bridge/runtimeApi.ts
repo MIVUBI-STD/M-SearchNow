@@ -94,6 +94,14 @@ export const runtimeApi = {
     return invoke<DownloadJob>("queue_catalog_download", { request });
   },
 
+  pauseDownload(jobId: string): Promise<DownloadJob> {
+    return invoke<DownloadJob>("pause_download", { jobId });
+  },
+
+  resumeDownload(jobId: string): Promise<DownloadJob> {
+    return invoke<DownloadJob>("resume_download", { jobId });
+  },
+
   cancelDownload(jobId: string): Promise<DownloadJob> {
     return invoke<DownloadJob>("cancel_download", { jobId });
   },

@@ -909,6 +909,38 @@ impl SearchNowBackendRuntime {
         })
     }
 
+    pub fn pause_download(&self, job_id: &str) -> BackendResult<DownloadJob> {
+        let started = Instant::now();
+        let result = self.downloads.pause(job_id);
+        self.diagnostics.record_outcome(
+            DiagnosticComponent::Download,
+            started,
+            result.is_ok(),
+            "download_pause_ok",
+            "Download pause requested.",
+            "download_pause_failed",
+            "Download could not be paused.",
+            DiagnosticSeverity::Warning,
+        );
+        result
+    }
+
+    pub fn resume_download(&self, job_id: &str) -> BackendResult<DownloadJob> {
+        let started = Instant::now();
+        let result = self.downloads.resume(job_id);
+        self.diagnostics.record_outcome(
+            DiagnosticComponent::Download,
+            started,
+            result.is_ok(),
+            "download_resume_ok",
+            "Download resume queued.",
+            "download_resume_failed",
+            "Download could not be resumed.",
+            DiagnosticSeverity::Warning,
+        );
+        result
+    }
+
     pub fn cancel_download(&self, job_id: &str) -> BackendResult<DownloadJob> {
         let started = Instant::now();
         let result = self.downloads.cancel(job_id);
