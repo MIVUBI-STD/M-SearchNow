@@ -2,8 +2,8 @@ use super::{
     archive::{MAX_SINGLE_ENTRY_BYTES, MAX_TOTAL_UNCOMPRESSED_BYTES},
     inspect_package,
     model::{
-        ImportedPack, PackKind, PackManifestSummary, PackageImportResult, PackageInspectionStatus,
-        PackageInputKind, PackageSafety,
+        ImportedPack, PackKind, PackManifestSummary, PackageImportResult, PackageInputKind,
+        PackageInspectionStatus, PackageSafety,
     },
 };
 use crate::error::{BackendError, BackendResult};
@@ -250,7 +250,11 @@ fn destination_name(name: &str, uuid: Option<&str>) -> String {
         }
     }
     let safe = safe.trim_matches([' ', '.']).trim();
-    let base = if safe.is_empty() { "Imported pack" } else { safe };
+    let base = if safe.is_empty() {
+        "Imported pack"
+    } else {
+        safe
+    };
     let suffix = uuid
         .and_then(|value| value.split('-').next())
         .filter(|value| !value.is_empty())

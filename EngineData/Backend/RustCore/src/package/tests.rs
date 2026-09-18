@@ -156,9 +156,17 @@ fn safe_mcpack_import_extracts_into_matching_container_without_overwrite() {
 
     let first = import_archive(&source, &minecraft, "root-fixture").expect("first import");
     assert_eq!(first.imported.len(), 1);
-    assert!(first.imported[0].destination_path.join("manifest.json").is_file());
+    assert!(first.imported[0]
+        .destination_path
+        .join("manifest.json")
+        .is_file());
     assert_eq!(
-        fs::read(first.imported[0].destination_path.join("textures/example.txt")).expect("texture"),
+        fs::read(
+            first.imported[0]
+                .destination_path
+                .join("textures/example.txt")
+        )
+        .expect("texture"),
         b"texture"
     );
 
