@@ -341,3 +341,20 @@ export type PackageInspection = {
   issues: PackageIssue[];
   archive: ArchiveSummary | null;
 };
+
+export type PackageImportRequest = {
+  sourcePath: string;
+  rootId: string;
+};
+
+export type ImportedPack = {
+  name: string;
+  kind: PackKind;
+  destinationPath: string;
+};
+
+export type PackageImportResult = {
+  sourcePath: string;
+  rootId: string;
+  imported: ImportedPack[];
+};

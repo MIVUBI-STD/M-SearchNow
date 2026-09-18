@@ -11,6 +11,8 @@ import type {
   ProductRuntimeSnapshot,
   QueueCatalogDownloadRequest,
   PackageInspection,
+  PackageImportRequest,
+  PackageImportResult,
 } from "../shared/types";
 import { toProductError } from "../shared/productErrors";
 import { runtimeApi } from "./runtimeApi";
@@ -82,6 +84,13 @@ export const runtimeProductFacade = {
     return productCall(
       () => runtimeApi.chooseAndInspectPackage(),
       "SearchNow could not inspect this Minecraft package.",
+    );
+  },
+
+  importPackage(request: PackageImportRequest): Promise<ProductResult<PackageImportResult>> {
+    return productCall(
+      () => runtimeApi.importPackage(request),
+      "SearchNow could not import this Minecraft package.",
     );
   },
 

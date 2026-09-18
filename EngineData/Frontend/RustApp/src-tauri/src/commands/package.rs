@@ -1,5 +1,8 @@
 use super::error::CommandError;
-use searchnow_core::{app_runtime::SearchNowBackendRuntime, package::PackageInspection};
+use searchnow_core::{
+    app_runtime::SearchNowBackendRuntime,
+    package::{PackageImportRequest, PackageImportResult, PackageInspection},
+};
 use tauri::{AppHandle, Runtime, State};
 use tauri_plugin_dialog::DialogExt;
 
@@ -26,4 +29,12 @@ pub async fn choose_and_inspect_package<R: Runtime>(
         .inspect_package(&path)
         .map(Some)
         .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub fn import_package(
+    state: State<'_, SearchNowBackendRuntime>,
+    request: PackageImportRequest,
+) -> Result<PackageImportResult, CommandError> {
+    state.import_package(request).map_err(CommandError::from)
 }

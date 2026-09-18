@@ -12,6 +12,8 @@ import type {
   QueueCatalogDownloadRequest,
   RuntimeStatus,
   PackageInspection,
+  PackageImportRequest,
+  PackageImportResult,
 } from "../shared/types";
 
 export const runtimeApi = {
@@ -45,6 +47,10 @@ export const runtimeApi = {
 
   chooseAndInspectPackage(): Promise<PackageInspection | null> {
     return invoke<PackageInspection | null>("choose_and_inspect_package");
+  },
+
+  importPackage(request: PackageImportRequest): Promise<PackageImportResult> {
+    return invoke<PackageImportResult>("import_package", { request });
   },
 
   chooseDownloadDirectory(): Promise<string | null> {
