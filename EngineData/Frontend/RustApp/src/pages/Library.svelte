@@ -30,17 +30,7 @@
   let sort = $state<LibrarySort>("nameAsc");
 
   let duplicateIds = $derived(findDuplicateIds(snapshot?.library.items ?? []));
-  let selectedDuplicates = $derived(
-    selectedItem
-      ? (snapshot?.library.items ?? []).filter(
-          (item) =>
-            item.id !== selectedItem?.id &&
-            item.manifestUuid !== null &&
-            selectedItem?.manifestUuid !== null &&
-            item.manifestUuid.toLowerCase() === selectedItem.manifestUuid.toLowerCase(),
-        )
-      : [],
-  );
+  let selectedDuplicates = $derived(findDuplicatesForItem(selectedItem, snapshot?.library.items ?? []));
   let filteredItems = $derived(
     (snapshot?.library.items ?? [])
       .filter((item) => matchesCurrentFilter(item))
@@ -53,6 +43,20 @@
       ? snapshot.library.summary.behaviorPacks + snapshot.library.summary.resourcePacks + snapshot.library.summary.skinPacks
       : "—",
   );
+
+  function findDuplicatesForItem(
+    selected: LocalContentItem | null,
+    items: LocalContentItem[],
+  ): LocalContentItem[] {
+    if (!selected?.manifestUuid) return [];
+    const uuid = selected.manifestUuid.toLowerCase();
+    return items.filter(
+      (item) =>
+        item.id !== selected.id &&
+        item.manifestUuid !== null &&
+        item.manifestUuid.toLowerCase() === uuid,
+    );
+  }
 
   function findDuplicateIds(items: LocalContentItem[]): Set<string> {
     const byUuid = new Map<string, LocalContentItem[]>();
