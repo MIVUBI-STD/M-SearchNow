@@ -76,7 +76,7 @@
     const item = selectedItem;
     if (!item || actionBusy) return;
     actionBusy = true;
-    const result = await runtimeProductFacade.openDownloadDirectory(item.path);
+    const result = await runtimeProductFacade.openLocalContentDirectory(item.id);
     if (!result.ok) error = result.error.message;
     else error = "";
     actionBusy = false;

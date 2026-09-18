@@ -105,6 +105,13 @@ export const runtimeProductFacade = {
     );
   },
 
+  openLocalContentDirectory(itemId: string): Promise<ProductResult<void>> {
+    return productCall(
+      () => runtimeApi.openLocalContentDirectory(itemId),
+      "SearchNow could not open this content folder.",
+    );
+  },
+
   openDownloadDirectory(jobId: string): Promise<ProductResult<void>> {
     return productCall(
       () => runtimeApi.openDownloadDirectory(jobId),

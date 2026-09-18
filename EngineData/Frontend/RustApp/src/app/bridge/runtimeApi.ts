@@ -46,6 +46,10 @@ export const runtimeApi = {
     return invoke<string | null>("choose_download_directory");
   },
 
+  openLocalContentDirectory(itemId: string): Promise<void> {
+    return invoke<void>("open_local_content_directory", { itemId });
+  },
+
   openDownloadDirectory(jobId: string): Promise<void> {
     return invoke<void>("open_download_directory", { jobId });
   },

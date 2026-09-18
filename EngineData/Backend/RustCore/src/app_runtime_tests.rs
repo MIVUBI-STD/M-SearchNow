@@ -11,6 +11,7 @@ use crate::{
     provider_adapter::IntegratedProvider,
 };
 use std::{
+    fs,
     io::{Read, Write},
     net::{TcpListener, TcpStream},
     sync::Arc,
@@ -209,4 +210,40 @@ fn wait_for_terminal(runtime: &SearchNowBackendRuntime) -> DownloadManagerSnapsh
         );
         thread::sleep(Duration::from_millis(10));
     }
+}
+
+#[test]
+fn local_content_directory_is_resolved_from_current_library_state() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let config = temp.path().join("config");
+    let data = temp.path().join("data");
+    let root = temp.path().join("minecraft-root");
+    let pack = root.join("resource_packs/example");
+    fs::create_dir_all(&pack).expect("pack");
+    fs::write(
+        pack.join("manifest.json"),
+        r#"{"header":{"name":"Example Pack","version":[1,0,0]}}"#,
+    )
+    .expect("manifest");
+
+    let runtime = SearchNowBackendRuntime::compose(
+        SearchNowBackendPaths::from_roots(config, data),
+        PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
+        Vec::new(),
+        HttpTransport::new_test_http(test_http_policy()).expect("test HTTP"),
+    )
+    .expect("runtime");
+
+    let mut settings = runtime.load_settings().expect("settings");
+    settings.minecraft.root_override = Some(root);
+    runtime.save_settings(&settings).expect("save settings");
+
+    let snapshot = runtime.scan_local_library().expect("library");
+    let item = snapshot.library.items.first().expect("library item");
+    assert_eq!(
+        runtime
+            .local_content_directory(&item.id)
+            .expect("content directory"),
+        pack
+    );
 }

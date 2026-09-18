@@ -22,6 +22,15 @@ pub async fn choose_download_directory<R: Runtime>(
 }
 
 #[tauri::command]
+pub fn open_local_content_directory(
+    state: State<'_, SearchNowBackendRuntime>,
+    item_id: String,
+) -> Result<(), CommandError> {
+    let path = state.local_content_directory(&item_id).map_err(CommandError::from)?;
+    open_directory(path)
+}
+
+#[tauri::command]
 pub fn open_download_directory(
     state: State<'_, SearchNowBackendRuntime>,
     job_id: String,
@@ -29,18 +38,22 @@ pub fn open_download_directory(
     let path = state
         .completed_download_directory(&job_id)
         .map_err(CommandError::from)?;
+    open_directory(path)
+}
+
+fn open_directory(path: std::path::PathBuf) -> Result<(), CommandError> {
     if !path.is_absolute() || !path.is_dir() {
         return Err(CommandError::new(
-            "download_directory_unavailable",
-            "The download folder is no longer available.",
+            "directory_unavailable",
+            "The folder is no longer available.",
         ));
     }
 
     let mut command = platform_open_command(&path);
     command.spawn().map_err(|_| {
         CommandError::new(
-            "download_directory_open_failed",
-            "The download folder could not be opened.",
+            "directory_open_failed",
+            "The folder could not be opened.",
         )
     })?;
     Ok(())

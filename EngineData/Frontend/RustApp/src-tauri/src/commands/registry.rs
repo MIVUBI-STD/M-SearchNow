@@ -9,6 +9,7 @@ pub fn register<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         crate::commands::library::scan_local_library,
         crate::commands::catalog::query_catalog,
         crate::commands::desktop::choose_download_directory,
+        crate::commands::desktop::open_local_content_directory,
         crate::commands::desktop::open_download_directory,
         crate::commands::download::get_download_snapshot,
         crate::commands::download::queue_catalog_download,

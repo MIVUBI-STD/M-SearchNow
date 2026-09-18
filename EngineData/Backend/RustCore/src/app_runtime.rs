@@ -301,6 +301,22 @@ impl SearchNowBackendRuntime {
         result
     }
 
+    pub fn local_content_directory(&self, item_id: &str) -> BackendResult<PathBuf> {
+        let snapshot = self.scan_local_library_raw()?;
+        snapshot
+            .library
+            .items
+            .iter()
+            .find(|item| item.id == item_id)
+            .map(|item| item.path.clone())
+            .ok_or_else(|| {
+                BackendError::new(
+                    "library_item_not_found",
+                    "The selected Minecraft content is no longer available.",
+                )
+            })
+    }
+
     pub fn completed_download_directory(&self, job_id: &str) -> BackendResult<PathBuf> {
         let snapshot = self.downloads.snapshot()?;
         let job = snapshot

@@ -115,6 +115,9 @@ const downloadCommand = await readFile(resolve(appRoot, "src-tauri/src/commands/
 const desktopCommand = await readFile(resolve(appRoot, "src-tauri/src/commands/desktop.rs"), "utf8");
 if (/\bDownloadRequest\b/.test(downloadCommand)) errors.push("download.rs: raw DownloadRequest/transport selection must not cross the Tauri IPC boundary");
 if (!downloadCommand.includes("QueueCatalogDownloadRequest")) errors.push("download.rs: download IPC must accept provider-neutral catalog download intent");
+if (!desktopCommand.includes("local_content_directory") || !desktopCommand.includes("item_id: String")) {
+  errors.push("desktop.rs: local-content folder opening must resolve an item id through the backend runtime");
+}
 if (!desktopCommand.includes("completed_download_directory") || !desktopCommand.includes("job_id: String")) {
   errors.push("desktop.rs: open-download-directory IPC must resolve a completed download job instead of accepting an arbitrary frontend path");
 }
