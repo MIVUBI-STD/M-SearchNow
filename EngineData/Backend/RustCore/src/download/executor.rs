@@ -422,7 +422,7 @@ impl DownloadExecutionRuntime {
 
     fn current_job(&self, job_id: &str) -> BackendResult<DownloadJob> {
         let manager = self.lock_manager()?;
-        find_job(&manager.snapshot(), job_id)
+        manager.download_job(job_id)
     }
 
     fn notify_change(&self) {

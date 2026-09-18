@@ -134,6 +134,16 @@ impl DownloadManager {
             })
     }
 
+    pub(crate) fn download_job(&self, job_id: &str) -> BackendResult<DownloadJob> {
+        self.jobs
+            .iter()
+            .find(|job| job.id == job_id)
+            .cloned()
+            .ok_or_else(|| {
+                BackendError::new("download_job_not_found", "Download job was not found.")
+            })
+    }
+
     #[cfg(test)]
     pub fn enqueue(&mut self, request: DownloadRequest) -> BackendResult<DownloadJob> {
         self.enqueue_to(request, None)
