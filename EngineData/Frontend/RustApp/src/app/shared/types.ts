@@ -100,9 +100,14 @@ export type MinecraftSettings = {
   includeDevelopmentContent: boolean;
 };
 
+export type DownloadSettings = {
+  bandwidthLimitBytesPerSecond: number | null;
+};
+
 export type AppSettings = {
   schemaVersion: number;
   minecraft: MinecraftSettings;
+  download: DownloadSettings;
 };
 
 export type DownloadJobState =

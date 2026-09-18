@@ -20,6 +20,41 @@ const PROGRESS_NOTIFICATION_INTERVAL: Duration = Duration::from_millis(200);
 
 type DownloadChangeNotifier = Arc<dyn Fn() + Send + Sync>;
 
+struct SharedBandwidthLimiter {
+    limit_bytes_per_second: Option<u64>,
+    next_available: Instant,
+}
+
+impl SharedBandwidthLimiter {
+    fn new() -> Self {
+        Self {
+            limit_bytes_per_second: None,
+            next_available: Instant::now(),
+        }
+    }
+
+    fn set_limit(&mut self, limit_bytes_per_second: Option<u64>) {
+        self.limit_bytes_per_second = limit_bytes_per_second;
+        self.next_available = Instant::now();
+    }
+
+    fn reserve(&mut self, bytes: usize) -> Duration {
+        let Some(limit) = self.limit_bytes_per_second else {
+            return Duration::ZERO;
+        };
+        if bytes == 0 {
+            return Duration::ZERO;
+        }
+
+        let now = Instant::now();
+        let start = self.next_available.max(now);
+        let transfer_time = Duration::from_secs_f64(bytes as f64 / limit as f64);
+        let finish = start + transfer_time;
+        self.next_available = finish;
+        finish.saturating_duration_since(now)
+    }
+}
+
 #[derive(Clone)]
 pub struct DownloadExecutionRuntime {
     inner: Arc<DownloadExecutionInner>,
@@ -34,6 +69,7 @@ struct DownloadExecutionInner {
     scheduler_error: Mutex<Option<DownloadFailure>>,
     change_notifier: Mutex<Option<DownloadChangeNotifier>>,
     last_progress_notice: Mutex<Option<Instant>>,
+    bandwidth_limiter: Mutex<SharedBandwidthLimiter>,
 }
 
 impl DownloadExecutionRuntime {
@@ -61,10 +97,20 @@ impl DownloadExecutionRuntime {
                 scheduler_error: Mutex::new(None),
                 change_notifier: Mutex::new(None),
                 last_progress_notice: Mutex::new(None),
+                bandwidth_limiter: Mutex::new(SharedBandwidthLimiter::new()),
             }),
         };
         runtime.pump()?;
         Ok(runtime)
+    }
+
+    pub fn set_bandwidth_limit(&self, limit_bytes_per_second: Option<u64>) {
+        let mut limiter = self
+            .inner
+            .bandwidth_limiter
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        limiter.set_limit(limit_bytes_per_second);
     }
 
     pub(crate) fn set_change_notifier(&self, notifier: DownloadChangeNotifier) {
@@ -302,6 +348,8 @@ impl DownloadExecutionRuntime {
                 break;
             }
 
+            self.apply_bandwidth_limit(read);
+
             if let Err(error) = payload.write_all(&buffer[..read]) {
                 self.fail_job(
                     job_id,
@@ -398,6 +446,20 @@ impl DownloadExecutionRuntime {
         self.mutate_persist(|manager| manager.mark_completed(job_id))?;
         let _cleanup_result = cleanup_workspace(&plan);
         Ok(())
+    }
+
+    fn apply_bandwidth_limit(&self, bytes: usize) {
+        let delay = {
+            let mut limiter = self
+                .inner
+                .bandwidth_limiter
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            limiter.reserve(bytes)
+        };
+        if !delay.is_zero() {
+            thread::sleep(delay);
+        }
     }
 
     fn report_progress(

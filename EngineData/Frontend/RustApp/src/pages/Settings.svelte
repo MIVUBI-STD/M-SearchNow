@@ -13,6 +13,7 @@
   let includePreview = $state(false);
   let includeLegacyUwp = $state(true);
   let includeDevelopmentContent = $state(false);
+  let bandwidthLimitMib = $state("");
   let discovery = $state<MinecraftDiscoverySnapshot | null>(null);
   let baselineSettings = $state<AppSettings | null>(null);
   let loading = $state(false);
@@ -27,12 +28,26 @@
       (rootOverride.trim() !== (baselineSettings.minecraft.rootOverride ?? "") ||
         includePreview !== baselineSettings.minecraft.includePreview ||
         includeLegacyUwp !== baselineSettings.minecraft.includeLegacyUwp ||
-        includeDevelopmentContent !== baselineSettings.minecraft.includeDevelopmentContent),
+        includeDevelopmentContent !== baselineSettings.minecraft.includeDevelopmentContent ||
+        bandwidthLimitMib !== formatBandwidthLimit(baselineSettings.download.bandwidthLimitBytesPerSecond)),
   );
   let discoveryLabel = $derived(
     discovery?.state === "found" ? "Found" : discovery?.state === "unsupportedPlatform" ? "Unsupported" : "Not found",
   );
   let discoveryTone = $derived(discovery?.state === "found" ? "completed" : "interrupted");
+
+  function formatBandwidthLimit(bytesPerSecond: number | null): string {
+    if (bytesPerSecond === null) return "";
+    return (bytesPerSecond / (1024 * 1024)).toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+  }
+
+  function parsedBandwidthLimit(): number | null {
+    const value = bandwidthLimitMib.trim();
+    if (!value) return null;
+    const mib = Number(value);
+    if (!Number.isFinite(mib) || mib <= 0) return null;
+    return Math.round(mib * 1024 * 1024);
+  }
 
   function applySettings(settings: AppSettings): void {
     schemaVersion = settings.schemaVersion;
@@ -40,6 +55,7 @@
     includePreview = settings.minecraft.includePreview;
     includeLegacyUwp = settings.minecraft.includeLegacyUwp;
     includeDevelopmentContent = settings.minecraft.includeDevelopmentContent;
+    bandwidthLimitMib = formatBandwidthLimit(settings.download.bandwidthLimitBytesPerSecond);
     baselineSettings = settings;
   }
 
@@ -73,6 +89,9 @@
         includePreview,
         includeLegacyUwp,
         includeDevelopmentContent,
+      },
+      download: {
+        bandwidthLimitBytesPerSecond: parsedBandwidthLimit(),
       },
     });
     if (result.ok) {
@@ -183,6 +202,25 @@
             <input bind:checked={includeDevelopmentContent} type="checkbox" disabled={!active || !snapshot?.ready || loading || saving || scanning} />
           </label>
         </div>
+      </article>
+
+      <article class="settings-section">
+        <div class="settings-section__heading">
+          <div><span class="eyebrow">Downloads</span><h2>Bandwidth</h2></div>
+        </div>
+        <label class="field">
+          <span>Download limit (MiB/s)</span>
+          <input
+            bind:value={bandwidthLimitMib}
+            type="number"
+            min="0.0625"
+            max="1024"
+            step="0.25"
+            placeholder="Unlimited"
+            disabled={!active || !snapshot?.ready || loading || saving || scanning}
+          />
+          <small>Leave empty for unlimited speed. One global limit is shared fairly by concurrent downloads.</small>
+        </label>
       </article>
 
       <article class="settings-section">

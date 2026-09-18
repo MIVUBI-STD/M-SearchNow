@@ -7,6 +7,8 @@ use std::path::{Path, PathBuf};
 
 pub const CURRENT_SCHEMA_VERSION: u32 = 1;
 const MAX_SETTINGS_BYTES: u64 = 512 * 1024;
+const MIN_BANDWIDTH_LIMIT_BYTES_PER_SECOND: u64 = 64 * 1024;
+const MAX_BANDWIDTH_LIMIT_BYTES_PER_SECOND: u64 = 1024 * 1024 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -15,6 +17,15 @@ pub struct AppSettings {
     pub schema_version: u32,
     #[serde(default)]
     pub minecraft: MinecraftSettings,
+    #[serde(default)]
+    pub download: DownloadSettings,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct DownloadSettings {
+    #[serde(default)]
+    pub bandwidth_limit_bytes_per_second: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -35,6 +46,7 @@ impl Default for AppSettings {
         Self {
             schema_version: CURRENT_SCHEMA_VERSION,
             minecraft: MinecraftSettings::default(),
+            download: DownloadSettings::default(),
         }
     }
 }
@@ -59,6 +71,19 @@ impl AppSettings {
                     "Settings schema {} is not supported by this SearchNow build.",
                     self.schema_version
                 ),
+            ));
+        }
+        if self
+            .download
+            .bandwidth_limit_bytes_per_second
+            .is_some_and(|limit| {
+                !(MIN_BANDWIDTH_LIMIT_BYTES_PER_SECOND..=MAX_BANDWIDTH_LIMIT_BYTES_PER_SECOND)
+                    .contains(&limit)
+            })
+        {
+            return Err(BackendError::new(
+                "settings_download_bandwidth_invalid",
+                "Download bandwidth limit must be between 64 KiB/s and 1 GiB/s.",
             ));
         }
         if self
@@ -138,6 +163,7 @@ mod tests {
         assert!(settings.minecraft.include_legacy_uwp);
         assert!(!settings.minecraft.include_development_content);
         assert!(settings.minecraft.root_override.is_none());
+        assert!(settings.download.bandwidth_limit_bytes_per_second.is_none());
     }
 
     #[test]
@@ -231,5 +257,24 @@ mod tests {
             .load()
             .expect_err("empty root override must fail closed");
         assert_eq!(error.code(), "settings_minecraft_root_invalid");
+    }
+}
+
+
+#[cfg(test)]
+mod download_setting_tests {
+    use super::*;
+
+    #[test]
+    fn bandwidth_limit_bounds_fail_closed() {
+        let mut settings = AppSettings::default();
+        settings.download.bandwidth_limit_bytes_per_second = Some(1);
+        let error = settings.validate().expect_err("too-small limit must fail");
+        assert_eq!(error.code(), "settings_download_bandwidth_invalid");
+
+        settings.download.bandwidth_limit_bytes_per_second =
+            Some(MAX_BANDWIDTH_LIMIT_BYTES_PER_SECOND + 1);
+        let error = settings.validate().expect_err("too-large limit must fail");
+        assert_eq!(error.code(), "settings_download_bandwidth_invalid");
     }
 }

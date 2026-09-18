@@ -149,6 +149,12 @@ impl SearchNowBackendRuntime {
             http,
         )))?;
 
+        let settings = SettingsStore::new(&paths.settings_path);
+        let initial_bandwidth_limit = settings
+            .load()
+            .ok()
+            .and_then(|settings| settings.download.bandwidth_limit_bytes_per_second);
+
         let download_started = Instant::now();
         let downloads = DownloadExecutionRuntime::new(
             DownloadPolicy::default(),
@@ -157,6 +163,7 @@ impl SearchNowBackendRuntime {
             &paths.download_destination_root,
             transports,
         )?;
+        downloads.set_bandwidth_limit(initial_bandwidth_limit);
         diagnostics.record(
             DiagnosticComponent::Download,
             DiagnosticSeverity::Info,
@@ -175,7 +182,7 @@ impl SearchNowBackendRuntime {
         );
 
         Ok(Self {
-            settings: SettingsStore::new(paths.settings_path),
+            settings,
             platform,
             providers,
             downloads,
@@ -201,7 +208,11 @@ impl SearchNowBackendRuntime {
 
     pub fn save_settings(&self, settings: &AppSettings) -> BackendResult<AppSettings> {
         let started = Instant::now();
-        let result = self.settings.save(settings).map(|()| settings.clone());
+        let result = self.settings.save(settings).map(|()| {
+            self.downloads
+                .set_bandwidth_limit(settings.download.bandwidth_limit_bytes_per_second);
+            settings.clone()
+        });
         self.diagnostics.record_outcome(
             DiagnosticComponent::Settings,
             started,

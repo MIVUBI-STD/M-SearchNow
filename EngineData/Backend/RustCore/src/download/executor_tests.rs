@@ -519,3 +519,26 @@ fn mismatched_sha256_fails_before_final_file_is_published() {
     );
     assert!(!directory.path().join("files/rejected.mcpack").exists());
 }
+
+
+#[test]
+fn shared_bandwidth_limiter_reserves_one_global_timeline() {
+    let mut limiter = SharedBandwidthLimiter::new();
+    limiter.set_limit(Some(1024));
+
+    let first = limiter.reserve(1024);
+    let second = limiter.reserve(1024);
+
+    assert!(first >= Duration::from_millis(900));
+    assert!(second >= first + Duration::from_millis(900));
+}
+
+#[test]
+fn disabling_bandwidth_limit_removes_reservation_delay() {
+    let mut limiter = SharedBandwidthLimiter::new();
+    limiter.set_limit(Some(1024));
+    assert!(!limiter.reserve(1024).is_zero());
+
+    limiter.set_limit(None);
+    assert!(limiter.reserve(1024).is_zero());
+}
