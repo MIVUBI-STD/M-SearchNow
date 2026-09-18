@@ -486,3 +486,164 @@ pub(crate) fn replace_single_pack(
     }
     result
 }
+
+#[derive(Debug, Clone)]
+pub(crate) struct BundleReplacePlan {
+    pub pack: super::model::PackManifestSummary,
+    pub destination_path: PathBuf,
+    pub replace_existing: bool,
+    pub skip_same_version: bool,
+}
+
+pub(crate) fn replace_bundle(
+    source: &Path,
+    minecraft_root: &Path,
+    root_id: &str,
+    plans: &[BundleReplacePlan],
+) -> BackendResult<PackageImportResult> {
+    let inspection = inspect_package(source)?;
+    if inspection.safety != PackageSafety::Safe
+        || inspection.status != PackageInspectionStatus::Ready
+        || inspection.input_kind != PackageInputKind::McAddon
+        || inspection.packs.len() < 2
+    {
+        return Err(BackendError::new(
+            "package_bundle_replace_not_supported",
+            "Transactional bundle update requires one inspected .mcaddon with at least two packs.",
+        ));
+    }
+    if plans.len() != inspection.packs.len() {
+        return Err(BackendError::new(
+            "package_bundle_replace_plan_invalid",
+            "The bundle update plan no longer matches the inspected package.",
+        ));
+    }
+
+    let actionable = plans
+        .iter()
+        .enumerate()
+        .filter(|(_, plan)| !plan.skip_same_version)
+        .map(|(index, plan)| (index, plan))
+        .collect::<Vec<_>>();
+    if actionable.is_empty() {
+        return Err(BackendError::new(
+            "package_bundle_replace_same_version",
+            "All packs in this bundle are already installed at the same version.",
+        ));
+    }
+
+    let staging_root = minecraft_root.join(format!(
+        ".searchnow-bundle-replace-{}",
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis()
+    ));
+    fs::create_dir(&staging_root).map_err(|error| {
+        BackendError::from_io(
+            "package_bundle_replace_staging_failed",
+            "SearchNow could not create a temporary bundle update workspace.",
+            error,
+        )
+    })?;
+
+    let result = (|| {
+        let source_roots = inspection
+            .packs
+            .iter()
+            .map(|pack| pack.pack_root.clone())
+            .collect::<Vec<_>>();
+        extract_roots(source, &staging_root, &source_roots)?;
+
+        for (index, plan) in plans.iter().enumerate() {
+            if plan.skip_same_version {
+                continue;
+            }
+            let staged = staging_root.join(index.to_string());
+            if !staged.join("manifest.json").is_file() {
+                return Err(BackendError::new(
+                    "package_bundle_replace_manifest_missing",
+                    "An inspected bundle pack no longer contains manifest.json.",
+                ));
+            }
+        }
+
+        let mut backups = Vec::<(PathBuf, PathBuf)>::new();
+        for (index, plan) in actionable.iter().copied() {
+            if !plan.replace_existing {
+                continue;
+            }
+            let metadata = fs::symlink_metadata(&plan.destination_path).map_err(|error| {
+                BackendError::from_io(
+                    "package_bundle_replace_existing_unavailable",
+                    "An installed bundle pack could not be verified before update.",
+                    error,
+                )
+            })?;
+            if metadata.file_type().is_symlink() || !metadata.is_dir() {
+                return Err(BackendError::new(
+                    "package_bundle_replace_existing_invalid",
+                    "An installed bundle pack path is not a safe directory.",
+                ));
+            }
+            let backup = staging_root.join(format!("previous-{index}"));
+            fs::rename(&plan.destination_path, &backup).map_err(|error| {
+                for (destination, previous) in backups.iter().rev() {
+                    let _ = fs::rename(previous, destination);
+                }
+                BackendError::from_io(
+                    "package_bundle_replace_backup_failed",
+                    "SearchNow could not preserve all installed bundle packs before update.",
+                    error,
+                )
+            })?;
+            backups.push((plan.destination_path.clone(), backup));
+        }
+
+        let mut committed = Vec::<(usize, PathBuf, bool)>::new();
+        for (index, plan) in actionable.iter().copied() {
+            let staged = staging_root.join(index.to_string());
+            if let Err(error) = fs::rename(&staged, &plan.destination_path) {
+                for (_, destination, _) in committed.iter().rev() {
+                    let _ = fs::remove_dir_all(destination);
+                }
+                for (destination, previous) in backups.iter().rev() {
+                    if destination.exists() {
+                        let _ = fs::remove_dir_all(destination);
+                    }
+                    let _ = fs::rename(previous, destination);
+                }
+                return Err(BackendError::from_io(
+                    "package_bundle_replace_commit_failed",
+                    "SearchNow could not commit the bundle update. Previous packs were restored when possible.",
+                    error,
+                ));
+            }
+            committed.push((index, plan.destination_path.clone(), plan.replace_existing));
+        }
+
+        for (_, backup) in &backups {
+            let _ = fs::remove_dir_all(backup);
+        }
+
+        let imported = plans
+            .iter()
+            .filter(|plan| !plan.skip_same_version)
+            .map(|plan| ImportedPack {
+                name: plan.pack.name.clone(),
+                kind: plan.pack.kind,
+                destination_path: plan.destination_path.clone(),
+            })
+            .collect();
+
+        Ok(PackageImportResult {
+            source_path: source.to_path_buf(),
+            root_id: root_id.to_string(),
+            imported,
+            world: None,
+        })
+    })();
+
+    let _ = fs::remove_dir_all(&staging_root);
+    result
+}

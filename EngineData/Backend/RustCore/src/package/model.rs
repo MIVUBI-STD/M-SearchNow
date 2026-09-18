@@ -192,3 +192,10 @@ pub struct PackageReplaceRequest {
     pub source_path: PathBuf,
     pub root_id: String,
 }
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PackageBundleUpdateRequest {
+    pub source_path: PathBuf,
+    pub root_id: String,
+}

@@ -584,3 +584,94 @@ fn replace_package_rejects_downgrade() {
         vec![2, 0, 0]
     );
 }
+
+#[test]
+fn replace_package_bundle_updates_and_imports_transactionally() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let root = temp.path().join("minecraft-root");
+    let behavior = root.join("behavior_packs/existing-behavior");
+    fs::create_dir_all(&behavior).expect("behavior");
+    let behavior_uuid = "10101010-1010-4010-8010-101010101010";
+    let resource_uuid = "20202020-2020-4020-8020-202020202020";
+    fs::write(
+        behavior.join("manifest.json"),
+        format!(
+            r#"{{"format_version":2,"header":{{"name":"Behavior","uuid":"{behavior_uuid}","version":[1,0,0]}},"modules":[{{"type":"data","uuid":"30303030-3030-4030-8030-303030303030","version":[1,0,0]}}],"dependencies":[{{"uuid":"{resource_uuid}","version":[2,0,0]}}]}}"#
+        ),
+    )
+    .expect("old behavior");
+    fs::write(behavior.join("old.txt"), "old").expect("old file");
+
+    let source = temp.path().join("bundle.mcaddon");
+    let file = fs::File::create(&source).expect("archive");
+    let mut writer = ZipWriter::new(file);
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+
+    writer
+        .start_file("behavior/manifest.json", options)
+        .expect("behavior manifest");
+    writer
+        .write_all(
+            format!(
+                r#"{{"format_version":2,"header":{{"name":"Behavior","uuid":"{behavior_uuid}","version":[2,0,0]}},"modules":[{{"type":"data","uuid":"40404040-4040-4040-8040-404040404040","version":[2,0,0]}}],"dependencies":[{{"uuid":"{resource_uuid}","version":[2,0,0]}}]}}"#
+            )
+            .as_bytes(),
+        )
+        .expect("behavior bytes");
+    writer
+        .start_file("behavior/new.txt", options)
+        .expect("behavior file");
+    writer.write_all(b"new behavior").expect("behavior data");
+
+    writer
+        .start_file("resource/manifest.json", options)
+        .expect("resource manifest");
+    writer
+        .write_all(
+            format!(
+                r#"{{"format_version":2,"header":{{"name":"Resource","uuid":"{resource_uuid}","version":[2,0,0]}},"modules":[{{"type":"resources","uuid":"50505050-5050-4050-8050-505050505050","version":[2,0,0]}}]}}"#
+            )
+            .as_bytes(),
+        )
+        .expect("resource bytes");
+    writer
+        .start_file("resource/new.txt", options)
+        .expect("resource file");
+    writer.write_all(b"new resource").expect("resource data");
+    writer.finish().expect("finish archive");
+
+    let runtime = SearchNowBackendRuntime::compose(
+        SearchNowBackendPaths::from_roots(temp.path().join("config"), temp.path().join("data")),
+        PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
+        Vec::new(),
+        HttpTransport::new_test_http(test_http_policy()).expect("test HTTP"),
+    )
+    .expect("runtime");
+    let mut settings = runtime.load_settings().expect("settings");
+    settings.minecraft.root_override = Some(root.clone());
+    runtime.save_settings(&settings).expect("save settings");
+    let root_id = runtime.discover_minecraft().expect("discovery").roots[0]
+        .id
+        .clone();
+
+    let result = runtime
+        .replace_package_bundle(crate::package::PackageBundleUpdateRequest {
+            source_path: source,
+            root_id,
+        })
+        .expect("bundle replace");
+
+    assert_eq!(result.imported.len(), 2);
+    assert!(!behavior.join("old.txt").exists());
+    assert_eq!(
+        fs::read_to_string(behavior.join("new.txt")).expect("new behavior"),
+        "new behavior"
+    );
+    let snapshot = runtime.scan_local_library().expect("library");
+    assert_eq!(snapshot.library.summary.total, 2);
+    assert!(snapshot
+        .library
+        .items
+        .iter()
+        .any(|item| item.manifest_uuid.as_deref() == Some(resource_uuid)));
+}

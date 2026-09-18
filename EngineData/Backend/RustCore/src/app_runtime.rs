@@ -14,8 +14,9 @@ use crate::{
     library_export::export_directory,
     minecraft::{discover_minecraft_storage, MinecraftDiscoverySnapshot},
     package::{
-        import_archive, inspect_package, replace_single_pack, PackageImportRequest,
-        PackageImportResult, PackageInspection, PackageReplaceRequest,
+        import_archive, inspect_package, replace_bundle, replace_single_pack, BundleReplacePlan,
+        PackageBundleUpdateRequest, PackageImportRequest, PackageImportResult, PackageInspection,
+        PackageReplaceRequest,
     },
     platform::PlatformContext,
     provider_adapter::{IntegratedProvider, ProviderAdapterRuntime, ProviderRuntimeStatus},
@@ -598,6 +599,192 @@ impl SearchNowBackendRuntime {
         result
     }
 
+    pub fn replace_package_bundle(
+        &self,
+        request: PackageBundleUpdateRequest,
+    ) -> BackendResult<PackageImportResult> {
+        let settings = self.settings.load()?;
+        let discovery = discover_minecraft_storage(&settings.minecraft, &self.platform);
+        let root = discovery
+            .roots
+            .iter()
+            .find(|root| root.id == request.root_id)
+            .ok_or_else(|| {
+                BackendError::new(
+                    "package_import_root_unavailable",
+                    "The selected Minecraft storage root is no longer available.",
+                )
+            })?;
+
+        let inspection = inspect_package(&request.source_path)?;
+        if inspection.input_kind != crate::package::PackageInputKind::McAddon
+            || inspection.packs.len() < 2
+            || inspection.status != crate::package::PackageInspectionStatus::Ready
+            || inspection.safety != crate::package::PackageSafety::Safe
+        {
+            return Err(BackendError::new(
+                "package_bundle_replace_not_supported",
+                "Transactional bundle update requires one inspected .mcaddon with at least two packs.",
+            ));
+        }
+
+        let mut incoming_uuids = std::collections::HashSet::new();
+        for pack in &inspection.packs {
+            let uuid = pack.uuid.as_deref().ok_or_else(|| {
+                BackendError::new(
+                    "package_bundle_replace_uuid_missing",
+                    "Every pack in a transactional .mcaddon update must have a manifest UUID.",
+                )
+            })?;
+            if !incoming_uuids.insert(uuid.to_ascii_lowercase()) {
+                return Err(BackendError::new(
+                    "package_bundle_replace_uuid_duplicate",
+                    "The .mcaddon contains duplicate manifest UUIDs.",
+                ));
+            }
+            match pack.kind {
+                crate::package::PackKind::BehaviorPack
+                | crate::package::PackKind::ResourcePack
+                | crate::package::PackKind::SkinPack => {}
+                _ => {
+                    return Err(BackendError::new(
+                        "package_bundle_replace_kind_unsupported",
+                        "This .mcaddon contains a pack type that is not supported by transactional update.",
+                    ));
+                }
+            }
+        }
+
+        let library = scan_library(
+            std::slice::from_ref(root),
+            settings.minecraft.include_development_content,
+        );
+        let mut reserved = std::collections::HashSet::new();
+        let mut plans = Vec::with_capacity(inspection.packs.len());
+
+        for pack in &inspection.packs {
+            let uuid = pack.uuid.as_deref().ok_or_else(|| {
+                BackendError::new(
+                    "package_bundle_replace_uuid_missing",
+                    "Every pack in a transactional .mcaddon update must have a manifest UUID.",
+                )
+            })?;
+            let incoming_version = pack
+                .version
+                .as_deref()
+                .and_then(parse_numeric_version)
+                .ok_or_else(|| {
+                    BackendError::new(
+                        "package_bundle_replace_version_invalid",
+                        "Every pack in a transactional .mcaddon update must have a numeric version.",
+                    )
+                })?;
+            let matches = library
+                .items
+                .iter()
+                .filter(|item| {
+                    item.manifest_uuid
+                        .as_deref()
+                        .is_some_and(|value| value.eq_ignore_ascii_case(uuid))
+                })
+                .collect::<Vec<_>>();
+            if matches.len() > 1 {
+                return Err(BackendError::new(
+                    "package_bundle_replace_target_ambiguous",
+                    "More than one installed pack matches a bundle UUID.",
+                ));
+            }
+
+            let expected_type = match pack.kind {
+                crate::package::PackKind::BehaviorPack => LocalContentType::BehaviorPack,
+                crate::package::PackKind::ResourcePack => LocalContentType::ResourcePack,
+                crate::package::PackKind::SkinPack => LocalContentType::SkinPack,
+                _ => unreachable!("validated bundle pack kind"),
+            };
+
+            if let Some(existing) = matches.first().copied() {
+                if existing.content_type != expected_type {
+                    return Err(BackendError::new(
+                        "package_bundle_replace_type_mismatch",
+                        "An installed pack type does not match its incoming bundle pack.",
+                    ));
+                }
+                if existing.version.is_empty() {
+                    return Err(BackendError::new(
+                        "package_bundle_replace_installed_version_missing",
+                        "An installed bundle pack has no comparable version.",
+                    ));
+                }
+                let ordering = compare_numeric_versions(&incoming_version, &existing.version);
+                if ordering == std::cmp::Ordering::Less {
+                    return Err(BackendError::new(
+                        "package_bundle_replace_older_version",
+                        "At least one incoming bundle pack is older than the installed version.",
+                    ));
+                }
+                if !existing.path.starts_with(&root.root) || existing.path == root.root {
+                    return Err(BackendError::new(
+                        "package_bundle_replace_path_rejected",
+                        "SearchNow refused to update a bundle pack outside its detected Minecraft storage.",
+                    ));
+                }
+                plans.push(BundleReplacePlan {
+                    pack: pack.clone(),
+                    destination_path: existing.path.clone(),
+                    replace_existing: ordering == std::cmp::Ordering::Greater,
+                    skip_same_version: ordering == std::cmp::Ordering::Equal,
+                });
+                continue;
+            }
+
+            let container = match expected_type {
+                LocalContentType::BehaviorPack => "behavior_packs",
+                LocalContentType::ResourcePack => "resource_packs",
+                LocalContentType::SkinPack => "skin_packs",
+                LocalContentType::World => unreachable!("bundle world unsupported"),
+            };
+            let container_root = root.root.join(container);
+            std::fs::create_dir_all(&container_root).map_err(|error| {
+                BackendError::from_io(
+                    "package_import_destination_failed",
+                    "SearchNow could not prepare a bundle destination folder.",
+                    error,
+                )
+            })?;
+            let base_name = pack
+                .name
+                .chars()
+                .map(|character| {
+                    if character.is_ascii_alphanumeric()
+                        || matches!(character, ' ' | '-' | '_' | '.')
+                    {
+                        character
+                    } else {
+                        '_'
+                    }
+                })
+                .collect::<String>();
+            let safe_name = base_name.trim_matches([' ', '.']).trim();
+            let safe_name = if safe_name.is_empty() {
+                "Imported pack"
+            } else {
+                safe_name
+            };
+            let suffix = uuid.split('-').next().unwrap_or("pack");
+            let base = format!("{safe_name} [{suffix}]");
+            let destination = allocate_bundle_destination(&container_root, &base, &mut reserved)?;
+            plans.push(BundleReplacePlan {
+                pack: pack.clone(),
+                destination_path: destination,
+                replace_existing: false,
+                skip_same_version: false,
+            });
+        }
+
+        validate_bundle_dependencies(&inspection, &library.items, &plans)?;
+        replace_bundle(&request.source_path, &root.root, &root.id, &plans)
+    }
+
     pub fn remove_local_content(&self, item_id: &str) -> BackendResult<LocalBackendSnapshot> {
         if !valid_local_content_id(item_id) {
             return Err(BackendError::new(
@@ -811,4 +998,74 @@ fn next_batch_export_destination(
         "library_batch_export_destination_exhausted",
         "SearchNow could not allocate a unique backup filename.",
     ))
+}
+
+fn allocate_bundle_destination(
+    container: &Path,
+    base_name: &str,
+    reserved: &mut std::collections::HashSet<PathBuf>,
+) -> BackendResult<PathBuf> {
+    for sequence in 1_u32..=u32::MAX {
+        let name = if sequence == 1 {
+            base_name.to_string()
+        } else {
+            format!("{base_name} ({sequence})")
+        };
+        let candidate = container.join(name);
+        if !candidate.exists() && reserved.insert(candidate.clone()) {
+            return Ok(candidate);
+        }
+    }
+    Err(BackendError::new(
+        "package_bundle_replace_destination_exhausted",
+        "SearchNow could not allocate a unique bundle destination folder.",
+    ))
+}
+
+fn validate_bundle_dependencies(
+    inspection: &PackageInspection,
+    installed: &[crate::library::LocalContentItem],
+    plans: &[BundleReplacePlan],
+) -> BackendResult<()> {
+    let mut available = std::collections::HashMap::<String, Vec<u32>>::new();
+    for item in installed {
+        if let Some(uuid) = item.manifest_uuid.as_deref() {
+            available.insert(uuid.to_ascii_lowercase(), item.version.clone());
+        }
+    }
+    for plan in plans {
+        if let (Some(uuid), Some(version)) = (
+            plan.pack.uuid.as_deref(),
+            plan.pack.version.as_deref().and_then(parse_numeric_version),
+        ) {
+            available.insert(uuid.to_ascii_lowercase(), version);
+        }
+    }
+
+    for pack in &inspection.packs {
+        for dependency in &pack.dependencies {
+            let Some(uuid) = dependency.uuid.as_deref() else {
+                continue;
+            };
+            let key = uuid.to_ascii_lowercase();
+            let Some(installed_version) = available.get(&key) else {
+                return Err(BackendError::new(
+                    "package_bundle_dependency_missing",
+                    "The .mcaddon requires a pack dependency that is not installed or included in the bundle.",
+                ));
+            };
+            if let Some(required) = dependency.version.as_deref().and_then(parse_numeric_version) {
+                if !installed_version.is_empty()
+                    && compare_numeric_versions(installed_version, &required)
+                        == std::cmp::Ordering::Less
+                {
+                    return Err(BackendError::new(
+                        "package_bundle_dependency_outdated",
+                        "The .mcaddon would leave at least one pack dependency below its required version.",
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
 }
