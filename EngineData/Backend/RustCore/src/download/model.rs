@@ -4,7 +4,7 @@ use std::path::PathBuf;
 pub const DOWNLOAD_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct DownloadSourceRef {
     pub transport: String,
     pub resource_id: String,
@@ -51,14 +51,14 @@ impl DownloadJobState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct DownloadProgress {
     pub downloaded_bytes: u64,
     pub total_bytes: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct DownloadFailure {
     pub code: String,
     pub message: String,
@@ -66,7 +66,7 @@ pub struct DownloadFailure {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct DownloadJob {
     pub id: String,
     pub source: DownloadSourceRef,
@@ -110,7 +110,7 @@ pub struct DownloadManagerSnapshot {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct PersistedDownloadState {
     pub schema_version: u32,
     pub next_sequence: u64,

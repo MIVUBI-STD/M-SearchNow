@@ -293,3 +293,36 @@ fn recovery_rejects_inconsistent_terminal_jobs() {
         .expect_err("failed job without error details must fail closed");
     assert_eq!(error.code(), "download_state_job_invalid");
 }
+
+#[test]
+fn store_rejects_unknown_nested_persisted_fields() {
+    let directory = tempfile::tempdir().expect("tempdir");
+    let path = directory.path().join("downloads.json");
+    fs::write(
+        &path,
+        br#"{
+            "schemaVersion":1,
+            "nextSequence":2,
+            "jobs":[{
+                "id":"download-000001",
+                "source":{"transport":"fixture","resourceId":"resource-pack","unexpectedSource":true},
+                "displayName":"pack",
+                "destinationFileName":"pack.mcpack",
+                "destinationDirectory":null,
+                "state":"queued",
+                "progress":{"downloadedBytes":0,"totalBytes":10},
+                "attempt":0,
+                "lastError":null,
+                "createdAtMs":1,
+                "updatedAtMs":1
+            }]
+        }"#,
+    )
+    .expect("persisted state");
+    let store = DownloadStore::new(path);
+
+    let error = store
+        .load()
+        .expect_err("unknown persisted fields must fail closed");
+    assert_eq!(error.code(), "download_state_invalid_json");
+}
