@@ -18,48 +18,4 @@ permissions:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-python@v7.0.0
-        with:
-          python-version: "3.11"
-      - name: Verify repository contracts
-        run: python tools/verify_repository.py
-      - name: Verify backend core
-        run: |
-          cargo fmt --manifest-path EngineData/Backend/RustCore/Cargo.toml -- --check
-          cargo test --locked --manifest-path EngineData/Backend/RustCore/Cargo.toml
-          cargo clippy --locked --manifest-path EngineData/Backend/RustCore/Cargo.toml --all-targets -- -D warnings
-      - name: Verify Tauri adapter formatting
-        run: cargo fmt --manifest-path EngineData/Frontend/RustApp/src-tauri/Cargo.toml -- --check
-      - uses: actions/setup-node@v7.0.0
-        with:
-          node-version: "22"
-      - name: Install frontend dependencies
-        working-directory: EngineData/Frontend/RustApp
-        run: npm ci --no-audit --no-fund
-      - name: Verify frontend architecture and build
-        working-directory: EngineData/Frontend/RustApp
-        run: npm run validate:quick
-
-  windows-readiness:
-    name: Windows Rust/Tauri compile gate
-    needs: verify
-    runs-on: windows-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7.0.1
-      - name: Verify RustCore on Windows
-        run: cargo test --locked --manifest-path EngineData/Backend/RustCore/Cargo.toml
-      - uses: actions/setup-node@v7.0.0
-        with:
-          node-version: "22"
-      - name: Install frontend dependencies on Windows
-        working-directory: EngineData/Frontend/RustApp
-        run: npm ci --no-audit --no-fund
-      - name: Build frontend for Tauri context
-        working-directory: EngineData/Frontend/RustApp
-        run: npm run build:frontend
-      - name: Verify Tauri crate compiles on Windows
-        run: cargo check --locked --manifest-path EngineData/Frontend/RustApp/src-tauri/Cargo.toml
+    uses: ./.github/workflows/shared-verify.yml

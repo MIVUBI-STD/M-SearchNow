@@ -59,7 +59,7 @@ Use only to answer **who owns what**. Exact procedures remain in the named owner
 | local backend snapshot helper/module exports | `EngineData/Backend/RustCore/src/lib.rs` |
 | backend error semantics | `EngineData/Backend/RustCore/src/error.rs` |
 | one Tauri backend runtime construction/management | `EngineData/Frontend/RustApp/src-tauri/src/app_bootstrap.rs` |
-| Tauri Windows resource/build-only icon fallback | `EngineData/Frontend/RustApp/src-tauri/build.rs` |
+| Tauri standard build-script entrypoint | `EngineData/Frontend/RustApp/src-tauri/build.rs` |
 | Tauri IPC registration | `EngineData/Frontend/RustApp/src-tauri/src/commands/registry.rs` |
 | thin Tauri runtime/settings/Minecraft/library/package/download adaptation | `EngineData/Frontend/RustApp/src-tauri/src/commands/` |
 | deferred non-destructive Windows smoke helper | `tools/windows_smoke_readiness.ps1` |

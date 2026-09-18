@@ -44,8 +44,9 @@ REQUIRED = [
     "EngineData/Frontend/RustApp/src-tauri/src/app_bootstrap.rs",
     "EngineData/Frontend/RustApp/src-tauri/src/commands/registry.rs",
     "tools/windows_smoke_readiness.ps1",
-    ".github/PULL_REQUEST_TEMPLATE.md", ".github/workflows/repository-verify.yml",
-    ".github/workflows/local-promotion-verify.yml", ".github/workflows/release-verify.yml",
+    ".github/PULL_REQUEST_TEMPLATE.md", ".github/workflows/shared-verify.yml",
+    ".github/workflows/repository-verify.yml", ".github/workflows/local-promotion-verify.yml",
+    ".github/workflows/release-verify.yml",
 ]
 
 errors = [f"missing required path: {rel}" for rel in REQUIRED if not (ROOT / rel).exists()]
@@ -152,19 +153,16 @@ if build_rs.exists():
         if forbidden in text:
             errors.append(f"{build_rs.relative_to(ROOT)}: build-only icon workaround must not return: {forbidden!r}")
 
-for workflow_rel in [
-    ".github/workflows/repository-verify.yml",
-    ".github/workflows/local-promotion-verify.yml",
-    ".github/workflows/release-verify.yml",
-]:
-    workflow = ROOT / workflow_rel
-    if not workflow.exists():
-        continue
-    text = workflow.read_text(encoding="utf-8", errors="replace")
+shared_workflow_rel = ".github/workflows/shared-verify.yml"
+shared_workflow = ROOT / shared_workflow_rel
+if shared_workflow.exists():
+    text = shared_workflow.read_text(encoding="utf-8", errors="replace")
     for needle in [
+        "workflow_call:",
         "windows-latest",
         'node-version: "22"',
         "actions/checkout@v7.0.1",
+        "github.event.pull_request.head.sha || github.sha",
         "actions/setup-node@v7.0.0",
         "npm ci --no-audit --no-fund",
         "cargo test --locked --manifest-path EngineData/Backend/RustCore/Cargo.toml",
@@ -172,9 +170,33 @@ for workflow_rel in [
         "cargo check --locked --manifest-path EngineData/Frontend/RustApp/src-tauri/Cargo.toml",
     ]:
         if needle not in text:
-            errors.append(f"{workflow_rel}: missing deterministic verification contract {needle!r}")
+            errors.append(f"{shared_workflow_rel}: missing deterministic verification contract {needle!r}")
     if "npm install" in text:
-        errors.append(f"{workflow_rel}: npm install must not replace the committed package-lock baseline")
+        errors.append(f"{shared_workflow_rel}: npm install must not replace the committed package-lock baseline")
+    if "contents: write" in text:
+        errors.append(f"{shared_workflow_rel}: verification workflow must not retain repository write permission")
+
+workflow_wrapper_checks = {
+    ".github/workflows/repository-verify.yml": ["uses: ./.github/workflows/shared-verify.yml"],
+    ".github/workflows/local-promotion-verify.yml": [
+        "uses: ./.github/workflows/shared-verify.yml",
+        'test "${{ github.head_ref }}" = "develop"',
+        "needs: promotion-policy",
+    ],
+    ".github/workflows/release-verify.yml": [
+        "uses: ./.github/workflows/shared-verify.yml",
+        'test "${{ github.head_ref }}" = "Local"',
+        "needs: release-policy",
+    ],
+}
+for workflow_rel, needles in workflow_wrapper_checks.items():
+    workflow = ROOT / workflow_rel
+    if not workflow.exists():
+        continue
+    text = workflow.read_text(encoding="utf-8", errors="replace")
+    for needle in needles:
+        if needle not in text:
+            errors.append(f"{workflow_rel}: missing workflow routing contract {needle!r}")
     if "contents: write" in text:
         errors.append(f"{workflow_rel}: verification workflow must not retain repository write permission")
 
