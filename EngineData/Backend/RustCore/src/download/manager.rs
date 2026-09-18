@@ -175,7 +175,9 @@ impl DownloadManager {
                 downloaded_bytes: 0,
                 total_bytes: request.expected_bytes,
             },
-            expected_sha256: request.expected_sha256.map(|value| value.to_ascii_lowercase()),
+            expected_sha256: request
+                .expected_sha256
+                .map(|value| value.to_ascii_lowercase()),
             attempt: 0,
             last_error: None,
             created_at_ms: now,
@@ -550,11 +552,9 @@ fn validate_request(request: &DownloadRequest) -> BackendResult<()> {
             "Download resource id is empty or unsupported.",
         ));
     }
-    if request
-        .expected_sha256
-        .as_deref()
-        .is_some_and(|digest| digest.len() != 64 || !digest.bytes().all(|byte| byte.is_ascii_hexdigit()))
-    {
+    if request.expected_sha256.as_deref().is_some_and(|digest| {
+        digest.len() != 64 || !digest.bytes().all(|byte| byte.is_ascii_hexdigit())
+    }) {
         return Err(BackendError::new(
             "download_integrity_digest_invalid",
             "Expected SHA-256 digest must contain exactly 64 hexadecimal characters.",
