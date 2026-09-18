@@ -580,12 +580,7 @@ fn replace_package_rejects_downgrade() {
 
     assert_eq!(error.code(), "package_replace_older_version");
     assert_eq!(
-        runtime
-            .scan_local_library()
-            .expect("library")
-            .library
-            .items[0]
-            .version,
+        runtime.scan_local_library().expect("library").library.items[0].version,
         vec![2, 0, 0]
     );
 }
