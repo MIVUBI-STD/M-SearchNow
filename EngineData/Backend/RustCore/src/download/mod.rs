@@ -13,12 +13,12 @@ pub(crate) use http::{
 };
 pub(crate) use manager::DownloadManager;
 pub use model::*;
+pub(crate) use resolver::{
+    provider_download_source, ProviderResolvedTransport, RESOLVED_PROVIDER_TRANSPORT_KEY,
+};
 pub use resolver::{
     ProviderResolveFailure, ProviderResourceRef, ResolvedResource, ResourceResolver,
     ResourceResolverRegistry,
-};
-pub(crate) use resolver::{
-    provider_download_source, ProviderResolvedTransport, RESOLVED_PROVIDER_TRANSPORT_KEY,
 };
 pub(crate) use store::DownloadStore;
 pub(crate) use transport::{
