@@ -10,6 +10,7 @@ use crate::{
         DownloadTransportRegistry, HttpTransport, HttpTransportPolicy, ProviderResolvedTransport,
     },
     error::{BackendError, BackendResult},
+    library::valid_local_content_id,
     minecraft::{discover_minecraft_storage, MinecraftDiscoverySnapshot},
     platform::PlatformContext,
     provider_adapter::{IntegratedProvider, ProviderAdapterRuntime, ProviderRuntimeStatus},
@@ -302,6 +303,12 @@ impl SearchNowBackendRuntime {
     }
 
     pub fn local_content_directory(&self, item_id: &str) -> BackendResult<PathBuf> {
+        if !valid_local_content_id(item_id) {
+            return Err(BackendError::new(
+                "library_item_not_found",
+                "The selected Minecraft content is no longer available.",
+            ));
+        }
         let snapshot = self.scan_local_library_raw()?;
         snapshot
             .library

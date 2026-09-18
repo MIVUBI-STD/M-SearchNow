@@ -283,6 +283,12 @@ fn folder_name(path: &Path) -> String {
         .unwrap_or_else(|| "Untitled".into())
 }
 
+pub(crate) fn valid_local_content_id(value: &str) -> bool {
+    value
+        .strip_prefix("local-")
+        .is_some_and(|hash| hash.len() == 16 && hash.bytes().all(|byte| byte.is_ascii_hexdigit()))
+}
+
 fn item_id(path: &Path) -> String {
     let normalized = path.to_string_lossy().replace('\\', "/");
     let mut hash = 0xcbf29ce484222325u64;
@@ -425,5 +431,13 @@ mod tests {
         let upper = item_id(Path::new("/minecraft/resource_packs/Pack"));
         let lower = item_id(Path::new("/minecraft/resource_packs/pack"));
         assert_ne!(upper, lower);
+    }
+
+    #[test]
+    fn local_content_id_contract_rejects_malformed_values() {
+        assert!(valid_local_content_id("local-0123456789abcdef"));
+        assert!(!valid_local_content_id("local-0123456789abcde"));
+        assert!(!valid_local_content_id("local-0123456789abcdeg"));
+        assert!(!valid_local_content_id("not-local-0123456789abcdef"));
     }
 }
