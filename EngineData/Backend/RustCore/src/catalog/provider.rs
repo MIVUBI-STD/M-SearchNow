@@ -192,8 +192,7 @@ fn normalize_page(
             expected_bytes: download_metadata
                 .as_ref()
                 .and_then(|value| value.expected_bytes),
-            expected_sha256: download_metadata
-                .and_then(|value| value.expected_sha256),
+            expected_sha256: download_metadata.and_then(|value| value.expected_sha256),
             download: item.download,
         });
     }
