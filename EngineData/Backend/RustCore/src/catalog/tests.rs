@@ -413,3 +413,15 @@ fn unknown_catalog_request_fields_fail_closed() {
     }"#;
     assert!(serde_json::from_str::<CatalogRequest>(json).is_err());
 }
+
+#[test]
+fn unknown_catalog_download_ref_fields_fail_closed() {
+    let json = r#"{
+        "kind": "providerResolved",
+        "provider": "fake",
+        "resourceId": "catalog-item-42",
+        "unexpectedField": true
+    }"#;
+
+    assert!(serde_json::from_str::<CatalogDownloadRef>(json).is_err());
+}

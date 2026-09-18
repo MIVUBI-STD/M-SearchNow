@@ -66,7 +66,7 @@ pub struct CatalogRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(tag = "kind", rename_all = "camelCase")]
+#[serde(tag = "kind", rename_all = "camelCase", deny_unknown_fields)]
 pub enum CatalogDownloadRef {
     PublicHttps {
         url: String,
