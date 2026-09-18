@@ -1,7 +1,7 @@
 use crate::{
     app_runtime::{QueueCatalogDownloadRequest, SearchNowBackendPaths, SearchNowBackendRuntime},
     catalog::CatalogDownloadRef,
-    diagnostics::{BackendStartupPhase, DiagnosticSeverity},
+    diagnostics::BackendStartupPhase,
     download::{
         DownloadJobState, DownloadManagerSnapshot, HttpTransport, HttpTransportPolicy,
         ProviderResolveFailure, ResolvedResource, ResourceResolver,
@@ -146,28 +146,6 @@ fn invalid_provider_prevents_application_runtime_construction() {
         Ok(_) => panic!("invalid provider must prevent runtime construction"),
     };
     assert_eq!(error.code(), "provider_adapter_key_invalid");
-}
-
-#[test]
-fn failed_package_diagnostic_does_not_expose_input_path() {
-    let temp = tempfile::tempdir().expect("tempdir");
-    let paths =
-        SearchNowBackendPaths::from_roots(temp.path().join("config"), temp.path().join("data"));
-    let runtime = SearchNowBackendRuntime::compose(
-        paths,
-        PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
-        Vec::new(),
-        HttpTransport::new_test_http(test_http_policy()).expect("test HTTP"),
-    )
-    .expect("runtime");
-    let secret_path = temp.path().join("private-user-path-secret.mcaddon");
-    assert!(runtime.inspect_package(&secret_path).is_err());
-    let diagnostics = runtime.diagnostics_snapshot();
-    assert!(diagnostics.events.iter().any(|event| {
-        event.code == "package_inspection_failed" && event.severity == DiagnosticSeverity::Warning
-    }));
-    let json = serde_json::to_string(&diagnostics).expect("diagnostics json");
-    assert!(!json.contains("private-user-path-secret"));
 }
 
 fn spawn_server(payload: Vec<u8>) -> String {

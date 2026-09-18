@@ -11,7 +11,6 @@ use crate::{
     },
     error::BackendResult,
     minecraft::{discover_minecraft_storage, MinecraftDiscoverySnapshot},
-    package::{inspect_package, PackageInspection},
     platform::PlatformContext,
     provider_adapter::{IntegratedProvider, ProviderAdapterRuntime, ProviderRuntimeStatus},
     runtime::{runtime_status, RuntimeStatus},
@@ -211,22 +210,6 @@ impl SearchNowBackendRuntime {
             "library_scan_failed",
             "Local library scan could not complete.",
             DiagnosticSeverity::Error,
-        );
-        result
-    }
-
-    pub fn inspect_package(&self, path: &Path) -> BackendResult<PackageInspection> {
-        let started = Instant::now();
-        let result = inspect_package(path);
-        self.diagnostics.record_outcome(
-            DiagnosticComponent::Package,
-            started,
-            result.is_ok(),
-            "package_inspection_ok",
-            "Package inspection completed.",
-            "package_inspection_failed",
-            "Package inspection could not complete.",
-            DiagnosticSeverity::Warning,
         );
         result
     }

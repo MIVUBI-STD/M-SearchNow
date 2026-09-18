@@ -12,7 +12,7 @@ Tauri
 SearchNowBackendRuntime
 ├── SettingsStore
 ├── PlatformContext
-├── local discovery / library / package facade
+├── local discovery / library facade
 ├── ProviderAdapterRuntime
 │   ├── ProviderSessionManager
 │   ├── CatalogService
@@ -142,7 +142,7 @@ The snapshot is diagnostic/application-state information; it is not a second per
 
 ## Local facade rule
 
-Settings, Minecraft discovery, local library scan, and package inspection are reachable through `SearchNowBackendRuntime`, but their existing RustCore modules remain authoritative. Consolidation does not introduce broad caching or duplicate library state.
+Settings, Minecraft discovery, and local library scan are reachable through `SearchNowBackendRuntime`, while package inspection remains a standalone RustCore domain capability until a concrete product interaction requires application-runtime exposure. Consolidation does not introduce broad caching or duplicate library state.
 
 ## Security boundary
 

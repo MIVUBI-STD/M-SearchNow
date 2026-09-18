@@ -92,7 +92,7 @@ The remote closure baseline has passed:
 
 `tools/windows_smoke_readiness.ps1` remains a non-destructive TARGET_WINDOWS step. Local runtime claims must not be made until that smoke phase is actually performed.
 
-The smoke phase should cover AppData resolution, current GDK/UWP Minecraft discovery, settings save/reload, package inspection, representative download finalization, safe diagnostics, and application launch.
+The smoke phase should cover AppData resolution, current GDK/UWP Minecraft discovery, settings save/reload, representative download finalization, safe diagnostics, and application launch.
 
 ## Security boundary
 
