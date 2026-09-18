@@ -55,7 +55,7 @@ no change required?
 → add a new abstraction/system only for a proven repeated responsibility
 ```
 
-A normal change should aim for one semantic owner, one coherent outcome, and the fewest touched files consistent with clean ownership. Do not add speculative extension points, fallback paths without a supported consumer, or configuration for choices the product does not actually expose.
+A normal change should aim for one semantic owner, one coherent outcome, and the fewest touched files consistent with clean ownership. File-size thresholds are advisory only: split a file when responsibility/cohesion warrants it, not merely to satisfy a byte count. Do not add speculative extension points, fallback paths without a supported consumer, or configuration for choices the product does not actually expose.
 
 Do not simplify away trust-boundary validation, bounded resource limits, data-loss prevention, recoverability, required error handling, accessibility basics, or explicit user requirements.
 

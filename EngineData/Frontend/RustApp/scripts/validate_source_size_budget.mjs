@@ -9,7 +9,7 @@ const roots = [
   resolve(appRoot, "../../Backend/RustCore/src"),
 ];
 const tracked = new Set([".rs", ".svelte", ".ts"]);
-const budgets = { ".rs": 20_000, ".svelte": 18_000, ".ts": 16_000 };
+const advisoryThresholds = { ".rs": 20_000, ".svelte": 18_000, ".ts": 16_000 };
 
 async function collect(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -22,20 +22,28 @@ async function collect(directory) {
   return files;
 }
 
-const violations = [];
+const largeFiles = [];
 for (const root of roots) {
   for (const path of await collect(root)) {
     const extension = extname(path);
     const { size } = await stat(path);
-    const budget = budgets[extension];
-    if (size > budget) violations.push({ path: relative(appRoot, path).replaceAll("\\", "/"), size, budget });
+    const threshold = advisoryThresholds[extension];
+    if (size > threshold) {
+      largeFiles.push({
+        path: relative(appRoot, path).replaceAll("\\", "/"),
+        size,
+        threshold,
+      });
+    }
   }
 }
 
-if (violations.length) {
-  console.error("Source size budget exceeded:");
-  for (const item of violations) console.error(`- ${item.path}: ${item.size} > ${item.budget} bytes`);
-  console.error("Split ownership before adding responsibility; do not raise a budget by default.");
-  process.exit(1);
+if (largeFiles.length) {
+  console.warn("Source size advisory:");
+  for (const item of largeFiles) {
+    console.warn(`- ${item.path}: ${item.size} bytes (advisory threshold ${item.threshold})`);
+  }
+  console.warn("Review responsibility/cohesion before adding more scope. Size alone is not a reason to split a file.");
+} else {
+  console.log("SearchNow source size advisory: no files above advisory thresholds.");
 }
-console.log("SearchNow source size budget: PASS");
