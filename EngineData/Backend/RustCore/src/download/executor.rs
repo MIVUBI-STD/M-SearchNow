@@ -42,8 +42,7 @@ impl SharedBandwidthLimiter {
     pub(crate) fn max_read_bytes(&self) -> usize {
         self.limit_bytes_per_second
             .map(|limit| {
-                ((limit / 4) as usize)
-                    .clamp(MIN_THROTTLED_CHUNK_BYTES, TRANSFER_BUFFER_BYTES)
+                ((limit / 4) as usize).clamp(MIN_THROTTLED_CHUNK_BYTES, TRANSFER_BUFFER_BYTES)
             })
             .unwrap_or(TRANSFER_BUFFER_BYTES)
     }
