@@ -91,6 +91,9 @@ pub(crate) fn inspect_world_archive(
                 .to_string()
         });
 
+    let level_name_key = level_name_path.to_string_lossy().replace('\\', "/");
+    let has_level_name = archive.by_name(&level_name_key).is_ok();
+
     Ok(Some(WorldSummary {
         world_root: if root == Path::new(".") {
             ".".into()
@@ -99,7 +102,7 @@ pub(crate) fn inspect_world_archive(
         },
         name,
         has_level_dat: true,
-        has_level_name: archive.by_name(&level_name_path.to_string_lossy()).is_ok(),
+        has_level_name,
     }))
 }
 
