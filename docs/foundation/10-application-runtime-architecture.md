@@ -89,7 +89,7 @@ ProviderAdapterRuntime
 HttpTransport
 ```
 
-Commands call methods on `SearchNowBackendRuntime`; domain logic remains in RustCore.
+Commands call methods on `SearchNowBackendRuntime`; domain logic remains in RustCore. Product-intent request DTOs that cross Tauri must deserialize fail-closed when the frontend sends unknown fields, so Rust/TypeScript contract drift becomes an explicit error instead of silently dropping user intent.
 
 ## Blocking work
 
@@ -166,7 +166,7 @@ REMOTE_GITHUB proves with deterministic fixtures:
 - provider-resolved application download reaches a deterministic HTTP fixture and final atomic file publication;
 - invalid provider composition prevents application runtime construction;
 - all Tauri feature commands delegate through `State<SearchNowBackendRuntime>`;
-- architecture validation rejects old per-command/sub-runtime ownership patterns;
+- architecture validation rejects old per-command/sub-runtime ownership patterns and checks the critical download-destination Rust/TypeScript request mirror;
 - all prior backend regressions remain passing.
 
 Hosted CI still does **not** prove installed Windows Tauri execution, real AppData/Minecraft behavior, production network/provider behavior, or real provider authentication. Those require TARGET_WINDOWS / NETWORK / PROVIDER evidence.

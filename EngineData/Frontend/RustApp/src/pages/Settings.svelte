@@ -132,7 +132,7 @@
       onAction={revertChanges}
     />
   {:else if saved}
-    <Notice tone="success" title="Changes saved." message="Your Minecraft locations are up to date." />
+    <Notice tone="success" title="Changes saved." message="Scan again to refresh detected Minecraft locations." />
   {/if}
 
   <div class="settings-layout">

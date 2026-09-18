@@ -137,6 +137,7 @@ if (!lib.includes("pub mod provider_session")) errors.push("RustCore must expose
 if (!lib.includes("pub mod provider_adapter")) errors.push("RustCore must expose the integrated provider adapter boundary");
 
 const appRuntime = await readFile(resolve(backendRoot, "src/app_runtime.rs"), "utf8");
+const frontendTypes = await readFile(resolve(appRoot, "src/app/shared/types.ts"), "utf8");
 for (const needle of [
   "SearchNowBackendRuntime",
   "SettingsStore::new",
@@ -150,6 +151,20 @@ for (const needle of [
   if (!appRuntime.includes(needle)) errors.push(`application backend runtime is missing composition contract ${needle}`);
 }
 if (appRuntime.includes("DownloadTransportRegistry::with_local_file")) errors.push("production application runtime must not register local-file fixture transport");
+
+for (const needle of [
+  'pub destination_directory: Option<PathBuf>',
+  '#[serde(rename_all = "camelCase", deny_unknown_fields)]',
+]) {
+  if (!appRuntime.includes(needle)) errors.push(`QueueCatalogDownloadRequest Rust contract is missing ${needle}`);
+}
+for (const needle of [
+  'destinationDirectory: string | null',
+  'export type QueueCatalogDownloadRequest',
+]) {
+  if (!frontendTypes.includes(needle)) errors.push(`frontend download request contract is missing ${needle}`);
+}
+if (frontendTypes.includes('| "package"')) errors.push("frontend DiagnosticComponent must not expose inactive package runtime diagnostics");
 
 if (errors.length) {
   for (const error of errors) console.error(`ERROR: ${error}`);

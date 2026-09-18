@@ -97,7 +97,8 @@ fn composed_provider_resolver_is_used_by_application_download_runtime() {
     let temp = tempfile::tempdir().expect("tempdir");
     let paths =
         SearchNowBackendPaths::from_roots(temp.path().join("config"), temp.path().join("data"));
-    let destination = paths.download_destination_root.clone();
+    let destination = temp.path().join("chosen-downloads");
+    std::fs::create_dir_all(&destination).expect("chosen destination");
     let runtime = SearchNowBackendRuntime::compose(
         paths,
         PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
@@ -118,6 +119,7 @@ fn composed_provider_resolver_is_used_by_application_download_runtime() {
             },
             display_name: "Runtime Fixture".into(),
             destination_file_name: "runtime.mcpack".into(),
+            destination_directory: Some(destination.clone()),
             expected_bytes: Some(payload.len() as u64),
         })
         .expect("queue");

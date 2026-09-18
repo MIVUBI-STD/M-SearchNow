@@ -66,7 +66,7 @@ Download destination names are validated against Windows file-name restrictions,
 
 ## Download and provider boundary
 
-Tauri accepts a provider-neutral `QueueCatalogDownloadRequest`; it does not accept a raw `DownloadRequest` or a caller-selected transport key. `SearchNowBackendRuntime` converts the catalog download reference to the internal transport identity.
+Tauri accepts a provider-neutral `QueueCatalogDownloadRequest`; it does not accept a raw `DownloadRequest` or a caller-selected transport key. The request carries the user-selected destination directory through the Rust DTO, and unknown request fields are rejected rather than silently ignored. `SearchNowBackendRuntime` converts the catalog download reference to the internal transport identity.
 
 The production runtime registers only the public HTTPS and provider-resolved transports. The deterministic `local-file` transport remains a test/development fixture and is not reachable from the normal product command surface.
 
