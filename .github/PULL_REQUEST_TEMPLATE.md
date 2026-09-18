@@ -33,6 +33,8 @@ Evidence / result:
 
 ## Local promotion contract
 
+Repository note: workflow verification validates the PR source and code evidence; direct-push prevention and merge-method enforcement require repository branch protection/rulesets.
+
 For `develop` → `Local`:
 
 - [ ] source branch is `develop`

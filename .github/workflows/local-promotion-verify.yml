@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - Local
-  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,17 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Require develop promotion source
-        if: github.event_name == 'pull_request'
         run: |
           test "${{ github.head_ref }}" = "develop" || {
             echo "Local promotion must come from develop." >&2
             exit 1
           }
-      - name: Promotion policy reminder
-        if: github.event_name == 'pull_request'
-        run: |
-          echo "Required merge method: squash."
-          echo "After merge, synchronize develop to the resulting Local HEAD before new development."
 
   verify:
     needs: promotion-policy

@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,17 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Require Local release source
-        if: github.event_name == 'pull_request'
         run: |
           test "${{ github.head_ref }}" = "Local" || {
             echo "Stable promotion must come from Local." >&2
             exit 1
           }
-      - name: Stable policy reminder
-        if: github.event_name == 'pull_request'
-        run: |
-          echo "Release source: Local."
-          echo "Required merge method: merge commit."
 
   verify:
     needs: release-policy

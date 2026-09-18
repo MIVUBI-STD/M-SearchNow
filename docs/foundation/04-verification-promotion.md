@@ -32,6 +32,14 @@ Requires:
 - Stable Release Verify PASS;
 - normal merge commit.
 
+### Enforcement boundary
+
+Promotion workflows are intentionally PR-only. They validate source branch and executable repository evidence.
+
+They do **not** enforce direct-push prevention, review requirements, or the final merge method by themselves. Those controls belong to GitHub repository branch protection/rulesets and required status checks.
+
+Do not describe promotion governance as fully enforced unless those repository-level controls are actually enabled for `develop`, `Local`, and `main`.
+
 ## Proof language
 
 Use only:

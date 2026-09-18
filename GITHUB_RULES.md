@@ -129,6 +129,9 @@ main    → stable history
 - After promotion, synchronize `develop` to resulting `Local` HEAD before new work.
 - `Local → main` requires an explicit stable PR and Stable Release Verify.
 - Stable promotion uses a normal merge commit.
+- Promotion workflows are PR-only evidence. A manually dispatched workflow must never be treated as promotion proof.
+- Workflow checks can validate source branch and code evidence, but they cannot by themselves prevent direct pushes or enforce the final merge method. Those controls require GitHub branch protection/rulesets with required status checks.
+- Until repository-level enforcement is configured, report promotion governance as documented but not fully enforced.
 - Tags/releases are separate publishing actions.
 - Do not bypass a failed gate with direct edits to another branch.
 
