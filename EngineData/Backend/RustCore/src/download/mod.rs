@@ -31,8 +31,6 @@ pub(crate) use http::PUBLIC_HTTPS_TRANSPORT_KEY;
 #[cfg(test)]
 pub(crate) use resolver::RESOLVED_PROVIDER_TRANSPORT_KEY;
 #[cfg(test)]
-pub(crate) use transport::LocalFileTransport;
-#[cfg(test)]
 pub(crate) use workspace::finalization_stage_path;
 
 #[cfg(test)]
