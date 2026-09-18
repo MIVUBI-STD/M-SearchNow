@@ -470,7 +470,10 @@ impl SearchNowBackendRuntime {
         Ok(self.resolve_local_content(item_id)?.path)
     }
 
-    fn resolve_local_content(&self, item_id: &str) -> BackendResult<crate::library::LocalContentItem> {
+    fn resolve_local_content(
+        &self,
+        item_id: &str,
+    ) -> BackendResult<crate::library::LocalContentItem> {
         if !valid_local_content_id(item_id) {
             return Err(BackendError::new(
                 "library_item_not_found",

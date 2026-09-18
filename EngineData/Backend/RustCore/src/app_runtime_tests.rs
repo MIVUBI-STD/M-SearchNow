@@ -447,8 +447,13 @@ fn export_local_content_creates_reimportable_archive() {
     runtime
         .export_local_content(&item.id, &destination)
         .expect("export");
-    let inspection = runtime.inspect_package(&destination).expect("inspect export");
-    assert_eq!(inspection.status, crate::package::PackageInspectionStatus::Ready);
+    let inspection = runtime
+        .inspect_package(&destination)
+        .expect("inspect export");
+    assert_eq!(
+        inspection.status,
+        crate::package::PackageInspectionStatus::Ready
+    );
     assert_eq!(inspection.packs.len(), 1);
     assert_eq!(inspection.packs[0].name, "Export Me");
 }

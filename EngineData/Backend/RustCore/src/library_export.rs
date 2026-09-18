@@ -77,7 +77,11 @@ pub(crate) fn export_directory(source: &Path, destination: &Path) -> BackendResu
     result
 }
 
-fn write_directory(writer: &mut ZipWriter<File>, root: &Path, directory: &Path) -> BackendResult<()> {
+fn write_directory(
+    writer: &mut ZipWriter<File>,
+    root: &Path,
+    directory: &Path,
+) -> BackendResult<()> {
     let mut entries = fs::read_dir(directory)
         .map_err(|error| {
             BackendError::from_io(
@@ -123,7 +127,8 @@ fn write_directory(writer: &mut ZipWriter<File>, root: &Path, directory: &Path) 
                 writer
                     .add_directory(
                         format!("{name}/"),
-                        SimpleFileOptions::default().compression_method(CompressionMethod::Deflated),
+                        SimpleFileOptions::default()
+                            .compression_method(CompressionMethod::Deflated),
                     )
                     .map_err(|error| {
                         BackendError::new(
