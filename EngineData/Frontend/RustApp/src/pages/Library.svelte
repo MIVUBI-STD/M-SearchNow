@@ -1,12 +1,13 @@
 <script lang="ts">
-  import { RefreshCw, Search } from "@lucide/svelte";
+  import { FileSearch, RefreshCw, Search } from "@lucide/svelte";
   import { runtimeProductFacade } from "../app/bridge/runtimeProductFacade";
   import { localContentTypeLabel } from "../app/shared/format";
-  import type { LocalBackendSnapshot, LocalContentItem, LocalContentType } from "../app/shared/types";
+  import type { LocalBackendSnapshot, LocalContentItem, LocalContentType, PackageInspection } from "../app/shared/types";
   import ContentTypeMark from "../components/ui/ContentTypeMark.svelte";
   import LocalContentDetailModal from "../components/ui/LocalContentDetailModal.svelte";
   import MetricCard from "../components/ui/MetricCard.svelte";
   import Notice from "../components/ui/Notice.svelte";
+  import PackageInspectionModal from "../components/ui/PackageInspectionModal.svelte";
   import PageState from "../components/ui/PageState.svelte";
   import ResultsBar from "../components/ui/ResultsBar.svelte";
 
@@ -19,6 +20,8 @@
   let snapshot = $state<LocalBackendSnapshot | null>(null);
   let selectedItem = $state<LocalContentItem | null>(null);
   let actionBusy = $state(false);
+  let inspectionBusy = $state(false);
+  let packageInspection = $state<PackageInspection | null>(null);
   let error = $state("");
   let query = $state("");
   let filter = $state<LibraryFilter>("all");
@@ -82,6 +85,16 @@
     actionBusy = false;
   }
 
+  async function inspectPackage(): Promise<void> {
+    if (!runtimeReady || inspectionBusy) return;
+    inspectionBusy = true;
+    error = "";
+    const result = await runtimeProductFacade.chooseAndInspectPackage();
+    if (result.ok) packageInspection = result.data;
+    else error = result.error.message;
+    inspectionBusy = false;
+  }
+
   async function refresh(): Promise<void> {
     if (!runtimeReady || loading) return;
     loading = true;
@@ -99,6 +112,8 @@
     error = "";
     actionBusy = false;
     selectedItem = null;
+    packageInspection = null;
+    inspectionBusy = false;
   });
 
   $effect(() => {
@@ -113,10 +128,16 @@
       <h1>Library</h1>
       <p>Browse Minecraft Bedrock worlds and packs detected on this device.</p>
     </div>
-    <button class="button button--secondary" type="button" onclick={refresh} disabled={!runtimeReady || loading}>
-      <RefreshCw size={15} class={loading ? "spin" : ""} aria-hidden="true" />
-      {loading ? "Scanning" : "Scan again"}
-    </button>
+    <div class="page-heading__actions">
+      <button class="button button--secondary" type="button" onclick={inspectPackage} disabled={!runtimeReady || inspectionBusy}>
+        <FileSearch size={15} aria-hidden="true" />
+        {inspectionBusy ? "Inspecting…" : "Inspect package"}
+      </button>
+      <button class="button button--secondary" type="button" onclick={refresh} disabled={!runtimeReady || loading}>
+        <RefreshCw size={15} class={loading ? "spin" : ""} aria-hidden="true" />
+        {loading ? "Scanning" : "Scan again"}
+      </button>
+    </div>
   </div>
 
   <div class="metric-grid metric-grid--four">
@@ -212,4 +233,10 @@
   onClose={closeDetails}
   onOpenFolder={openSelectedFolder}
   {actionBusy}
+/>
+
+<PackageInspectionModal
+  inspection={packageInspection}
+  open={packageInspection !== null}
+  onClose={() => (packageInspection = null)}
 />

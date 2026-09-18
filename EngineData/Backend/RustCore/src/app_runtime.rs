@@ -12,6 +12,7 @@ use crate::{
     error::{BackendError, BackendResult},
     library::valid_local_content_id,
     minecraft::{discover_minecraft_storage, MinecraftDiscoverySnapshot},
+    package::{inspect_package, PackageInspection},
     platform::PlatformContext,
     provider_adapter::{IntegratedProvider, ProviderAdapterRuntime, ProviderRuntimeStatus},
     runtime::{runtime_status, RuntimeStatus},
@@ -300,6 +301,10 @@ impl SearchNowBackendRuntime {
             DiagnosticSeverity::Warning,
         );
         result
+    }
+
+    pub fn inspect_package(&self, path: &Path) -> BackendResult<PackageInspection> {
+        inspect_package(path)
     }
 
     pub fn local_content_directory(&self, item_id: &str) -> BackendResult<PathBuf> {

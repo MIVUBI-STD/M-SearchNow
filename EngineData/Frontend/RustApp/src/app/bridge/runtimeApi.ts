@@ -11,6 +11,7 @@ import type {
   MinecraftDiscoverySnapshot,
   QueueCatalogDownloadRequest,
   RuntimeStatus,
+  PackageInspection,
 } from "../shared/types";
 
 export const runtimeApi = {
@@ -40,6 +41,10 @@ export const runtimeApi = {
 
   scanLocalLibrary(): Promise<LocalBackendSnapshot> {
     return invoke<LocalBackendSnapshot>("scan_local_library");
+  },
+
+  chooseAndInspectPackage(): Promise<PackageInspection | null> {
+    return invoke<PackageInspection | null>("choose_and_inspect_package");
   },
 
   chooseDownloadDirectory(): Promise<string | null> {

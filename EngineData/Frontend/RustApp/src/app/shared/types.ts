@@ -280,3 +280,64 @@ export type CatalogRequest = {
     };
   };
 };
+
+export type PackageInputKind = "folder" | "mcPack" | "mcAddon";
+export type PackageSafety = "safe" | "rejected";
+export type PackageInspectionStatus = "ready" | "issues" | "rejected";
+export type PackageIssueSeverity = "warning" | "error";
+export type PackKind = "behaviorPack" | "resourcePack" | "skinPack" | "worldTemplate" | "mixed" | "unknown";
+export type PackageRelationshipKind = "behaviorRequiresResource" | "resourceRequiresBehavior" | "packDependency";
+
+export type PackageIssue = {
+  severity: PackageIssueSeverity;
+  code: string;
+  message: string;
+  path: string | null;
+};
+
+export type PackDependency = {
+  uuid: string | null;
+  moduleName: string | null;
+  version: string | null;
+};
+
+export type PackManifestSummary = {
+  manifestPath: string;
+  packRoot: string;
+  name: string;
+  description: string | null;
+  uuid: string | null;
+  version: string | null;
+  formatVersion: string | null;
+  kind: PackKind;
+  moduleTypes: string[];
+  dependencies: PackDependency[];
+  hasScripts: boolean;
+};
+
+export type PackageRelationship = {
+  sourceManifest: string;
+  targetManifest: string;
+  dependencyUuid: string;
+  kind: PackageRelationshipKind;
+};
+
+export type ArchiveSummary = {
+  entries: number;
+  files: number;
+  directories: number;
+  compressedBytes: number;
+  uncompressedBytes: number;
+  nestedArchives: number;
+};
+
+export type PackageInspection = {
+  sourcePath: string;
+  inputKind: PackageInputKind;
+  status: PackageInspectionStatus;
+  safety: PackageSafety;
+  packs: PackManifestSummary[];
+  relationships: PackageRelationship[];
+  issues: PackageIssue[];
+  archive: ArchiveSummary | null;
+};

@@ -10,6 +10,7 @@ import type {
   ProductResult,
   ProductRuntimeSnapshot,
   QueueCatalogDownloadRequest,
+  PackageInspection,
 } from "../shared/types";
 import { toProductError } from "../shared/productErrors";
 import { runtimeApi } from "./runtimeApi";
@@ -74,6 +75,13 @@ export const runtimeProductFacade = {
     return productCall(
       () => runtimeApi.scanLocalLibrary(),
       "SearchNow could not scan your Minecraft content.",
+    );
+  },
+
+  chooseAndInspectPackage(): Promise<ProductResult<PackageInspection | null>> {
+    return productCall(
+      () => runtimeApi.chooseAndInspectPackage(),
+      "SearchNow could not inspect this Minecraft package.",
     );
   },
 

@@ -1,0 +1,104 @@
+<script lang="ts">
+  import { FileArchive, X } from "@lucide/svelte";
+  import type { PackageInspection, PackKind } from "../../app/shared/types";
+  import TechnicalDetails from "./TechnicalDetails.svelte";
+
+  let {
+    inspection,
+    open,
+    onClose,
+  }: {
+    inspection: PackageInspection | null;
+    open: boolean;
+    onClose: () => void;
+  } = $props();
+
+  function handleBackdrop(event: MouseEvent): void {
+    if (event.target === event.currentTarget) onClose();
+  }
+
+  function handleKeydown(event: KeyboardEvent): void {
+    if (open && event.key === "Escape") onClose();
+  }
+
+  function inputKindLabel(): string {
+    if (!inspection) return "";
+    if (inspection.inputKind === "mcPack") return ".mcpack";
+    if (inspection.inputKind === "mcAddon") return ".mcaddon";
+    return "Folder";
+  }
+
+  function packKindLabel(kind: PackKind): string {
+    switch (kind) {
+      case "behaviorPack": return "Behavior pack";
+      case "resourcePack": return "Resource pack";
+      case "skinPack": return "Skin pack";
+      case "worldTemplate": return "World template";
+      case "mixed": return "Mixed";
+      default: return "Unknown";
+    }
+  }
+
+  function statusLabel(): string {
+    if (!inspection) return "";
+    if (inspection.status === "ready") return "Ready to import";
+    if (inspection.status === "rejected") return "Rejected";
+    return "Needs review";
+  }
+</script>
+
+<svelte:window onkeydown={handleKeydown} />
+
+{#if open && inspection}
+  <div class="catalog-modal__backdrop" role="presentation" onclick={handleBackdrop}>
+    <div class="catalog-modal" role="dialog" aria-modal="true" aria-labelledby="package-inspection-title">
+      <button class="catalog-modal__close" type="button" aria-label="Close package inspection" onclick={onClose}>
+        <X size={18} aria-hidden="true" />
+      </button>
+
+      <div class="catalog-modal__media catalog-modal__media--local">
+        <FileArchive size={42} aria-hidden="true" />
+        <span class="catalog-modal__type">{inputKindLabel()}</span>
+      </div>
+
+      <div class="catalog-modal__content">
+        <div class="catalog-modal__heading">
+          <div>
+            <h2 id="package-inspection-title">Package inspection</h2>
+            <p>{statusLabel()}</p>
+          </div>
+        </div>
+
+        <div class="catalog-modal__facts">
+          <div><span>Packs</span><strong>{inspection.packs.length}</strong></div>
+          <div><span>Issues</span><strong>{inspection.issues.length}</strong></div>
+          {#if inspection.archive}<div><span>Files</span><strong>{inspection.archive.files}</strong></div>{/if}
+        </div>
+
+        {#if inspection.packs.length}
+          <div class="catalog-modal__issue">
+            <strong>Detected content</strong>
+            <span>{inspection.packs.map((pack) => `${pack.name} · ${packKindLabel(pack.kind)}`).join(" · ")}</span>
+          </div>
+        {/if}
+
+        {#if inspection.issues.length}
+          <div class="catalog-modal__issue">
+            <strong>{inspection.status === "rejected" ? "Package rejected" : "Review findings"}</strong>
+            <span>{inspection.issues[0].message}{inspection.issues.length > 1 ? ` (+${inspection.issues.length - 1} more)` : ""}</span>
+          </div>
+        {/if}
+
+        <TechnicalDetails
+          items={[
+            { label: "Source", value: inspection.sourcePath },
+            { label: "Safety", value: inspection.safety },
+            { label: "Relationships", value: String(inspection.relationships.length) },
+            { label: "Compressed bytes", value: inspection.archive ? String(inspection.archive.compressedBytes) : null },
+            { label: "Uncompressed bytes", value: inspection.archive ? String(inspection.archive.uncompressedBytes) : null },
+          ]}
+        />
+      </div>
+    </div>
+  </div>
+{/if}
