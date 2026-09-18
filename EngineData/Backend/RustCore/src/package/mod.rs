@@ -2,8 +2,8 @@ mod archive;
 mod folder;
 mod import;
 mod manifest;
-mod world;
 pub mod model;
+mod world;
 
 use crate::error::{BackendError, BackendResult};
 use manifest::ManifestCandidate;
