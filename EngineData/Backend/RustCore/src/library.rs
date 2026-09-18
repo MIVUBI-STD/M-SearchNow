@@ -284,7 +284,7 @@ fn folder_name(path: &Path) -> String {
 }
 
 fn item_id(path: &Path) -> String {
-    let normalized = path.to_string_lossy().replace('\\', "/").to_lowercase();
+    let normalized = path.to_string_lossy().replace('\\', "/");
     let mut hash = 0xcbf29ce484222325u64;
     for byte in normalized.as_bytes() {
         hash ^= u64::from(*byte);
@@ -418,5 +418,12 @@ mod tests {
         assert_eq!(snapshot.summary.total, 1);
         assert_eq!(snapshot.items[0].title, "world-folder");
         assert_eq!(snapshot.items[0].status, LocalContentStatus::Ready);
+    }
+
+    #[test]
+    fn item_identity_preserves_case_to_avoid_case_sensitive_collisions() {
+        let upper = item_id(Path::new("/minecraft/resource_packs/Pack"));
+        let lower = item_id(Path::new("/minecraft/resource_packs/pack"));
+        assert_ne!(upper, lower);
     }
 }
