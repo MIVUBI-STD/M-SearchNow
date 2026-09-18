@@ -1,58 +1,79 @@
 # Current Validation
 
-Reviewed: **2026-09-11**  
-Scope: `develop` remote backend/frontend cleanup and provider-independent application foundation  
-Status: **repository/static/frontend and hosted-Windows compile verification complete; target-Windows installed/runtime smoke pending**
+Reviewed: **2026-09-18**
 
-## Latest verified code proof
+## Purpose
 
-Current verified code endpoint:
+This document describes **what the repository verification pipeline proves** and its proof ceiling.
 
-- commit: `2e5b708baaaa31090c9258563221b7b639ec1208`;
-- GitHub Actions: `Repository Verify` run **#341**;
-- repository/backend/frontend verification: **PASS**;
-- hosted Windows RustCore/frontend/Tauri compile gate: **PASS**.
+It intentionally does not hard-code a "latest verified commit" or workflow run number. Exact current evidence belongs to the `Repository Verify` run attached to the current branch HEAD; this document would otherwise become stale after ordinary development commits.
 
-The remote gate proves repository contracts, **81 RustCore tests**, RustCore formatting and clippy with warnings denied, Tauri formatting, locked dependency installation, frontend architecture/source-size contracts, Svelte/TypeScript checking with **0 errors and 0 warnings**, production frontend build, Windows RustCore tests, and Windows Tauri compilation.
+## Remote verification contract
 
-## Cleanup included in this baseline
+A successful current `Repository Verify` run proves:
 
-- `SearchNowBackendRuntime` remains the application authority; the local snapshot helper is crate-internal rather than a second public backend path;
-- stale persisted-state temp cleanup is namespace-scoped and restricted to regular non-symlink files, with regression coverage;
-- agent routing treats recovered legacy documentation as cold evidence rather than normal development context;
-- the desktop folder-picker command is correctly generic over the Tauri runtime and compiles on the hosted Windows gate;
-- Library interactive cards use native button semantics while preserving the existing presentation;
-- catalog/local-content dialogs use valid dialog container semantics and window-level Escape handling where required;
-- Settings initializes Minecraft discovery reactively rather than capturing only the initial snapshot value;
-- the frontend validation pass emits no Svelte warnings.
+- repository contract checks;
+- RustCore formatting;
+- locked RustCore tests;
+- RustCore Clippy with warnings denied;
+- Tauri adapter formatting;
+- locked frontend dependency installation;
+- frontend architecture/source-size checks;
+- Svelte/TypeScript checking;
+- production frontend build;
+- hosted Windows RustCore tests;
+- hosted Windows frontend build;
+- hosted Windows Tauri compilation.
 
-## Architecture state
+A queued, running, cancelled, skipped, or failed workflow is **not** a verified baseline.
 
-The application still uses one executable boundary:
+## Current architecture proof boundary
+
+When the gate passes, it supports the repository/static/integration claim for this architecture:
 
 ```text
 Svelte product UI
 → runtimeProductFacade
-→ raw Tauri runtimeApi
-→ Tauri command adapter
+→ runtimeApi
+→ thin Tauri command adapter
 → SearchNowBackendRuntime
-→ RustCore domain subsystems
+→ RustCore domains
 ```
 
-No second backend runtime, frontend-owned filesystem/network/provider logic, or duplicate persistence path was introduced by the cleanup.
+The gate also protects current repository contracts around:
 
-## Not yet proven
+- one application backend owner;
+- provider-neutral IPC;
+- fail-closed inbound product request DTOs;
+- crate-private low-level download implementation plumbing;
+- deterministic locked dependency installation;
+- secret-safe provider/session/download boundaries;
+- bounded storage, archive, network and diagnostics behavior covered by tests.
+
+## Not proven by remote CI
 
 Remote verification does **not** prove:
 
 - installed SearchNow launch/interaction on the owner's target Windows machine;
-- target-machine AppData/Minecraft discovery against the owner's installation;
+- real AppData/Minecraft discovery against the target installation;
 - representative real local libraries at user scale;
-- actual settings/download interaction through a running installed Tauri window;
-- production provider authentication, Marketplace/PlayFab endpoints, or real TLS/CDN behavior;
-- live Discover result/download behavior without a registered real provider;
-- installer/branding/clean-machine release acceptance.
+- actual native folder picker and filesystem permission behavior;
+- production provider authentication/session semantics;
+- Marketplace/PlayFab or other real provider endpoint compatibility;
+- production TLS/CDN behavior;
+- real-world performance, memory usage or long-running stability;
+- installer/signing/update/clean-machine release behavior.
 
-## Deferred proof
+## Evidence rule
 
-`TARGET_WINDOWS_RUNTIME_SMOKE` remains required and is intentionally deferred until the owner can perform local testing. Hosted Windows compilation is strong integration evidence, but it is not installed-runtime proof.
+Use the strongest evidence actually available:
+
+```text
+repository/static
+→ executed source/unit
+→ integration/hosted compile
+→ rendered/live app
+→ target-Windows installed acceptance
+```
+
+Do not report a stronger level than the highest level actually exercised.

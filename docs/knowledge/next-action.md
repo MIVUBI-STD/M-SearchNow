@@ -1,59 +1,56 @@
 # Next Action
 
-Status: `FRONTEND_VISUAL_REFINEMENT_READY`
-
-## Sequencing note
-
-The remote cleanup pass is complete at the verified code baseline. The target-Windows installed/runtime smoke remains required, but it is intentionally deferred because the owner is not currently available to run local tests. Real-provider work also remains a separate functional dependency and must not be simulated in product code.
+Status: `REMOTE_FOUNDATION_HARDENING`
 
 ## Current checkpoint
 
-The `develop` branch contains the closed remote backend foundation plus the provider-independent frontend product shell. The latest cleanup removed the remaining static/compile issues found by the full audit without adding a second runtime or new architecture layer.
+`develop` contains the provider-independent SearchNow application foundation and the latest remote hardening work.
 
-Current remote coverage includes:
+Current implemented scope includes:
 
-- one application bootstrap using the safe backend/runtime snapshot;
-- `SearchNowBackendRuntime` as the application authority over settings, local discovery, catalog/provider composition, downloads, and diagnostics;
-- crate-internal local snapshot composition rather than a competing public backend entry path;
-- bounded and regression-tested persisted-state temp cleanup;
-- persistent mounted Library, Discover, Downloads, and Settings pages with active-page execution gating;
-- one `runtimeProductFacade` over the single raw Tauri `runtimeApi` bridge;
-- native accessible Library card controls and valid dialog semantics;
-- Settings discovery state synchronized from runtime snapshots without stale initial-value capture;
-- desktop folder selection bound correctly to the generic Tauri runtime;
-- no frontend-owned persistence, filesystem scan, credential handling, provider endpoint ownership, or second runtime client.
+- one Tauri-managed `SearchNowBackendRuntime` as the application backend authority;
+- provider-neutral catalog/session/resolver composition without a fake production provider;
+- bounded recoverable downloads with explicit destination-directory handling;
+- fail-closed inbound settings/catalog/download IPC contracts;
+- crate-private storage, identity, download execution, persistence, transport and workspace plumbing where no external boundary requires them;
+- Library, Discover, Downloads and Settings frontend surfaces behind one `runtimeProductFacade` and one raw `runtimeApi` bridge;
+- Linux repository/backend/frontend verification and a hosted Windows RustCore/Tauri compile gate.
 
-## Verification state
+## Verification authority
 
-Latest verified code endpoint:
+Do **not** treat this document as the authority for the latest commit SHA, workflow run number, or pass/fail result.
 
-- commit: `2e5b708baaaa31090c9258563221b7b639ec1208`;
-- GitHub Actions: `Repository Verify` run **#341**;
-- repository/backend/frontend gate: **PASS**;
-- hosted Windows RustCore/frontend/Tauri compile gate: **PASS**;
-- RustCore: **81 tests passed**;
-- Svelte check: **0 errors, 0 warnings**.
+For exact current verification state, use the `Repository Verify` run attached to the current `develop` HEAD. A queued, running, cancelled, skipped, or failed run is not a verified baseline.
 
-This is remote/static/integration evidence only. It does not replace running the installed application on the owner's Windows machine.
+This file owns continuation intent only. GitHub Actions owns exact executable verification evidence.
 
-## Deliberately not claimed
+## Current engineering priority
 
-The following remain outside this checkpoint:
+Finish remote-foundation hygiene before new functional architecture:
 
-- installed application behavior on the owner's target Windows machine;
+1. current `develop` HEAD must pass `Repository Verify`;
+2. repository memory must remain truthful and avoid hard-coded stale verification identifiers;
+3. repository governance should enforce the documented branch model where repository administration permits it;
+4. after remote hygiene is clean, stop architecture-only refinement.
+
+## Remaining product evidence
+
+The following remain unproven until exercised directly:
+
+- installed application launch and interaction on the target Windows machine;
 - target-machine AppData/Minecraft discovery and representative real local libraries;
-- real provider login or Marketplace/PlayFab network behavior;
-- live catalog results without a registered real provider;
-- provider-backed Discover download behavior until a real provider supplies deterministic safe output metadata;
-- package import/file-picker interaction beyond the currently approved paths;
-- installer/branding/clean-machine release acceptance.
+- settings/download/folder-picker behavior through an installed Tauri window;
+- a real provider login/session/catalog/resolver integration;
+- production TLS/CDN/provider behavior;
+- representative performance and scale;
+- installer, branding, clean-machine and release acceptance.
 
-## Remaining paths
+## Next functional paths
 
 ```text
-FRONTEND_VISUAL_REFINEMENT_READY
-├── TARGET_WINDOWS_RUNTIME_SMOKE        deferred by owner; required for installed-runtime proof
-└── REAL_PROVIDER_INTEGRATION          next functional dependency for live Discover behavior
+REMOTE_FOUNDATION_HARDENING
+├── TARGET_WINDOWS_RUNTIME_SMOKE
+└── REAL_PROVIDER_INTEGRATION
 ```
 
-Do not add speculative abstractions to avoid these dependencies. Continue from the smallest concrete owner when either path becomes active.
+Do not create placeholder providers, speculative credential abstractions, new managers, new policy layers, or additional architecture documentation to avoid those evidence dependencies.
