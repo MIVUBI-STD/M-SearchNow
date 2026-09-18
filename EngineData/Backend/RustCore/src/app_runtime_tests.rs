@@ -124,6 +124,7 @@ fn composed_provider_resolver_is_used_by_application_download_runtime() {
             destination_file_name: "runtime.mcpack".into(),
             destination_directory: Some(destination.clone()),
             expected_bytes: Some(payload.len() as u64),
+            expected_sha256: None,
         })
         .expect("queue");
 
