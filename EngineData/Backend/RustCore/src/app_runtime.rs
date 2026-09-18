@@ -572,11 +572,8 @@ impl SearchNowBackendRuntime {
         for item_id in item_ids {
             let item = self.resolve_local_content(item_id)?;
             let suggested = self.local_content_export_file_name(item_id)?;
-            let destination = next_batch_export_destination(
-                destination_directory,
-                &suggested,
-                &mut reserved,
-            )?;
+            let destination =
+                next_batch_export_destination(destination_directory, &suggested, &mut reserved)?;
             destinations.push((item.id, destination));
         }
 
