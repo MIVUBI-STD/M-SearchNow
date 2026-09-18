@@ -1054,7 +1054,11 @@ fn validate_bundle_dependencies(
                     "The .mcaddon requires a pack dependency that is not installed or included in the bundle.",
                 ));
             };
-            if let Some(required) = dependency.version.as_deref().and_then(parse_numeric_version) {
+            if let Some(required) = dependency
+                .version
+                .as_deref()
+                .and_then(parse_numeric_version)
+            {
                 if !installed_version.is_empty()
                     && compare_numeric_versions(installed_version, &required)
                         == std::cmp::Ordering::Less
