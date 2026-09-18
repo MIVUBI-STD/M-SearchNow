@@ -357,3 +357,50 @@ fn package_import_rejects_installed_manifest_uuid_conflict() {
         1
     );
 }
+
+#[test]
+fn remove_local_content_deletes_only_current_library_item() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let root = temp.path().join("minecraft-root");
+    let pack = root.join("resource_packs/remove-me");
+    let survivor = root.join("resource_packs/keep-me");
+    fs::create_dir_all(&pack).expect("pack");
+    fs::create_dir_all(&survivor).expect("survivor");
+    fs::write(
+        pack.join("manifest.json"),
+        r#"{"header":{"name":"Remove Me","version":[1,0,0]}}"#,
+    )
+    .expect("manifest");
+    fs::write(
+        survivor.join("manifest.json"),
+        r#"{"header":{"name":"Keep Me","version":[1,0,0]}}"#,
+    )
+    .expect("survivor manifest");
+
+    let runtime = SearchNowBackendRuntime::compose(
+        SearchNowBackendPaths::from_roots(temp.path().join("config"), temp.path().join("data")),
+        PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
+        Vec::new(),
+        HttpTransport::new_test_http(test_http_policy()).expect("test HTTP"),
+    )
+    .expect("runtime");
+    let mut settings = runtime.load_settings().expect("settings");
+    settings.minecraft.root_override = Some(root);
+    runtime.save_settings(&settings).expect("save settings");
+
+    let before = runtime.scan_local_library().expect("library");
+    let item = before
+        .library
+        .items
+        .iter()
+        .find(|item| item.title == "Remove Me")
+        .expect("remove item");
+    let after = runtime
+        .remove_local_content(&item.id)
+        .expect("remove local content");
+
+    assert!(!pack.exists());
+    assert!(survivor.is_dir());
+    assert_eq!(after.library.summary.total, 1);
+    assert_eq!(after.library.items[0].title, "Keep Me");
+}

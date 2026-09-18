@@ -352,6 +352,72 @@ impl SearchNowBackendRuntime {
         import_archive(&request.source_path, &root.root, &root.id)
     }
 
+    pub fn remove_local_content(&self, item_id: &str) -> BackendResult<LocalBackendSnapshot> {
+        if !valid_local_content_id(item_id) {
+            return Err(BackendError::new(
+                "library_item_not_found",
+                "The selected Minecraft content is no longer available.",
+            ));
+        }
+
+        let settings = self.settings.load()?;
+        let discovery = discover_minecraft_storage(&settings.minecraft, &self.platform);
+        let library = scan_library(
+            &discovery.roots,
+            settings.minecraft.include_development_content,
+        );
+        let item = library
+            .items
+            .iter()
+            .find(|item| item.id == item_id)
+            .ok_or_else(|| {
+                BackendError::new(
+                    "library_item_not_found",
+                    "The selected Minecraft content is no longer available.",
+                )
+            })?;
+        let root = discovery
+            .roots
+            .iter()
+            .find(|root| root.id == item.root_id)
+            .ok_or_else(|| {
+                BackendError::new(
+                    "library_root_unavailable",
+                    "The Minecraft storage root for this content is no longer available.",
+                )
+            })?;
+
+        if !item.path.starts_with(&root.root) || item.path == root.root {
+            return Err(BackendError::new(
+                "library_remove_path_rejected",
+                "SearchNow refused to remove content outside its detected Minecraft storage.",
+            ));
+        }
+
+        let metadata = std::fs::symlink_metadata(&item.path).map_err(|error| {
+            BackendError::from_io(
+                "library_remove_metadata_failed",
+                "SearchNow could not verify the selected Minecraft content.",
+                error,
+            )
+        })?;
+        if metadata.file_type().is_symlink() || !metadata.is_dir() {
+            return Err(BackendError::new(
+                "library_remove_path_rejected",
+                "SearchNow only removes detected Minecraft content directories.",
+            ));
+        }
+
+        std::fs::remove_dir_all(&item.path).map_err(|error| {
+            BackendError::from_io(
+                "library_remove_failed",
+                "SearchNow could not remove the selected Minecraft content.",
+                error,
+            )
+        })?;
+        self.scan_local_library_raw()
+    }
+
     pub fn local_content_directory(&self, item_id: &str) -> BackendResult<PathBuf> {
         if !valid_local_content_id(item_id) {
             return Err(BackendError::new(
