@@ -1,4 +1,5 @@
 use super::*;
+use ring::digest::{digest, SHA256};
 use std::{
     io::{Cursor, Read},
     sync::Arc,
@@ -74,6 +75,16 @@ impl Read for SlowReader {
         let len = buffer.len().min(self.max_chunk);
         self.cursor.read(&mut buffer[..len])
     }
+}
+
+fn sha256_hex(payload: &[u8]) -> String {
+    let digest = digest(&SHA256, payload);
+    let mut output = String::with_capacity(64);
+    for byte in digest.as_ref() {
+        use std::fmt::Write as _;
+        write!(&mut output, "{byte:02x}").expect("write digest");
+    }
+    output
 }
 
 fn request(transport: &str, resource_id: String, name: &str, bytes: usize) -> DownloadRequest {
@@ -428,4 +439,83 @@ fn paused_download_resumes_from_partial_payload_without_redownloading_prefix() {
         std::fs::read(directory.path().join("files/resume-me.mcpack")).expect("final payload"),
         payload
     );
+}
+
+
+#[test]
+fn matching_sha256_allows_completed_download_to_publish() {
+    let directory = tempfile::tempdir().expect("tempdir");
+    let payload = b"verified-searchnow-payload".repeat(32 * 1024);
+    let runtime = fixture_runtime(
+        directory.path(),
+        DownloadPolicy::default(),
+        Some(FixtureTransport::new(
+            "integrity-match",
+            payload.clone(),
+            Duration::ZERO,
+        )),
+    );
+    let mut request = request(
+        "integrity-match",
+        "fixture".into(),
+        "verified",
+        payload.len(),
+    );
+    request.expected_sha256 = Some(sha256_hex(&payload));
+
+    let job = runtime.queue(request).expect("queue");
+    let snapshot = wait_for(&runtime, |snapshot| {
+        snapshot.jobs.iter().any(|candidate| {
+            candidate.id == job.id && candidate.state == DownloadJobState::Completed
+        })
+    });
+    let completed = snapshot
+        .jobs
+        .iter()
+        .find(|candidate| candidate.id == job.id)
+        .expect("completed job");
+    assert!(completed.last_error.is_none());
+    assert_eq!(
+        std::fs::read(directory.path().join("files/verified.mcpack")).expect("final payload"),
+        payload
+    );
+}
+
+#[test]
+fn mismatched_sha256_fails_before_final_file_is_published() {
+    let directory = tempfile::tempdir().expect("tempdir");
+    let payload = b"corruption-must-not-publish".repeat(32 * 1024);
+    let runtime = fixture_runtime(
+        directory.path(),
+        DownloadPolicy::default(),
+        Some(FixtureTransport::new(
+            "integrity-mismatch",
+            payload.clone(),
+            Duration::ZERO,
+        )),
+    );
+    let mut request = request(
+        "integrity-mismatch",
+        "fixture".into(),
+        "rejected",
+        payload.len(),
+    );
+    request.expected_sha256 = Some("00".repeat(32));
+
+    let job = runtime.queue(request).expect("queue");
+    let snapshot = wait_for(&runtime, |snapshot| {
+        snapshot.jobs.iter().any(|candidate| {
+            candidate.id == job.id && candidate.state == DownloadJobState::Failed
+        })
+    });
+    let failed = snapshot
+        .jobs
+        .iter()
+        .find(|candidate| candidate.id == job.id)
+        .expect("failed job");
+    assert_eq!(
+        failed.last_error.as_ref().expect("failure").code,
+        "download_integrity_mismatch"
+    );
+    assert!(!directory.path().join("files/rejected.mcpack").exists());
 }

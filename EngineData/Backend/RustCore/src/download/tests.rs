@@ -352,3 +352,26 @@ fn pause_and_resume_preserve_partial_progress() {
     assert_eq!(resumed.progress.downloaded_bytes, 6);
     assert!(resumed.last_error.is_none());
 }
+
+
+#[test]
+fn malformed_sha256_is_rejected_before_enqueue() {
+    let mut manager = DownloadManager::new(DownloadPolicy::default()).expect("manager");
+    let mut malformed = request("bad-hash");
+    malformed.expected_sha256 = Some("not-a-sha256".into());
+
+    let error = manager
+        .enqueue(malformed)
+        .expect_err("malformed digest must fail");
+    assert_eq!(error.code(), "download_integrity_digest_invalid");
+}
+
+#[test]
+fn sha256_is_normalized_when_enqueued() {
+    let mut manager = DownloadManager::new(DownloadPolicy::default()).expect("manager");
+    let mut request = request("upper-hash");
+    request.expected_sha256 = Some("AB".repeat(32));
+
+    let job = manager.enqueue(request).expect("queue");
+    assert_eq!(job.expected_sha256.as_deref(), Some("ab".repeat(32).as_str()));
+}
