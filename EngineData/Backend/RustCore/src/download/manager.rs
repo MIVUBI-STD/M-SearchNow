@@ -124,6 +124,16 @@ impl DownloadManager {
         }
     }
 
+    pub(crate) fn downloaded_bytes(&self, job_id: &str) -> BackendResult<u64> {
+        self.jobs
+            .iter()
+            .find(|job| job.id == job_id)
+            .map(|job| job.progress.downloaded_bytes)
+            .ok_or_else(|| {
+                BackendError::new("download_job_not_found", "Download job was not found.")
+            })
+    }
+
     #[cfg(test)]
     pub fn enqueue(&mut self, request: DownloadRequest) -> BackendResult<DownloadJob> {
         self.enqueue_to(request, None)

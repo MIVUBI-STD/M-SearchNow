@@ -318,20 +318,20 @@ impl DownloadExecutionRuntime {
         total_bytes: Option<u64>,
     ) -> BackendResult<DownloadJob> {
         let mut manager = self.lock_manager()?;
-        let previous = find_job(&manager.snapshot(), job_id)?
-            .progress
-            .downloaded_bytes;
-        let mut candidate = manager.clone();
-        let output = candidate.report_progress(job_id, downloaded_bytes, total_bytes)?;
-
+        let previous = manager.downloaded_bytes(job_id)?;
         let crossed_checkpoint =
             previous / PROGRESS_CHECKPOINT_BYTES != downloaded_bytes / PROGRESS_CHECKPOINT_BYTES;
         let completed_declared_size = total_bytes.is_some_and(|total| downloaded_bytes == total);
+
         if crossed_checkpoint || completed_declared_size {
+            let mut candidate = manager.clone();
+            let output = candidate.report_progress(job_id, downloaded_bytes, total_bytes)?;
             self.inner.store.save(&candidate.persisted_state())?;
+            *manager = candidate;
+            return Ok(output);
         }
-        *manager = candidate;
-        Ok(output)
+
+        manager.report_progress(job_id, downloaded_bytes, total_bytes)
     }
 
     fn acknowledge_cancel_if_requested(
