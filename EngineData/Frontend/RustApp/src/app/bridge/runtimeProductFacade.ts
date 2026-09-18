@@ -95,6 +95,13 @@ export const runtimeProductFacade = {
     );
   },
 
+  exportLocalContentBatch(itemIds: string[]): Promise<ProductResult<string[] | null>> {
+    return productCall(
+      () => runtimeApi.exportLocalContentBatch(itemIds),
+      "SearchNow could not export the selected Minecraft content.",
+    );
+  },
+
   chooseAndInspectPackage(): Promise<ProductResult<PackageInspection | null>> {
     return productCall(
       () => runtimeApi.chooseAndInspectPackage(),

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FileSearch, FolderOpen, RefreshCw, Search } from "@lucide/svelte";
+  import { Archive, CheckSquare, FileSearch, FolderOpen, RefreshCw, Search, X } from "@lucide/svelte";
   import { runtimeProductFacade } from "../app/bridge/runtimeProductFacade";
   import { localContentTypeLabel } from "../app/shared/format";
   import type { LocalBackendSnapshot, LocalContentItem, LocalContentType, PackageInspection } from "../app/shared/types";
@@ -23,6 +23,9 @@
   let inspectionBusy = $state(false);
   let packageInspection = $state<PackageInspection | null>(null);
   let importBusy = $state(false);
+  let selectionMode = $state(false);
+  let selectedIds = $state<string[]>([]);
+  let batchBusy = $state(false);
   let success = $state("");
   let error = $state("");
   let query = $state("");
@@ -118,7 +121,38 @@
   }
 
   function openDetails(item: LocalContentItem): void {
+    if (selectionMode) {
+      toggleSelection(item.id);
+      return;
+    }
     selectedItem = item;
+  }
+
+  function toggleSelection(itemId: string): void {
+    selectedIds = selectedIds.includes(itemId)
+      ? selectedIds.filter((id) => id !== itemId)
+      : [...selectedIds, itemId];
+  }
+
+  function exitSelectionMode(): void {
+    if (batchBusy) return;
+    selectionMode = false;
+    selectedIds = [];
+  }
+
+  async function exportSelectedBatch(): Promise<void> {
+    if (selectedIds.length === 0 || batchBusy) return;
+    batchBusy = true;
+    error = "";
+    success = "";
+    const result = await runtimeProductFacade.exportLocalContentBatch(selectedIds);
+    if (result.ok && result.data) {
+      success = `${result.data.length} backup${result.data.length === 1 ? "" : "s"} exported successfully.`;
+      exitSelectionMode();
+    } else if (!result.ok) {
+      error = result.error.message;
+    }
+    batchBusy = false;
   }
 
   function closeDetails(): void {
@@ -258,6 +292,9 @@
     packageInspection = null;
     inspectionBusy = false;
     importBusy = false;
+    selectionMode = false;
+    selectedIds = [];
+    batchBusy = false;
   });
 
   $effect(() => {
@@ -281,7 +318,19 @@
         <FolderOpen size={15} aria-hidden="true" />
         Inspect folder
       </button>
-      <button class="button button--secondary" type="button" onclick={refresh} disabled={!runtimeReady || loading}>
+      <button
+        class="button button--secondary"
+        type="button"
+        onclick={() => {
+          selectionMode = !selectionMode;
+          if (!selectionMode) selectedIds = [];
+        }}
+        disabled={!runtimeReady || batchBusy || (snapshot?.library.items.length ?? 0) === 0}
+      >
+        <CheckSquare size={15} aria-hidden="true" />
+        {selectionMode ? "Selecting…" : "Select"}
+      </button>
+      <button class="button button--secondary" type="button" onclick={refresh} disabled={!runtimeReady || loading || batchBusy}>
         <RefreshCw size={15} class={loading ? "spin" : ""} aria-hidden="true" />
         {loading ? "Scanning" : "Scan again"}
       </button>
@@ -334,6 +383,25 @@
     />
   {/if}
 
+  {#if selectionMode}
+    <div class="toolbar">
+      <span>{selectedIds.length} selected</span>
+      <button
+        class="button button--secondary"
+        type="button"
+        onclick={exportSelectedBatch}
+        disabled={selectedIds.length === 0 || batchBusy}
+      >
+        <Archive size={15} aria-hidden="true" />
+        {batchBusy ? "Exporting…" : "Export selected"}
+      </button>
+      <button class="button button--ghost" type="button" onclick={exitSelectionMode} disabled={batchBusy}>
+        <X size={15} aria-hidden="true" />
+        Done
+      </button>
+    </div>
+  {/if}
+
   {#if snapshot?.library.warnings.length}
     <Notice
       tone="warning"
@@ -357,7 +425,13 @@
   {:else if snapshot && filteredItems.length > 0}
     <div class="content-grid">
       {#each filteredItems as item (item.id)}
-        <button class="content-card content-card--interactive w-full p-0 text-left" type="button" onclick={() => openDetails(item)}>
+        <button
+          class="content-card content-card--interactive w-full p-0 text-left"
+          class:ring-2={selectedIds.includes(item.id)}
+          type="button"
+          aria-pressed={selectionMode ? selectedIds.includes(item.id) : undefined}
+          onclick={() => openDetails(item)}
+        >
           <div class="content-card__preview">
             <ContentTypeMark kind={item.contentType} />
           </div>

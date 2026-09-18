@@ -82,3 +82,38 @@ pub async fn export_local_content<R: Runtime>(
         .map_err(CommandError::from)?;
     Ok(Some(file_name))
 }
+
+#[tauri::command]
+pub async fn export_local_content_batch<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, SearchNowBackendRuntime>,
+    item_ids: Vec<String>,
+) -> Result<Option<Vec<String>>, CommandError> {
+    let selected = app
+        .dialog()
+        .file()
+        .set_title("Export Minecraft backups")
+        .blocking_pick_folder();
+    let Some(selected) = selected else {
+        return Ok(None);
+    };
+    let directory = selected.into_path().map_err(|_| {
+        CommandError::new(
+            "library_export_destination_invalid",
+            "The selected backup folder could not be used.",
+        )
+    })?;
+    let runtime = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        runtime.export_local_content_batch(&item_ids, &directory)
+    })
+    .await
+    .map_err(|error| {
+        CommandError::new(
+            "library_export_task_failed",
+            format!("Batch export task failed: {error}"),
+        )
+    })?
+    .map(Some)
+    .map_err(CommandError::from)
+}

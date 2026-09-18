@@ -54,6 +54,10 @@ export const runtimeApi = {
     return invoke<string | null>("export_local_content", { itemId });
   },
 
+  exportLocalContentBatch(itemIds: string[]): Promise<string[] | null> {
+    return invoke<string[] | null>("export_local_content_batch", { itemIds });
+  },
+
   chooseAndInspectPackage(): Promise<PackageInspection | null> {
     return invoke<PackageInspection | null>("choose_and_inspect_package");
   },

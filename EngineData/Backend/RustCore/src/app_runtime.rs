@@ -543,6 +543,64 @@ impl SearchNowBackendRuntime {
         replace_single_pack(&request.source_path, &root.root, &root.id, &existing.path)
     }
 
+    pub fn export_local_content_batch(
+        &self,
+        item_ids: &[String],
+        destination_directory: &Path,
+    ) -> BackendResult<Vec<String>> {
+        if item_ids.is_empty() {
+            return Err(BackendError::new(
+                "library_batch_export_empty",
+                "Select at least one Minecraft content item to export.",
+            ));
+        }
+        if item_ids.len() > 100 {
+            return Err(BackendError::new(
+                "library_batch_export_too_large",
+                "SearchNow exports up to 100 Library items at a time.",
+            ));
+        }
+        if !destination_directory.is_dir() {
+            return Err(BackendError::new(
+                "library_export_destination_invalid",
+                "The selected export folder is not available.",
+            ));
+        }
+
+        let mut destinations = Vec::with_capacity(item_ids.len());
+        let mut reserved = std::collections::HashSet::new();
+        for item_id in item_ids {
+            let item = self.resolve_local_content(item_id)?;
+            let suggested = self.local_content_export_file_name(item_id)?;
+            let destination = next_batch_export_destination(
+                destination_directory,
+                &suggested,
+                &mut reserved,
+            )?;
+            destinations.push((item.id, destination));
+        }
+
+        let mut created = Vec::new();
+        let result = (|| {
+            for (item_id, destination) in &destinations {
+                self.export_local_content(item_id, destination)?;
+                created.push(destination.clone());
+            }
+            Ok(created
+                .iter()
+                .filter_map(|path| path.file_name())
+                .map(|name| name.to_string_lossy().into_owned())
+                .collect())
+        })();
+
+        if result.is_err() {
+            for path in created.iter().rev() {
+                let _ = std::fs::remove_file(path);
+            }
+        }
+        result
+    }
+
     pub fn remove_local_content(&self, item_id: &str) -> BackendResult<LocalBackendSnapshot> {
         if !valid_local_content_id(item_id) {
             return Err(BackendError::new(
@@ -720,4 +778,40 @@ impl SearchNowBackendRuntime {
         let settings = self.settings.load()?;
         Ok(build_local_backend_snapshot(&settings, &self.platform))
     }
+}
+
+fn next_batch_export_destination(
+    directory: &Path,
+    suggested: &str,
+    reserved: &mut std::collections::HashSet<PathBuf>,
+) -> BackendResult<PathBuf> {
+    let suggested_path = Path::new(suggested);
+    let extension = suggested_path
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or("");
+    let stem = suggested_path
+        .file_stem()
+        .and_then(|value| value.to_str())
+        .filter(|value| !value.is_empty())
+        .unwrap_or("Minecraft backup");
+
+    for sequence in 1_u32..=u32::MAX {
+        let file_name = if sequence == 1 {
+            suggested.to_string()
+        } else if extension.is_empty() {
+            format!("{stem} ({sequence})")
+        } else {
+            format!("{stem} ({sequence}).{extension}")
+        };
+        let candidate = directory.join(file_name);
+        if !candidate.exists() && reserved.insert(candidate.clone()) {
+            return Ok(candidate);
+        }
+    }
+
+    Err(BackendError::new(
+        "library_batch_export_destination_exhausted",
+        "SearchNow could not allocate a unique backup filename.",
+    ))
 }
