@@ -378,4 +378,42 @@ mod tests {
             1
         );
     }
+
+    #[test]
+    fn oversized_manifest_is_reported_without_reading_unbounded_metadata() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let pack = directory.path().join("resource_packs/oversized");
+        fs::create_dir_all(&pack).expect("pack");
+        fs::write(
+            pack.join("manifest.json"),
+            vec![b'x'; (MAX_MANIFEST_BYTES + 1) as usize],
+        )
+        .expect("manifest");
+
+        let snapshot = scan_library(&[root(directory.path())], false);
+        assert_eq!(snapshot.summary.total, 1);
+        assert_eq!(snapshot.summary.invalid_items, 1);
+        assert_eq!(snapshot.items[0].status, LocalContentStatus::InvalidMetadata);
+        assert_eq!(
+            snapshot.items[0].issue.as_deref(),
+            Some("manifest.json is larger than the supported metadata limit.")
+        );
+    }
+
+    #[test]
+    fn oversized_world_name_falls_back_to_folder_name() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let world = directory.path().join("minecraftWorlds/world-folder");
+        fs::create_dir_all(&world).expect("world");
+        fs::write(
+            world.join("levelname.txt"),
+            vec![b'w'; (MAX_LEVEL_NAME_BYTES + 1) as usize],
+        )
+        .expect("level name");
+
+        let snapshot = scan_library(&[root(directory.path())], false);
+        assert_eq!(snapshot.summary.total, 1);
+        assert_eq!(snapshot.items[0].title, "world-folder");
+        assert_eq!(snapshot.items[0].status, LocalContentStatus::Ready);
+    }
 }
