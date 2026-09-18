@@ -393,7 +393,10 @@ mod tests {
         let snapshot = scan_library(&[root(directory.path())], false);
         assert_eq!(snapshot.summary.total, 1);
         assert_eq!(snapshot.summary.invalid_items, 1);
-        assert_eq!(snapshot.items[0].status, LocalContentStatus::InvalidMetadata);
+        assert_eq!(
+            snapshot.items[0].status,
+            LocalContentStatus::InvalidMetadata
+        );
         assert_eq!(
             snapshot.items[0].issue.as_deref(),
             Some("manifest.json is larger than the supported metadata limit.")
