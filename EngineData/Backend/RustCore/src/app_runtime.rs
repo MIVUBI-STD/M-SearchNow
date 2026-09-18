@@ -10,7 +10,7 @@ use crate::{
         DownloadTransportRegistry, HttpTransport, HttpTransportPolicy, ProviderResolvedTransport,
     },
     error::{BackendError, BackendResult},
-    library::valid_local_content_id,
+    library::{scan_library, valid_local_content_id},
     minecraft::{discover_minecraft_storage, MinecraftDiscoverySnapshot},
     package::{
         import_archive, inspect_package, PackageImportRequest, PackageImportResult,
@@ -326,6 +326,29 @@ impl SearchNowBackendRuntime {
                     "The selected Minecraft storage root is no longer available.",
                 )
             })?;
+        let inspection = inspect_package(&request.source_path)?;
+        let target_library = scan_library(
+            std::slice::from_ref(root),
+            settings.minecraft.include_development_content,
+        );
+        let installed_uuids = target_library
+            .items
+            .iter()
+            .filter_map(|item| item.manifest_uuid.as_deref())
+            .map(str::to_ascii_lowercase)
+            .collect::<std::collections::HashSet<_>>();
+        let conflict = inspection
+            .packs
+            .iter()
+            .filter_map(|pack| pack.uuid.as_deref())
+            .map(str::to_ascii_lowercase)
+            .any(|uuid| installed_uuids.contains(&uuid));
+        if conflict {
+            return Err(BackendError::new(
+                "package_import_conflict",
+                "A pack with the same manifest UUID is already installed in the selected Minecraft storage.",
+            ));
+        }
         import_archive(&request.source_path, &root.root, &root.id)
     }
 

@@ -1,12 +1,13 @@
 <script lang="ts">
   import { FileArchive, X } from "@lucide/svelte";
-  import type { MinecraftStorageRoot, PackageInspection, PackKind } from "../../app/shared/types";
+  import type { LocalContentItem, MinecraftStorageRoot, PackageInspection, PackKind } from "../../app/shared/types";
   import TechnicalDetails from "./TechnicalDetails.svelte";
 
   let {
     inspection,
     open,
     roots,
+    installedItems,
     onClose,
     onImport,
     importBusy = false,
@@ -14,6 +15,7 @@
     inspection: PackageInspection | null;
     open: boolean;
     roots: MinecraftStorageRoot[];
+    installedItems: LocalContentItem[];
     onClose: () => void;
     onImport: (rootId: string) => void;
     importBusy?: boolean;
@@ -52,8 +54,23 @@
     }
   }
 
+  function conflictingItems(): LocalContentItem[] {
+    if (!inspection || !selectedRootId) return [];
+    const uuids = new Set(
+      inspection.packs
+        .map((pack) => pack.uuid?.toLowerCase())
+        .filter((uuid): uuid is string => Boolean(uuid)),
+    );
+    return installedItems.filter(
+      (item) =>
+        item.rootId === selectedRootId &&
+        item.manifestUuid !== null &&
+        uuids.has(item.manifestUuid.toLowerCase()),
+    );
+  }
+
   function canAutoImport(): boolean {
-    if (!inspection || inspection.status !== "ready") return false;
+    if (!inspection || inspection.status !== "ready" || conflictingItems().length > 0) return false;
     return inspection.packs.every((pack) =>
       pack.kind === "behaviorPack" || pack.kind === "resourcePack" || pack.kind === "skinPack",
     );
@@ -63,6 +80,7 @@
     if (!inspection) return "";
     if (inspection.status === "rejected") return "Rejected";
     if (inspection.status === "issues") return "Needs review";
+    if (conflictingItems().length > 0) return "Already installed";
     return canAutoImport() ? "Ready to import" : "Inspection passed";
   }
 </script>
@@ -106,6 +124,13 @@
           <div class="catalog-modal__issue">
             <strong>{inspection.status === "rejected" ? "Package rejected" : "Review findings"}</strong>
             <span>{inspection.issues[0].message}{inspection.issues.length > 1 ? ` (+${inspection.issues.length - 1} more)` : ""}</span>
+          </div>
+        {/if}
+
+        {#if conflictingItems().length}
+          <div class="catalog-modal__issue">
+            <strong>Already installed</strong>
+            <span>{conflictingItems().map((item) => item.title).join(", ")} uses the same manifest UUID in this Minecraft storage.</span>
           </div>
         {/if}
 

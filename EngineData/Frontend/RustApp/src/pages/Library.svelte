@@ -259,6 +259,7 @@
 <PackageInspectionModal
   inspection={packageInspection}
   roots={snapshot?.minecraft.roots ?? []}
+  installedItems={snapshot?.library.items ?? []}
   open={packageInspection !== null}
   onClose={() => {
     if (!importBusy) packageInspection = null;
