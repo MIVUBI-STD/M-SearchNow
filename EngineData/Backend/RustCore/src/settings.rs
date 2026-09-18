@@ -187,4 +187,49 @@ mod tests {
         }"#;
         assert!(serde_json::from_str::<AppSettings>(json).is_err());
     }
+
+    #[test]
+    fn store_rejects_invalid_json() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let path = directory.path().join("settings.json");
+        fs::write(&path, b"{not-json").expect("corrupt settings");
+        let store = SettingsStore::new(path);
+
+        let error = store.load().expect_err("invalid JSON must fail closed");
+        assert_eq!(error.code(), "settings_invalid_json");
+    }
+
+    #[test]
+    fn store_rejects_unsupported_schema() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let path = directory.path().join("settings.json");
+        fs::write(
+            &path,
+            br#"{"schemaVersion":999,"minecraft":{"includePreview":false,"includeLegacyUwp":true,"includeDevelopmentContent":false}}"#,
+        )
+        .expect("future settings");
+        let store = SettingsStore::new(path);
+
+        let error = store
+            .load()
+            .expect_err("unsupported schema must fail closed");
+        assert_eq!(error.code(), "settings_schema_unsupported");
+    }
+
+    #[test]
+    fn persisted_empty_root_override_fails_closed() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let path = directory.path().join("settings.json");
+        fs::write(
+            &path,
+            br#"{"schemaVersion":1,"minecraft":{"rootOverride":"","includePreview":false,"includeLegacyUwp":true,"includeDevelopmentContent":false}}"#,
+        )
+        .expect("invalid root settings");
+        let store = SettingsStore::new(path);
+
+        let error = store
+            .load()
+            .expect_err("empty root override must fail closed");
+        assert_eq!(error.code(), "settings_minecraft_root_invalid");
+    }
 }
