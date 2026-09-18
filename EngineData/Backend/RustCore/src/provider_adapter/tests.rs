@@ -267,6 +267,7 @@ fn integrated_provider_catalog_to_download_reuses_one_secret_session() {
             display_name: "Demo Add-On".into(),
             destination_file_name: "demo.mcaddon".into(),
             expected_bytes: Some(payload.len() as u64),
+            expected_sha256: None,
         })
         .expect("queue provider download");
 
