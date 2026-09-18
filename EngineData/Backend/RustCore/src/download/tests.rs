@@ -376,7 +376,6 @@ fn sha256_is_normalized_when_enqueued() {
     assert_eq!(job.expected_sha256.as_deref(), Some(expected.as_str()));
 }
 
-
 #[test]
 fn queued_jobs_can_be_reordered_without_mutating_nonqueued_jobs() {
     let mut manager = DownloadManager::new(DownloadPolicy {
