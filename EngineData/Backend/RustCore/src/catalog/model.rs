@@ -27,14 +27,14 @@ pub enum CatalogSort {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CatalogFilters {
     pub content_types: Vec<CatalogContentType>,
     pub tags: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CatalogPageRequest {
     pub limit: u16,
     pub cursor: Option<String>,
@@ -50,7 +50,7 @@ impl Default for CatalogPageRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CatalogQuery {
     pub text: Option<String>,
     pub filters: CatalogFilters,
@@ -59,7 +59,7 @@ pub struct CatalogQuery {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CatalogRequest {
     pub provider: String,
     pub query: CatalogQuery,

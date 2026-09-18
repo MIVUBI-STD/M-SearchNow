@@ -9,7 +9,7 @@ pub const CURRENT_SCHEMA_VERSION: u32 = 1;
 const MAX_SETTINGS_BYTES: u64 = 512 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct AppSettings {
     #[serde(default = "current_schema_version")]
     pub schema_version: u32,
@@ -18,7 +18,7 @@ pub struct AppSettings {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct MinecraftSettings {
     #[serde(default)]
     pub root_override: Option<PathBuf>,
@@ -172,5 +172,19 @@ mod tests {
         };
         let error = settings.validate().expect_err("future schema must fail");
         assert_eq!(error.code(), "settings_schema_unsupported");
+    }
+
+    #[test]
+    fn unknown_settings_fields_fail_closed() {
+        let json = r#"{
+            "schemaVersion": 1,
+            "minecraft": {
+                "includePreview": false,
+                "includeLegacyUwp": true,
+                "includeDevelopmentContent": false,
+                "unexpectedSetting": true
+            }
+        }"#;
+        assert!(serde_json::from_str::<AppSettings>(json).is_err());
     }
 }

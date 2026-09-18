@@ -138,6 +138,8 @@ if (!lib.includes("pub mod provider_adapter")) errors.push("RustCore must expose
 
 const appRuntime = await readFile(resolve(backendRoot, "src/app_runtime.rs"), "utf8");
 const frontendTypes = await readFile(resolve(appRoot, "src/app/shared/types.ts"), "utf8");
+const settingsModel = await readFile(resolve(backendRoot, "src/settings.rs"), "utf8");
+const catalogModel = await readFile(resolve(backendRoot, "src/catalog/model.rs"), "utf8");
 for (const needle of [
   "SearchNowBackendRuntime",
   "SettingsStore::new",
@@ -165,6 +167,25 @@ for (const needle of [
   if (!frontendTypes.includes(needle)) errors.push(`frontend download request contract is missing ${needle}`);
 }
 if (frontendTypes.includes('| "package"')) errors.push("frontend DiagnosticComponent must not expose inactive package runtime diagnostics");
+
+for (const needle of [
+  'pub struct AppSettings',
+  'pub struct MinecraftSettings',
+]) {
+  const index = settingsModel.indexOf(needle);
+  const prefix = index >= 0 ? settingsModel.slice(Math.max(0, index - 160), index) : "";
+  if (index < 0 || !prefix.includes("deny_unknown_fields")) errors.push(`settings input contract must fail closed for unknown fields near ${needle}`);
+}
+for (const needle of [
+  'pub struct CatalogFilters',
+  'pub struct CatalogPageRequest',
+  'pub struct CatalogQuery',
+  'pub struct CatalogRequest',
+]) {
+  const index = catalogModel.indexOf(needle);
+  const prefix = index >= 0 ? catalogModel.slice(Math.max(0, index - 160), index) : "";
+  if (index < 0 || !prefix.includes("deny_unknown_fields")) errors.push(`catalog input contract must fail closed for unknown fields near ${needle}`);
+}
 
 if (errors.length) {
   for (const error of errors) console.error(`ERROR: ${error}`);

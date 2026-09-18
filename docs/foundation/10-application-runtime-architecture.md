@@ -89,7 +89,7 @@ ProviderAdapterRuntime
 HttpTransport
 ```
 
-Commands call methods on `SearchNowBackendRuntime`; domain logic remains in RustCore. Product-intent request DTOs that cross Tauri must deserialize fail-closed when the frontend sends unknown fields, so Rust/TypeScript contract drift becomes an explicit error instead of silently dropping user intent.
+Commands call methods on `SearchNowBackendRuntime`; domain logic remains in RustCore. Product-intent request DTOs that cross Tauri must deserialize fail-closed when the frontend sends unknown fields, so Rust/TypeScript contract drift becomes an explicit error instead of silently dropping user intent. This applies to download, catalog, and settings input contracts.
 
 ## Blocking work
 

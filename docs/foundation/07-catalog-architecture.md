@@ -78,7 +78,7 @@ NameAsc
 NameDesc
 ```
 
-A provider translates these intents into its own supported query shape. SearchNow core does not encode provider endpoint syntax in domain DTOs.
+A provider translates these intents into its own supported query shape. SearchNow core does not encode provider endpoint syntax in domain DTOs. Catalog request structs reject unknown JSON fields so frontend/backend contract drift fails explicitly instead of silently changing query intent.
 
 ## Bounds
 

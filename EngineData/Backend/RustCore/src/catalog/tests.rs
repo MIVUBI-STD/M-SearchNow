@@ -392,3 +392,24 @@ fn catalog_download_refs_map_only_to_existing_download_boundaries() {
     };
     assert!(signed_public.to_download_source().is_err());
 }
+
+#[test]
+fn unknown_catalog_request_fields_fail_closed() {
+    let json = r#"{
+        "provider": "fake",
+        "query": {
+            "text": null,
+            "filters": {
+                "contentTypes": [],
+                "tags": [],
+                "unexpectedFilter": true
+            },
+            "sort": "relevance",
+            "page": {
+                "limit": 30,
+                "cursor": null
+            }
+        }
+    }"#;
+    assert!(serde_json::from_str::<CatalogRequest>(json).is_err());
+}
