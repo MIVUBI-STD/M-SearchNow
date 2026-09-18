@@ -1,7 +1,14 @@
 <script lang="ts">
   import { FolderOpen, RefreshCw, RotateCcw, Search, Trash2, X } from "@lucide/svelte";
   import { runtimeProductFacade } from "../app/bridge/runtimeProductFacade";
-  import { downloadStateLabel, formatBytes, formatDateTime, progressPercent } from "../app/shared/format";
+  import {
+    downloadStateLabel,
+    formatBytes,
+    formatDateTime,
+    formatDuration,
+    formatTransferRate,
+    progressPercent,
+  } from "../app/shared/format";
   import type { DownloadJob, DownloadManagerSnapshot } from "../app/shared/types";
   import MetricCard from "../components/ui/MetricCard.svelte";
   import Notice from "../components/ui/Notice.svelte";
@@ -11,6 +18,14 @@
   import TechnicalDetails from "../components/ui/TechnicalDetails.svelte";
 
   type DownloadFilter = "all" | "active" | "completed" | "issues";
+  type TransferSample = {
+    bytes: number;
+    sampledAtMs: number;
+    bytesPerSecond: number | null;
+  };
+
+  const SPEED_EMA_ALPHA = 0.35;
+  const MAX_REASONABLE_ETA_SECONDS = 7 * 24 * 60 * 60;
 
   let { runtimeReady, active }: { runtimeReady: boolean; active: boolean } = $props();
   let snapshot = $state<DownloadManagerSnapshot | null>(null);
@@ -20,6 +35,7 @@
   let query = $state("");
   let filter = $state<DownloadFilter>("all");
   let refreshSequence = 0;
+  const transferSamples = new Map<string, TransferSample>();
 
   let jobs = $derived((snapshot?.jobs ?? []).slice().sort((a, b) => b.updatedAtMs - a.updatedAtMs));
   let visibleJobs = $derived(jobs.filter((job) => matchesFilter(job)));
@@ -53,6 +69,52 @@
     return job.state === "completed" || job.state === "failed" || job.state === "cancelled";
   }
 
+  function updateTransferSamples(next: DownloadManagerSnapshot): void {
+    const sampledAtMs = performance.now();
+    const activeIds = new Set<string>();
+
+    for (const job of next.jobs) {
+      if (job.state !== "transferring") continue;
+      activeIds.add(job.id);
+      const previous = transferSamples.get(job.id);
+      let bytesPerSecond: number | null = previous?.bytesPerSecond ?? null;
+
+      if (previous && job.progress.downloadedBytes >= previous.bytes) {
+        const elapsedSeconds = (sampledAtMs - previous.sampledAtMs) / 1000;
+        const deltaBytes = job.progress.downloadedBytes - previous.bytes;
+        if (elapsedSeconds > 0 && deltaBytes > 0) {
+          const instantRate = deltaBytes / elapsedSeconds;
+          bytesPerSecond =
+            previous.bytesPerSecond === null
+              ? instantRate
+              : previous.bytesPerSecond * (1 - SPEED_EMA_ALPHA) + instantRate * SPEED_EMA_ALPHA;
+        }
+      }
+
+      transferSamples.set(job.id, {
+        bytes: job.progress.downloadedBytes,
+        sampledAtMs,
+        bytesPerSecond,
+      });
+    }
+
+    for (const jobId of transferSamples.keys()) {
+      if (!activeIds.has(jobId)) transferSamples.delete(jobId);
+    }
+  }
+
+  function transferRate(job: DownloadJob): number | null {
+    return job.state === "transferring" ? (transferSamples.get(job.id)?.bytesPerSecond ?? null) : null;
+  }
+
+  function etaSeconds(job: DownloadJob): number | null {
+    const rate = transferRate(job);
+    const total = job.progress.totalBytes;
+    if (rate === null || rate <= 0 || total === null || total <= job.progress.downloadedBytes) return null;
+    const eta = (total - job.progress.downloadedBytes) / rate;
+    return Number.isFinite(eta) && eta <= MAX_REASONABLE_ETA_SECONDS ? eta : null;
+  }
+
   async function refresh(showBusy = true): Promise<void> {
     if (!runtimeReady || (showBusy && loading)) return;
     const sequence = ++refreshSequence;
@@ -60,6 +122,7 @@
     const result = await runtimeProductFacade.loadDownloads();
     if (sequence !== refreshSequence) return;
     if (result.ok) {
+      updateTransferSamples(result.data);
       snapshot = result.data;
       error = "";
     } else {
@@ -232,6 +295,8 @@
     <div class="download-list" aria-live="polite">
       {#each visibleJobs as job (job.id)}
         {@const percent = progressPercent(job.progress.downloadedBytes, job.progress.totalBytes)}
+        {@const rate = transferRate(job)}
+        {@const eta = etaSeconds(job)}
         <article class="download-card" aria-busy={actionJobId === job.id}>
           <div class="download-card__main">
             <div class="download-card__heading">
@@ -257,7 +322,13 @@
 
             <div class="download-card__meta">
               <span>{formatBytes(job.progress.downloadedBytes)}{job.progress.totalBytes !== null ? ` / ${formatBytes(job.progress.totalBytes)}` : ""}</span>
-              {#if percent !== null}<span>{percent}%</span>{/if}
+              <span>
+                {#if job.state === "transferring"}
+                  {formatTransferRate(rate)}{eta !== null ? ` · ${formatDuration(eta)} left` : ""}
+                {:else if percent !== null}
+                  {percent}%
+                {/if}
+              </span>
             </div>
 
             {#if job.destinationDirectory}
