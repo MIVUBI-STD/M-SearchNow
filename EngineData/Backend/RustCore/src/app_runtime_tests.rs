@@ -503,10 +503,7 @@ fn replace_package_updates_single_installed_pack_in_place() {
     let mut settings = runtime.load_settings().expect("settings");
     settings.minecraft.root_override = Some(root);
     runtime.save_settings(&settings).expect("save settings");
-    let root_id = runtime
-        .discover_minecraft()
-        .expect("discovery")
-        .roots[0]
+    let root_id = runtime.discover_minecraft().expect("discovery").roots[0]
         .id
         .clone();
 

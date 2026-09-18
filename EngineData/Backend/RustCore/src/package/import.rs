@@ -391,7 +391,12 @@ pub(crate) fn replace_single_pack(
             "Automatic update supports one inspected .mcpack at a time.",
         ));
     }
-    let pack = inspection.packs.first().expect("single pack inspection");
+    let pack = inspection.packs.first().ok_or_else(|| {
+        BackendError::new(
+            "package_replace_not_supported",
+            "Automatic update requires exactly one inspected pack.",
+        )
+    })?;
     container_for(pack.kind).ok_or_else(|| {
         BackendError::new(
             "package_replace_kind_unsupported",
@@ -429,11 +434,7 @@ pub(crate) fn replace_single_pack(
     })?;
 
     let result = (|| {
-        extract_roots(
-            source,
-            &staging_root,
-            std::slice::from_ref(&pack.pack_root),
-        )?;
+        extract_roots(source, &staging_root, std::slice::from_ref(&pack.pack_root))?;
         let staged = staging_root.join("0");
         if !staged.join("manifest.json").is_file() {
             return Err(BackendError::new(

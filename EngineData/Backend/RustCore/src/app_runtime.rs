@@ -492,12 +492,7 @@ impl SearchNowBackendRuntime {
             ));
         }
 
-        replace_single_pack(
-            &request.source_path,
-            &root.root,
-            &root.id,
-            &existing.path,
-        )
+        replace_single_pack(&request.source_path, &root.root, &root.id, &existing.path)
     }
 
     pub fn remove_local_content(&self, item_id: &str) -> BackendResult<LocalBackendSnapshot> {
