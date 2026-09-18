@@ -281,7 +281,7 @@ export type CatalogRequest = {
   };
 };
 
-export type PackageInputKind = "folder" | "mcPack" | "mcAddon";
+export type PackageInputKind = "folder" | "mcPack" | "mcAddon" | "mcWorld";
 export type PackageSafety = "safe" | "rejected";
 export type PackageInspectionStatus = "ready" | "issues" | "rejected";
 export type PackageIssueSeverity = "warning" | "error";
@@ -331,11 +331,19 @@ export type ArchiveSummary = {
   nestedArchives: number;
 };
 
+export type WorldSummary = {
+  worldRoot: string;
+  name: string;
+  hasLevelDat: boolean;
+  hasLevelName: boolean;
+};
+
 export type PackageInspection = {
   sourcePath: string;
   inputKind: PackageInputKind;
   status: PackageInspectionStatus;
   safety: PackageSafety;
+  world: WorldSummary | null;
   packs: PackManifestSummary[];
   relationships: PackageRelationship[];
   issues: PackageIssue[];

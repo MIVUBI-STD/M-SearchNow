@@ -2,6 +2,7 @@ mod archive;
 mod folder;
 mod import;
 mod manifest;
+mod world;
 pub mod model;
 
 use crate::error::{BackendError, BackendResult};
@@ -52,10 +53,22 @@ pub fn inspect_package(path: &Path) -> BackendResult<PackageInspection> {
         ));
     };
 
-    let mut packs = parse_manifests(candidates, &mut issues);
+    let world = if input_kind == PackageInputKind::McWorld && safety == PackageSafety::Safe {
+        world::inspect_world_archive(path, &mut issues)?
+    } else {
+        None
+    };
+
+    let mut packs = if input_kind == PackageInputKind::McWorld {
+        Vec::new()
+    } else {
+        parse_manifests(candidates, &mut issues)
+    };
     packs.sort_by(|left, right| left.manifest_path.cmp(&right.manifest_path));
-    validate_bundle(input_kind, &packs, &mut issues);
-    validate_unique_uuids(&packs, &mut issues);
+    if input_kind != PackageInputKind::McWorld {
+        validate_bundle(input_kind, &packs, &mut issues);
+        validate_unique_uuids(&packs, &mut issues);
+    }
     let relationships = detect_relationships(&packs);
 
     let status = if safety == PackageSafety::Rejected {
@@ -71,6 +84,7 @@ pub fn inspect_package(path: &Path) -> BackendResult<PackageInspection> {
         input_kind,
         status,
         safety,
+        world,
         packs,
         relationships,
         issues,
@@ -87,9 +101,10 @@ fn archive_kind(path: &Path) -> BackendResult<PackageInputKind> {
     {
         Some("mcpack") => Ok(PackageInputKind::McPack),
         Some("mcaddon") => Ok(PackageInputKind::McAddon),
+        Some("mcworld") => Ok(PackageInputKind::McWorld),
         _ => Err(BackendError::new(
             "package_extension_unsupported",
-            "Package inspector currently accepts folders, .mcpack, and .mcaddon inputs only.",
+            "Package inspector currently accepts folders, .mcpack, .mcaddon, and .mcworld inputs only.",
         )),
     }
 }

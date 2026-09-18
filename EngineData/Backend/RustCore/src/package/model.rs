@@ -7,6 +7,7 @@ pub enum PackageInputKind {
     Folder,
     McPack,
     McAddon,
+    McWorld,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -133,11 +134,21 @@ pub struct ArchiveSummary {
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+pub struct WorldSummary {
+    pub world_root: String,
+    pub name: String,
+    pub has_level_dat: bool,
+    pub has_level_name: bool,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct PackageInspection {
     pub source_path: PathBuf,
     pub input_kind: PackageInputKind,
     pub status: PackageInspectionStatus,
     pub safety: PackageSafety,
+    pub world: Option<WorldSummary>,
     pub packs: Vec<PackManifestSummary>,
     pub relationships: Vec<PackageRelationship>,
     pub issues: Vec<PackageIssue>,

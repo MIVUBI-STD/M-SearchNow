@@ -40,6 +40,7 @@
     if (!inspection) return "";
     if (inspection.inputKind === "mcPack") return ".mcpack";
     if (inspection.inputKind === "mcAddon") return ".mcaddon";
+    if (inspection.inputKind === "mcWorld") return ".mcworld";
     return "Folder";
   }
 
@@ -71,6 +72,7 @@
 
   function canAutoImport(): boolean {
     if (!inspection || inspection.status !== "ready" || conflictingItems().length > 0) return false;
+    if (inspection.inputKind === "mcWorld") return inspection.world !== null;
     return inspection.packs.every((pack) =>
       pack.kind === "behaviorPack" || pack.kind === "resourcePack" || pack.kind === "skinPack",
     );
@@ -108,10 +110,17 @@
         </div>
 
         <div class="catalog-modal__facts">
-          <div><span>Packs</span><strong>{inspection.packs.length}</strong></div>
+          <div><span>{inspection.inputKind === "mcWorld" ? "World" : "Packs"}</span><strong>{inspection.inputKind === "mcWorld" ? (inspection.world ? "1" : "0") : inspection.packs.length}</strong></div>
           <div><span>Issues</span><strong>{inspection.issues.length}</strong></div>
           {#if inspection.archive}<div><span>Files</span><strong>{inspection.archive.files}</strong></div>{/if}
         </div>
+
+        {#if inspection.world}
+          <div class="catalog-modal__issue">
+            <strong>Detected world</strong>
+            <span>{inspection.world.name}</span>
+          </div>
+        {/if}
 
         {#if inspection.packs.length}
           <div class="catalog-modal__issue">

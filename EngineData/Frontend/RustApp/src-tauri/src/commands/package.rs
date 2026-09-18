@@ -14,7 +14,7 @@ pub async fn choose_and_inspect_package<R: Runtime>(
     let selected = app
         .dialog()
         .file()
-        .add_filter("Minecraft package", &["mcpack", "mcaddon"])
+        .add_filter("Minecraft package", &["mcpack", "mcaddon", "mcworld"])
         .blocking_pick_file();
     let Some(selected) = selected else {
         return Ok(None);
