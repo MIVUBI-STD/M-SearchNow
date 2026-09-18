@@ -14,6 +14,7 @@
     onOpenFolder,
     onExport,
     onRemove,
+    onSelectRelated,
     actionBusy = false,
   }: {
     item: LocalContentItem | null;
@@ -24,6 +25,7 @@
     onOpenFolder: () => void;
     onExport: () => void;
     onRemove: () => void;
+    onSelectRelated: (item: LocalContentItem) => void;
     actionBusy?: boolean;
   } = $props();
 
@@ -44,12 +46,16 @@
     return 0;
   }
 
-  function dependencyLabel(uuid: string, requiredVersion: number[]): string {
-    const match = libraryItems.find(
+  function dependencyItem(uuid: string): LocalContentItem | null {
+    return libraryItems.find(
       (candidate) =>
         candidate.rootId === item?.rootId &&
         candidate.manifestUuid?.toLowerCase() === uuid.toLowerCase(),
-    );
+    ) ?? null;
+  }
+
+  function dependencyLabel(uuid: string, requiredVersion: number[]): string {
+    const match = dependencyItem(uuid);
     if (!match) return "Missing";
     const installed = match.version.length ? `v${match.version.join(".")}` : "version unknown";
     if (
@@ -113,22 +119,47 @@
         {#if item.dependencies.length}
           <div class="catalog-modal__issue">
             <strong>Dependencies</strong>
-            <span>
-              {item.dependencies.map((dependency) =>
-                `${dependency.uuid}${dependency.version.length ? ` · requires v${dependency.version.join(".")}` : ""} · ${dependencyLabel(dependency.uuid, dependency.version)}`
-              ).join(" · ")}
-            </span>
+            <div class="catalog-modal__footer">
+              {#each item.dependencies as dependency}
+                {@const installed = dependencyItem(dependency.uuid)}
+                {#if installed}
+                  <button
+                    class="button button--ghost"
+                    type="button"
+                    onclick={() => onSelectRelated(installed)}
+                    disabled={actionBusy}
+                  >
+                    {installed.title}
+                    {dependency.version.length ? ` · requires v${dependency.version.join(".")}` : ""}
+                    · {dependencyLabel(dependency.uuid, dependency.version)}
+                  </button>
+                {:else}
+                  <span>
+                    {dependency.uuid}
+                    {dependency.version.length ? ` · requires v${dependency.version.join(".")}` : ""}
+                    · Missing
+                  </span>
+                {/if}
+              {/each}
+            </div>
           </div>
         {/if}
 
         {#if duplicates.length}
           <div class="catalog-modal__issue">
             <strong>Duplicate manifest UUID</strong>
-            <span>
-              {duplicates.map((duplicate) =>
-                `${duplicate.title}${duplicate.version.length ? ` · v${duplicate.version.join(".")}` : ""}`
-              ).join(" · ")}
-            </span>
+            <div class="catalog-modal__footer">
+              {#each duplicates as duplicate}
+                <button
+                  class="button button--ghost"
+                  type="button"
+                  onclick={() => onSelectRelated(duplicate)}
+                  disabled={actionBusy}
+                >
+                  {duplicate.title}{duplicate.version.length ? ` · v${duplicate.version.join(".")}` : ""}
+                </button>
+              {/each}
+            </div>
           </div>
         {/if}
 

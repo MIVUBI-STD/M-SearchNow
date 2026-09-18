@@ -551,6 +551,7 @@
   onOpenFolder={openSelectedFolder}
   onExport={exportSelectedContent}
   onRemove={removeSelectedContent}
+  onSelectRelated={(item) => (selectedItem = item)}
   {actionBusy}
 />
 
