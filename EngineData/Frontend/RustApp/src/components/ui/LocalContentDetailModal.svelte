@@ -7,6 +7,7 @@
 
   let {
     item,
+    duplicates,
     open,
     onClose,
     onOpenFolder,
@@ -15,6 +16,7 @@
     actionBusy = false,
   }: {
     item: LocalContentItem | null;
+    duplicates: LocalContentItem[];
     open: boolean;
     onClose: () => void;
     onOpenFolder: () => void;
@@ -74,6 +76,17 @@
           <div class="catalog-modal__issue">
             <strong>Needs review</strong>
             <span>{item.issue}</span>
+          </div>
+        {/if}
+
+        {#if duplicates.length}
+          <div class="catalog-modal__issue">
+            <strong>Duplicate manifest UUID</strong>
+            <span>
+              {duplicates.map((duplicate) =>
+                `${duplicate.title}${duplicate.version.length ? ` · v${duplicate.version.join(".")}` : ""}`
+              ).join(" · ")}
+            </span>
           </div>
         {/if}
 

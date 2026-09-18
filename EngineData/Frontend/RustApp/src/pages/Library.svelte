@@ -11,7 +11,7 @@
   import PageState from "../components/ui/PageState.svelte";
   import ResultsBar from "../components/ui/ResultsBar.svelte";
 
-  type LibraryFilter = "all" | LocalContentType | "issues";
+  type LibraryFilter = "all" | LocalContentType | "issues" | "duplicates";
   type LibrarySort = "nameAsc" | "nameDesc" | "type" | "status";
 
   let { runtimeReady, active }: { runtimeReady: boolean; active: boolean } = $props();
@@ -29,6 +29,18 @@
   let filter = $state<LibraryFilter>("all");
   let sort = $state<LibrarySort>("nameAsc");
 
+  let duplicateIds = $derived(findDuplicateIds(snapshot?.library.items ?? []));
+  let selectedDuplicates = $derived(
+    selectedItem
+      ? (snapshot?.library.items ?? []).filter(
+          (item) =>
+            item.id !== selectedItem?.id &&
+            item.manifestUuid !== null &&
+            selectedItem?.manifestUuid !== null &&
+            item.manifestUuid.toLowerCase() === selectedItem.manifestUuid.toLowerCase(),
+        )
+      : [],
+  );
   let filteredItems = $derived(
     (snapshot?.library.items ?? [])
       .filter((item) => matchesCurrentFilter(item))
@@ -42,9 +54,27 @@
       : "—",
   );
 
+  function findDuplicateIds(items: LocalContentItem[]): Set<string> {
+    const byUuid = new Map<string, LocalContentItem[]>();
+    for (const item of items) {
+      if (!item.manifestUuid) continue;
+      const key = item.manifestUuid.toLowerCase();
+      const group = byUuid.get(key) ?? [];
+      group.push(item);
+      byUuid.set(key, group);
+    }
+    const ids = new Set<string>();
+    for (const group of byUuid.values()) {
+      if (group.length < 2) continue;
+      for (const item of group) ids.add(item.id);
+    }
+    return ids;
+  }
+
   function matchesCurrentFilter(item: LocalContentItem): boolean {
     if (filter === "issues" && item.status !== "invalidMetadata") return false;
-    if (filter !== "all" && filter !== "issues" && item.contentType !== filter) return false;
+    if (filter === "duplicates" && !duplicateIds.has(item.id)) return false;
+    if (filter !== "all" && filter !== "issues" && filter !== "duplicates" && item.contentType !== filter) return false;
     const needle = query.trim().toLowerCase();
     if (!needle) return true;
     return `${item.title} ${item.description ?? ""}`.toLowerCase().includes(needle);
@@ -259,6 +289,7 @@
         <option value="behaviorPack">Behavior packs</option>
         <option value="resourcePack">Resource packs</option>
         <option value="skinPack">Skin packs</option>
+        <option value="duplicates">Duplicate UUIDs</option>
         <option value="issues">Needs review</option>
       </select>
       <select class="select-field" bind:value={sort} aria-label="Sort library">
@@ -308,6 +339,7 @@
             <div class="content-card__meta">
               <span>{localContentTypeLabel(item.contentType)}</span>
               {#if item.isDevelopment}<span class="chip">Development</span>{/if}
+              {#if duplicateIds.has(item.id)}<span class="chip">Duplicate UUID</span>{/if}
             </div>
             <h2 title={item.title}>{item.title}</h2>
             <div class="content-card__footer">
@@ -333,6 +365,7 @@
 
 <LocalContentDetailModal
   item={selectedItem}
+  duplicates={selectedDuplicates}
   open={selectedItem !== null}
   onClose={closeDetails}
   onOpenFolder={openSelectedFolder}
