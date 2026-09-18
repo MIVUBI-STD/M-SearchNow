@@ -85,6 +85,7 @@ fn request(transport: &str, resource_id: String, name: &str, bytes: usize) -> Do
         display_name: name.to_string(),
         destination_file_name: format!("{name}.mcpack"),
         expected_bytes: Some(bytes as u64),
+        expected_sha256: None,
     }
 }
 
