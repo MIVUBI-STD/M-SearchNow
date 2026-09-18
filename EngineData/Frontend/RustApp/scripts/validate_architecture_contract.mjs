@@ -20,7 +20,6 @@ const required = [
   "src-tauri/src/commands/settings.rs",
   "src-tauri/src/commands/minecraft.rs",
   "src-tauri/src/commands/library.rs",
-  "src-tauri/src/commands/package.rs",
   "src-tauri/src/commands/catalog.rs",
   "src-tauri/src/commands/download.rs",
 ];
@@ -91,7 +90,6 @@ const commandPaths = [
   "settings.rs",
   "minecraft.rs",
   "library.rs",
-  "package.rs",
   "catalog.rs",
   "download.rs",
 ];

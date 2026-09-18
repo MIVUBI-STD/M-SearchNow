@@ -61,11 +61,11 @@ Use only to answer **who owns what**. Exact procedures remain in the named owner
 | one Tauri backend runtime construction/management | `EngineData/Frontend/RustApp/src-tauri/src/app_bootstrap.rs` |
 | Tauri standard build-script entrypoint | `EngineData/Frontend/RustApp/src-tauri/build.rs` |
 | Tauri IPC registration | `EngineData/Frontend/RustApp/src-tauri/src/commands/registry.rs` |
-| thin Tauri runtime/settings/Minecraft/library/package/download adaptation | `EngineData/Frontend/RustApp/src-tauri/src/commands/` |
+| thin Tauri runtime/settings/Minecraft/library/catalog/download adaptation | `EngineData/Frontend/RustApp/src-tauri/src/commands/` |
 | deferred non-destructive Windows smoke helper | `tools/windows_smoke_readiness.ps1` |
 | frontend raw invoke boundary | `EngineData/Frontend/RustApp/src/app/bridge/runtimeApi.ts` |
 
-Tauri commands must remain adapters over `State<SearchNowBackendRuntime>`. Queue lifecycle, network policy, catalog validation, provider composition/resolution/session state, diagnostics, persistence, filesystem, package, and Minecraft behavior belong in RustCore rather than IPC wrappers or Svelte pages.
+Tauri commands must remain adapters over `State<SearchNowBackendRuntime>`. Queue lifecycle, network policy, catalog validation, provider composition/resolution/session state, diagnostics, persistence, filesystem, package inspection, and Minecraft behavior belong in RustCore rather than IPC wrappers or Svelte pages.
 
 `app_runtime.rs` owns application composition, **not the underlying domain logic**. `diagnostics.rs` owns only safe bounded observability. `provider_adapter/runtime.rs` owns integrated-provider composition, `provider_session/runtime.rs` owns session coordination, `catalog/provider.rs` owns catalog coordination, `resolver.rs` owns runtime resource resolution, and `http.rs` owns HTTP mechanics. Tauri must not reconstruct those owners independently.
 

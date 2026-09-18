@@ -102,7 +102,7 @@ if session_runtime.exists():
             errors.append(f"{session_runtime.relative_to(ROOT)}: runtime session material must remain non-serializable/non-debug: {forbidden!r}")
 
 commands_root = ROOT / "EngineData/Frontend/RustApp/src-tauri/src/commands"
-for name in ["runtime.rs", "settings.rs", "minecraft.rs", "library.rs", "package.rs", "download.rs"]:
+for name in ["runtime.rs", "settings.rs", "minecraft.rs", "library.rs", "download.rs"]:
     path = commands_root / name
     if not path.exists():
         continue
