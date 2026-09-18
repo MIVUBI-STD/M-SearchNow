@@ -80,15 +80,20 @@ pub(crate) fn import_archive(
     let result = (|| {
         extract_plans(source, &staging_root, &plans)?;
         let mut imported = Vec::new();
+        let mut committed = Vec::new();
         for (index, (pack, destination)) in plans.iter().enumerate() {
             let staged = staging_root.join(index.to_string());
-            fs::rename(&staged, destination).map_err(|error| {
-                BackendError::from_io(
+            if let Err(error) = fs::rename(&staged, destination) {
+                for committed_path in committed.iter().rev() {
+                    let _ = fs::remove_dir_all(committed_path);
+                }
+                return Err(BackendError::from_io(
                     "package_import_commit_failed",
                     "SearchNow could not move an inspected pack into Minecraft storage.",
                     error,
-                )
-            })?;
+                ));
+            }
+            committed.push(destination.clone());
             imported.push(ImportedPack {
                 name: pack.name.clone(),
                 kind: pack.kind,

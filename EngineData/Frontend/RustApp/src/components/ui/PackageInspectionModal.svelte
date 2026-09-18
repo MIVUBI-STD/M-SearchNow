@@ -52,11 +52,18 @@
     }
   }
 
+  function canAutoImport(): boolean {
+    if (!inspection || inspection.status !== "ready") return false;
+    return inspection.packs.every((pack) =>
+      pack.kind === "behaviorPack" || pack.kind === "resourcePack" || pack.kind === "skinPack",
+    );
+  }
+
   function statusLabel(): string {
     if (!inspection) return "";
-    if (inspection.status === "ready") return "Ready to import";
     if (inspection.status === "rejected") return "Rejected";
-    return "Needs review";
+    if (inspection.status === "issues") return "Needs review";
+    return canAutoImport() ? "Ready to import" : "Inspection passed";
   }
 </script>
 
@@ -127,7 +134,7 @@
           <button
             class="button button--primary"
             type="button"
-            disabled={inspection.status !== "ready" || roots.length === 0 || importBusy}
+            disabled={!canAutoImport() || roots.length === 0 || importBusy}
             onclick={() => onImport(selectedRootId)}
           >
             {importBusy ? "Importing…" : "Import package"}
