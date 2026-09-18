@@ -25,16 +25,32 @@ pub async fn choose_and_inspect_package<R: Runtime>(
             "The selected package path could not be used.",
         )
     })?;
-    state
-        .inspect_package(&path)
+    let runtime = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || runtime.inspect_package(&path))
+        .await
+        .map_err(|error| {
+            CommandError::new(
+                "package_inspection_task_failed",
+                format!("Package inspection task failed: {error}"),
+            )
+        })?
         .map(Some)
         .map_err(CommandError::from)
 }
 
 #[tauri::command]
-pub fn import_package(
+pub async fn import_package(
     state: State<'_, SearchNowBackendRuntime>,
     request: PackageImportRequest,
 ) -> Result<PackageImportResult, CommandError> {
-    state.import_package(request).map_err(CommandError::from)
+    let runtime = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || runtime.import_package(request))
+        .await
+        .map_err(|error| {
+            CommandError::new(
+                "package_import_task_failed",
+                format!("Package import task failed: {error}"),
+            )
+        })?
+        .map_err(CommandError::from)
 }
