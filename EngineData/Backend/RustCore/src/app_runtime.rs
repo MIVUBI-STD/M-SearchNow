@@ -7,8 +7,7 @@ use crate::{
     download::{
         default_download_paths, DownloadExecutionRuntime, DownloadJob, DownloadJobState,
         DownloadManagerSnapshot, DownloadPolicy, DownloadRequest, DownloadStore,
-        DownloadTransportRegistry, HttpTransport,
-        HttpTransportPolicy, ProviderResolvedTransport,
+        DownloadTransportRegistry, HttpTransport, HttpTransportPolicy, ProviderResolvedTransport,
     },
     error::{BackendError, BackendResult},
     minecraft::{discover_minecraft_storage, MinecraftDiscoverySnapshot},
@@ -308,7 +307,9 @@ impl SearchNowBackendRuntime {
             .jobs
             .iter()
             .find(|job| job.id == job_id)
-            .ok_or_else(|| BackendError::new("download_job_not_found", "Download job was not found."))?;
+            .ok_or_else(|| {
+                BackendError::new("download_job_not_found", "Download job was not found.")
+            })?;
         if job.state != DownloadJobState::Completed {
             return Err(BackendError::new(
                 "download_directory_not_ready",
