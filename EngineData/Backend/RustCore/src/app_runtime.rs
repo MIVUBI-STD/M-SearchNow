@@ -302,6 +302,13 @@ impl SearchNowBackendRuntime {
         self.downloads.snapshot()
     }
 
+    pub fn set_download_change_notifier<F>(&self, notifier: F)
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
+        self.downloads.set_change_notifier(Arc::new(notifier));
+    }
+
     pub fn queue_catalog_download(
         &self,
         request: QueueCatalogDownloadRequest,

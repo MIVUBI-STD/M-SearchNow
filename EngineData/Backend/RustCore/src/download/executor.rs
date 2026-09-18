@@ -10,11 +10,14 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
     thread,
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 const TRANSFER_BUFFER_BYTES: usize = 256 * 1024;
 const PROGRESS_CHECKPOINT_BYTES: u64 = 1024 * 1024;
+const PROGRESS_NOTIFICATION_INTERVAL: Duration = Duration::from_millis(200);
+
+type DownloadChangeNotifier = Arc<dyn Fn() + Send + Sync>;
 
 #[derive(Clone)]
 pub struct DownloadExecutionRuntime {
@@ -28,6 +31,8 @@ struct DownloadExecutionInner {
     destination_root: PathBuf,
     transports: DownloadTransportRegistry,
     scheduler_error: Mutex<Option<DownloadFailure>>,
+    change_notifier: Mutex<Option<DownloadChangeNotifier>>,
+    last_progress_notice: Mutex<Option<Instant>>,
 }
 
 impl DownloadExecutionRuntime {
@@ -53,10 +58,21 @@ impl DownloadExecutionRuntime {
                 destination_root,
                 transports,
                 scheduler_error: Mutex::new(None),
+                change_notifier: Mutex::new(None),
+                last_progress_notice: Mutex::new(None),
             }),
         };
         runtime.pump()?;
         Ok(runtime)
+    }
+
+    pub(crate) fn set_change_notifier(&self, notifier: DownloadChangeNotifier) {
+        let mut slot = self
+            .inner
+            .change_notifier
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        *slot = Some(notifier);
     }
 
     pub fn snapshot(&self) -> BackendResult<DownloadManagerSnapshot> {
@@ -128,6 +144,7 @@ impl DownloadExecutionRuntime {
         };
         let count = claimed.len();
         self.clear_scheduler_error();
+        self.notify_change();
 
         for job in claimed {
             let runtime = self.clone();
@@ -158,6 +175,8 @@ impl DownloadExecutionRuntime {
             message: "Download scheduler could not continue automatically.".into(),
             retryable: true,
         });
+        drop(slot);
+        self.notify_change();
     }
 
     fn clear_scheduler_error(&self) {
@@ -328,10 +347,15 @@ impl DownloadExecutionRuntime {
             let output = candidate.report_progress(job_id, downloaded_bytes, total_bytes)?;
             self.inner.store.save(&candidate.persisted_state())?;
             *manager = candidate;
+            drop(manager);
+            self.notify_progress_change();
             return Ok(output);
         }
 
-        manager.report_progress(job_id, downloaded_bytes, total_bytes)
+        let output = manager.report_progress(job_id, downloaded_bytes, total_bytes)?;
+        drop(manager);
+        self.notify_progress_change();
+        Ok(output)
     }
 
     fn acknowledge_cancel_if_requested(
@@ -401,6 +425,40 @@ impl DownloadExecutionRuntime {
         find_job(&manager.snapshot(), job_id)
     }
 
+    fn notify_change(&self) {
+        let notifier = self
+            .inner
+            .change_notifier
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        if let Some(notifier) = notifier {
+            notifier();
+        }
+    }
+
+    fn notify_progress_change(&self) {
+        let now = Instant::now();
+        let should_notify = {
+            let mut last = self
+                .inner
+                .last_progress_notice
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            if last.is_some_and(|previous| {
+                now.duration_since(previous) < PROGRESS_NOTIFICATION_INTERVAL
+            }) {
+                false
+            } else {
+                *last = Some(now);
+                true
+            }
+        };
+        if should_notify {
+            self.notify_change();
+        }
+    }
+
     fn mutate_persist<T>(
         &self,
         action: impl FnOnce(&mut DownloadManager) -> BackendResult<T>,
@@ -410,6 +468,8 @@ impl DownloadExecutionRuntime {
         let output = action(&mut candidate)?;
         self.inner.store.save(&candidate.persisted_state())?;
         *manager = candidate;
+        drop(manager);
+        self.notify_change();
         Ok(output)
     }
 

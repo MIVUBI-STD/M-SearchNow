@@ -24,7 +24,6 @@
   let jobs = $derived((snapshot?.jobs ?? []).slice().sort((a, b) => b.updatedAtMs - a.updatedAtMs));
   let visibleJobs = $derived(jobs.filter((job) => matchesFilter(job)));
   let completedJobs = $derived(jobs.filter((job) => job.state === "completed").length);
-  let hasActivity = $derived((snapshot?.activeJobs ?? 0) > 0 || (snapshot?.queuedJobs ?? 0) > 0);
   let controlsChanged = $derived(query.trim().length > 0 || filter !== "all");
 
   function matchesFilter(job: DownloadJob): boolean {
@@ -114,17 +113,48 @@
   $effect(() => {
     if (!active || !runtimeReady) return;
     let disposed = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let unlisten: (() => void) | undefined;
+    let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+    let eventRefreshRunning = false;
+    let eventRefreshQueued = false;
 
-    const poll = async (): Promise<void> => {
-      await refresh(false);
-      if (!disposed && active) timer = setTimeout(poll, hasActivity ? 1200 : 5000);
+    const refreshFromEvent = async (): Promise<void> => {
+      eventRefreshQueued = true;
+      if (eventRefreshRunning) return;
+      eventRefreshRunning = true;
+      while (eventRefreshQueued && !disposed) {
+        eventRefreshQueued = false;
+        await refresh(false);
+      }
+      eventRefreshRunning = false;
     };
-    void poll();
+
+    const startFallbackPolling = (): void => {
+      const poll = async (): Promise<void> => {
+        await refresh(false);
+        if (!disposed && active) fallbackTimer = setTimeout(poll, 2000);
+      };
+      fallbackTimer = setTimeout(poll, 2000);
+    };
+
+    void refresh(false);
+    void runtimeProductFacade
+      .subscribeDownloadChanges(() => {
+        void refreshFromEvent();
+      })
+      .then((result) => {
+        if (disposed) {
+          if (result.ok) result.data();
+          return;
+        }
+        if (result.ok) unlisten = result.data;
+        else startFallbackPolling();
+      });
 
     return () => {
       disposed = true;
-      if (timer) clearTimeout(timer);
+      unlisten?.();
+      if (fallbackTimer) clearTimeout(fallbackTimer);
     };
   });
 </script>

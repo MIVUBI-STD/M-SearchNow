@@ -1,3 +1,4 @@
+import { listen } from "@tauri-apps/api/event";
 import type {
   AppSettings,
   BackendDiagnosticsSnapshot,
@@ -17,6 +18,8 @@ import type {
 } from "../shared/types";
 import { toProductError } from "../shared/productErrors";
 import { runtimeApi } from "./runtimeApi";
+
+const DOWNLOADS_CHANGED_EVENT = "searchnow://downloads-changed";
 
 async function productCall<T>(operation: () => Promise<T>, fallbackMessage: string): Promise<ProductResult<T>> {
   try {
@@ -176,6 +179,13 @@ export const runtimeProductFacade = {
     return productCall(
       () => runtimeApi.getDownloadSnapshot(),
       "SearchNow could not read your downloads.",
+    );
+  },
+
+  subscribeDownloadChanges(onChange: () => void): Promise<ProductResult<() => void>> {
+    return productCall(
+      () => listen(DOWNLOADS_CHANGED_EVENT, () => onChange()),
+      "SearchNow could not subscribe to download updates.",
     );
   },
 
