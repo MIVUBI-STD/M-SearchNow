@@ -457,3 +457,73 @@ fn export_local_content_creates_reimportable_archive() {
     assert_eq!(inspection.packs.len(), 1);
     assert_eq!(inspection.packs[0].name, "Export Me");
 }
+
+#[test]
+fn replace_package_updates_single_installed_pack_in_place() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let root = temp.path().join("minecraft-root");
+    let installed = root.join("resource_packs/existing");
+    fs::create_dir_all(&installed).expect("installed");
+    let uuid = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+    fs::write(
+        installed.join("manifest.json"),
+        format!(
+            r#"{{"format_version":2,"header":{{"name":"Example","uuid":"{uuid}","version":[1,0,0]}},"modules":[{{"type":"resources","uuid":"dddddddd-dddd-4ddd-8ddd-dddddddddddd","version":[1,0,0]}}]}}"#
+        ),
+    )
+    .expect("old manifest");
+    fs::write(installed.join("old.txt"), "old").expect("old file");
+
+    let source = temp.path().join("update.mcpack");
+    let file = fs::File::create(&source).expect("archive");
+    let mut writer = ZipWriter::new(file);
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+    writer
+        .start_file("manifest.json", options)
+        .expect("manifest entry");
+    writer
+        .write_all(
+            format!(
+                r#"{{"format_version":2,"header":{{"name":"Example","uuid":"{uuid}","version":[2,0,0]}},"modules":[{{"type":"resources","uuid":"eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee","version":[2,0,0]}}]}}"#
+            )
+            .as_bytes(),
+        )
+        .expect("manifest bytes");
+    writer.start_file("new.txt", options).expect("new entry");
+    writer.write_all(b"new").expect("new bytes");
+    writer.finish().expect("finish archive");
+
+    let runtime = SearchNowBackendRuntime::compose(
+        SearchNowBackendPaths::from_roots(temp.path().join("config"), temp.path().join("data")),
+        PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
+        Vec::new(),
+        HttpTransport::new_test_http(test_http_policy()).expect("test HTTP"),
+    )
+    .expect("runtime");
+    let mut settings = runtime.load_settings().expect("settings");
+    settings.minecraft.root_override = Some(root);
+    runtime.save_settings(&settings).expect("save settings");
+    let root_id = runtime
+        .discover_minecraft()
+        .expect("discovery")
+        .roots[0]
+        .id
+        .clone();
+
+    let result = runtime
+        .replace_package(crate::package::PackageReplaceRequest {
+            source_path: source,
+            root_id,
+        })
+        .expect("replace");
+
+    assert_eq!(result.imported.len(), 1);
+    assert_eq!(result.imported[0].destination_path, installed);
+    assert!(!installed.join("old.txt").exists());
+    assert_eq!(
+        fs::read_to_string(installed.join("new.txt")).expect("new file"),
+        "new"
+    );
+    let snapshot = runtime.scan_local_library().expect("library");
+    assert_eq!(snapshot.library.items[0].version, vec![2, 0, 0]);
+}

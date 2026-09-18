@@ -373,3 +373,115 @@ fn next_available_destination(
 fn is_symlink(mode: Option<u32>) -> bool {
     mode.is_some_and(|mode| mode & 0o170000 == 0o120000)
 }
+
+pub(crate) fn replace_single_pack(
+    source: &Path,
+    minecraft_root: &Path,
+    root_id: &str,
+    existing_path: &Path,
+) -> BackendResult<PackageImportResult> {
+    let inspection = inspect_package(source)?;
+    if inspection.safety != PackageSafety::Safe
+        || inspection.status != PackageInspectionStatus::Ready
+        || inspection.input_kind != PackageInputKind::McPack
+        || inspection.packs.len() != 1
+    {
+        return Err(BackendError::new(
+            "package_replace_not_supported",
+            "Automatic update supports one inspected .mcpack at a time.",
+        ));
+    }
+    let pack = inspection.packs.first().expect("single pack inspection");
+    container_for(pack.kind).ok_or_else(|| {
+        BackendError::new(
+            "package_replace_kind_unsupported",
+            "This pack type is not supported by automatic update.",
+        )
+    })?;
+
+    let metadata = fs::symlink_metadata(existing_path).map_err(|error| {
+        BackendError::from_io(
+            "package_replace_existing_unavailable",
+            "The installed pack could not be verified before update.",
+            error,
+        )
+    })?;
+    if metadata.file_type().is_symlink() || !metadata.is_dir() {
+        return Err(BackendError::new(
+            "package_replace_existing_invalid",
+            "The installed pack path is not a safe directory.",
+        ));
+    }
+
+    let staging_root = minecraft_root.join(format!(
+        ".searchnow-replace-{}",
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis()
+    ));
+    fs::create_dir(&staging_root).map_err(|error| {
+        BackendError::from_io(
+            "package_replace_staging_failed",
+            "SearchNow could not create a temporary update workspace.",
+            error,
+        )
+    })?;
+
+    let result = (|| {
+        extract_roots(
+            source,
+            &staging_root,
+            std::slice::from_ref(&pack.pack_root),
+        )?;
+        let staged = staging_root.join("0");
+        if !staged.join("manifest.json").is_file() {
+            return Err(BackendError::new(
+                "package_replace_manifest_missing",
+                "The inspected update no longer contains manifest.json.",
+            ));
+        }
+
+        let previous = staging_root.join("previous");
+        fs::rename(existing_path, &previous).map_err(|error| {
+            BackendError::from_io(
+                "package_replace_backup_failed",
+                "SearchNow could not preserve the installed pack before update.",
+                error,
+            )
+        })?;
+
+        if let Err(error) = fs::rename(&staged, existing_path) {
+            let _ = fs::rename(&previous, existing_path);
+            return Err(BackendError::from_io(
+                "package_replace_commit_failed",
+                "SearchNow could not commit the updated pack. The previous pack was restored when possible.",
+                error,
+            ));
+        }
+
+        fs::remove_dir_all(&previous).map_err(|error| {
+            BackendError::from_io(
+                "package_replace_cleanup_failed",
+                "The updated pack was installed, but SearchNow could not clean its temporary backup.",
+                error,
+            )
+        })?;
+
+        Ok(PackageImportResult {
+            source_path: source.to_path_buf(),
+            root_id: root_id.to_string(),
+            imported: vec![ImportedPack {
+                name: pack.name.clone(),
+                kind: pack.kind,
+                destination_path: existing_path.to_path_buf(),
+            }],
+            world: None,
+        })
+    })();
+
+    if result.is_ok() {
+        let _ = fs::remove_dir_all(&staging_root);
+    }
+    result
+}

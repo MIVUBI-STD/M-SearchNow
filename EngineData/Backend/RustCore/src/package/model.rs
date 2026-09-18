@@ -185,3 +185,10 @@ pub struct PackageImportResult {
     pub imported: Vec<ImportedPack>,
     pub world: Option<ImportedWorld>,
 }
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PackageReplaceRequest {
+    pub source_path: PathBuf,
+    pub root_id: String,
+}

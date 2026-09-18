@@ -14,8 +14,8 @@ use crate::{
     library_export::export_directory,
     minecraft::{discover_minecraft_storage, MinecraftDiscoverySnapshot},
     package::{
-        import_archive, inspect_package, PackageImportRequest, PackageImportResult,
-        PackageInspection,
+        import_archive, inspect_package, replace_single_pack, PackageImportRequest,
+        PackageImportResult, PackageInspection, PackageReplaceRequest,
     },
     platform::PlatformContext,
     provider_adapter::{IntegratedProvider, ProviderAdapterRuntime, ProviderRuntimeStatus},
@@ -398,6 +398,106 @@ impl SearchNowBackendRuntime {
             ));
         }
         export_directory(&item.path, destination)
+    }
+
+    pub fn replace_package(
+        &self,
+        request: PackageReplaceRequest,
+    ) -> BackendResult<PackageImportResult> {
+        let settings = self.settings.load()?;
+        let discovery = discover_minecraft_storage(&settings.minecraft, &self.platform);
+        let root = discovery
+            .roots
+            .iter()
+            .find(|root| root.id == request.root_id)
+            .ok_or_else(|| {
+                BackendError::new(
+                    "package_import_root_unavailable",
+                    "The selected Minecraft storage root is no longer available.",
+                )
+            })?;
+
+        let inspection = inspect_package(&request.source_path)?;
+        if inspection.input_kind != crate::package::PackageInputKind::McPack
+            || inspection.packs.len() != 1
+            || inspection.status != crate::package::PackageInspectionStatus::Ready
+            || inspection.safety != crate::package::PackageSafety::Safe
+        {
+            return Err(BackendError::new(
+                "package_replace_not_supported",
+                "Automatic update supports one inspected .mcpack at a time.",
+            ));
+        }
+        let incoming = inspection.packs.first().expect("single pack inspection");
+        let incoming_uuid = incoming.uuid.as_deref().ok_or_else(|| {
+            BackendError::new(
+                "package_replace_uuid_missing",
+                "This pack cannot be updated automatically because it has no manifest UUID.",
+            )
+        })?;
+        let library = scan_library(
+            std::slice::from_ref(root),
+            settings.minecraft.include_development_content,
+        );
+        let mut conflicts = library.items.iter().filter(|item| {
+            item.manifest_uuid
+                .as_deref()
+                .is_some_and(|uuid| uuid.eq_ignore_ascii_case(incoming_uuid))
+        });
+        let existing = conflicts.next().ok_or_else(|| {
+            BackendError::new(
+                "package_replace_target_missing",
+                "No installed pack with this manifest UUID was found.",
+            )
+        })?;
+        if conflicts.next().is_some() {
+            return Err(BackendError::new(
+                "package_replace_target_ambiguous",
+                "More than one installed pack uses this manifest UUID.",
+            ));
+        }
+        let expected_type = match incoming.kind {
+            crate::package::PackKind::BehaviorPack => LocalContentType::BehaviorPack,
+            crate::package::PackKind::ResourcePack => LocalContentType::ResourcePack,
+            crate::package::PackKind::SkinPack => LocalContentType::SkinPack,
+            _ => {
+                return Err(BackendError::new(
+                    "package_replace_kind_unsupported",
+                    "This pack type is not supported by automatic update.",
+                ))
+            }
+        };
+        if existing.content_type != expected_type {
+            return Err(BackendError::new(
+                "package_replace_type_mismatch",
+                "The installed content type does not match the incoming pack.",
+            ));
+        }
+        let installed_version = existing
+            .version
+            .iter()
+            .map(u32::to_string)
+            .collect::<Vec<_>>()
+            .join(".");
+        if incoming.version.as_deref() == Some(installed_version.as_str()) {
+            return Err(BackendError::new(
+                "package_replace_same_version",
+                "This exact pack version is already installed.",
+            ));
+        }
+        if !existing.path.starts_with(&root.root) || existing.path == root.root {
+            return Err(BackendError::new(
+                "package_replace_path_rejected",
+                "SearchNow refused to update content outside its detected Minecraft storage.",
+            ));
+        }
+
+        replace_single_pack(
+            &request.source_path,
+            &root.root,
+            &root.id,
+            &existing.path,
+        )
     }
 
     pub fn remove_local_content(&self, item_id: &str) -> BackendResult<LocalBackendSnapshot> {
