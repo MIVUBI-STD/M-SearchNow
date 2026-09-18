@@ -95,6 +95,17 @@
   }
 
   $effect(() => {
+    if (snapshot?.ready) return;
+    error = "";
+    saved = false;
+    if (!dirty) {
+      loaded = false;
+      baselineSettings = null;
+      discovery = null;
+    }
+  });
+
+  $effect(() => {
     if (!discovery && snapshot?.backend?.minecraft) discovery = snapshot.backend.minecraft;
   });
 

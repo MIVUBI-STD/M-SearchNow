@@ -19,7 +19,7 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
   download_payload_sync_failed: "The completed file could not be saved safely. Check the drive and try again.",
   download_destination_name_invalid: "The file name is not supported on this device.",
   download_destination_name_exhausted: "Too many files with this name already exist in the selected folder.",
-  download_destination_path_invalid: "The selected save location is not valid.",
+  download_destination_directory_invalid: "The selected save location is not valid.",
   download_destination_create_failed: "The selected folder is unavailable or cannot be written to.",
   download_finalize_incomplete: "The download is not complete yet.",
   download_finalize_stage_failed: "The file could not be prepared in the selected folder. Check free space and permissions.",
@@ -34,8 +34,11 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
   download_state_lock_failed: "Downloads are temporarily unavailable. Try again.",
 
   dialog_path_invalid: "The selected folder could not be used.",
-  directory_open_invalid: "This folder could not be opened.",
+  directory_unavailable: "This folder is no longer available.",
   directory_open_failed: "This folder could not be opened.",
+  library_item_not_found: "This Minecraft content is no longer available.",
+  download_directory_not_ready: "This download folder is available after the download completes.",
+  download_directory_unavailable: "This download no longer has an available save folder.",
   settings_load_failed: "SearchNow could not load your settings.",
   settings_save_failed: "SearchNow could not save your settings.",
 };

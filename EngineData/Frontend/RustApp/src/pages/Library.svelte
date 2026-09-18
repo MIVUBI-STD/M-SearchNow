@@ -94,6 +94,14 @@
   }
 
   $effect(() => {
+    if (runtimeReady) return;
+    loaded = false;
+    error = "";
+    actionBusy = false;
+    selectedItem = null;
+  });
+
+  $effect(() => {
     if (!active || !runtimeReady) return;
     if (!loaded && !loading) void refresh();
   });

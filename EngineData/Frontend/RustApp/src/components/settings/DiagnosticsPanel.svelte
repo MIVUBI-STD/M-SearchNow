@@ -25,6 +25,12 @@
   }
 
   $effect(() => {
+    if (runtimeReady) return;
+    loaded = false;
+    error = "";
+  });
+
+  $effect(() => {
     if (!active || !runtimeReady) return;
     if (!loaded && !loading) void refresh();
   });
