@@ -10,6 +10,7 @@ fn request(name: &str) -> DownloadRequest {
         display_name: name.into(),
         destination_file_name: format!("{name}.mcpack"),
         expected_bytes: Some(10),
+        expected_sha256: None,
     }
 }
 
