@@ -130,6 +130,12 @@ fn composed_provider_resolver_is_used_by_application_download_runtime() {
         std::fs::read(destination.join("runtime.mcpack")).expect("final file"),
         payload
     );
+    assert_eq!(
+        runtime
+            .completed_download_directory(&snapshot.jobs[0].id)
+            .expect("completed directory"),
+        destination
+    );
 }
 
 #[test]

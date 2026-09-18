@@ -170,3 +170,7 @@ REMOTE_GITHUB proves with deterministic fixtures:
 - all prior backend regressions remain passing.
 
 Hosted CI still does **not** prove installed Windows Tauri execution, real AppData/Minecraft behavior, production network/provider behavior, or real provider authentication. Those require TARGET_WINDOWS / NETWORK / PROVIDER evidence.
+
+## Desktop path authority
+
+The desktop open-folder command accepts a completed download job id, not an arbitrary frontend path. `SearchNowBackendRuntime` resolves the user-selected destination from current download state, and the Tauri adapter only verifies the resolved directory still exists before asking the operating system to open it.

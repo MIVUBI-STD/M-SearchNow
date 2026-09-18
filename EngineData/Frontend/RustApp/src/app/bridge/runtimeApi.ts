@@ -46,8 +46,8 @@ export const runtimeApi = {
     return invoke<string | null>("choose_download_directory");
   },
 
-  openDownloadDirectory(directory: string): Promise<void> {
-    return invoke<void>("open_download_directory", { directory });
+  openDownloadDirectory(jobId: string): Promise<void> {
+    return invoke<void>("open_download_directory", { jobId });
   },
 
   getDownloadSnapshot(): Promise<DownloadManagerSnapshot> {

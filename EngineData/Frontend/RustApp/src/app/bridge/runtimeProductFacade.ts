@@ -105,9 +105,9 @@ export const runtimeProductFacade = {
     );
   },
 
-  openDownloadDirectory(directory: string): Promise<ProductResult<void>> {
+  openDownloadDirectory(jobId: string): Promise<ProductResult<void>> {
     return productCall(
-      () => runtimeApi.openDownloadDirectory(directory),
+      () => runtimeApi.openDownloadDirectory(jobId),
       "SearchNow could not open this folder.",
     );
   },

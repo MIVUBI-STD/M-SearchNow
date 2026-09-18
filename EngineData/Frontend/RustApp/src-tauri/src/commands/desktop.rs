@@ -1,6 +1,7 @@
 use super::error::CommandError;
-use std::{path::PathBuf, process::Command};
-use tauri::{AppHandle, Runtime};
+use searchnow_core::app_runtime::SearchNowBackendRuntime;
+use std::process::Command;
+use tauri::{AppHandle, Runtime, State};
 use tauri_plugin_dialog::DialogExt;
 
 #[tauri::command]
@@ -21,8 +22,13 @@ pub async fn choose_download_directory<R: Runtime>(
 }
 
 #[tauri::command]
-pub async fn open_download_directory(directory: String) -> Result<(), CommandError> {
-    let path = PathBuf::from(directory);
+pub fn open_download_directory(
+    state: State<'_, SearchNowBackendRuntime>,
+    job_id: String,
+) -> Result<(), CommandError> {
+    let path = state
+        .completed_download_directory(&job_id)
+        .map_err(CommandError::from)?;
     if !path.is_absolute() || !path.is_dir() {
         return Err(CommandError::new(
             "download_directory_unavailable",

@@ -112,8 +112,15 @@ for (const file of commandPaths) {
 }
 
 const downloadCommand = await readFile(resolve(appRoot, "src-tauri/src/commands/download.rs"), "utf8");
+const desktopCommand = await readFile(resolve(appRoot, "src-tauri/src/commands/desktop.rs"), "utf8");
 if (/\bDownloadRequest\b/.test(downloadCommand)) errors.push("download.rs: raw DownloadRequest/transport selection must not cross the Tauri IPC boundary");
 if (!downloadCommand.includes("QueueCatalogDownloadRequest")) errors.push("download.rs: download IPC must accept provider-neutral catalog download intent");
+if (!desktopCommand.includes("completed_download_directory") || !desktopCommand.includes("job_id: String")) {
+  errors.push("desktop.rs: open-download-directory IPC must resolve a completed download job instead of accepting an arbitrary frontend path");
+}
+if (desktopCommand.includes("PathBuf::from(directory)")) {
+  errors.push("desktop.rs: frontend-provided directory paths must not drive shell folder opening");
+}
 
 const catalogCommand = await readFile(resolve(appRoot, "src-tauri/src/commands/catalog.rs"), "utf8");
 if (!catalogCommand.includes("CatalogRequest") || !catalogCommand.includes("query_catalog")) errors.push("catalog.rs: catalog IPC must remain provider-neutral and delegate to the application runtime");

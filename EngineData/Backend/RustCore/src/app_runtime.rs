@@ -5,11 +5,12 @@ use crate::{
         BackendDiagnosticsSnapshot, DiagnosticComponent, DiagnosticSeverity, DiagnosticsBuffer,
     },
     download::{
-        default_download_paths, DownloadExecutionRuntime, DownloadJob, DownloadManagerSnapshot,
-        DownloadPolicy, DownloadRequest, DownloadStore, DownloadTransportRegistry, HttpTransport,
+        default_download_paths, DownloadExecutionRuntime, DownloadJob, DownloadJobState,
+        DownloadManagerSnapshot, DownloadPolicy, DownloadRequest, DownloadStore,
+        DownloadTransportRegistry, HttpTransport,
         HttpTransportPolicy, ProviderResolvedTransport,
     },
-    error::BackendResult,
+    error::{BackendError, BackendResult},
     minecraft::{discover_minecraft_storage, MinecraftDiscoverySnapshot},
     platform::PlatformContext,
     provider_adapter::{IntegratedProvider, ProviderAdapterRuntime, ProviderRuntimeStatus},
@@ -299,6 +300,27 @@ impl SearchNowBackendRuntime {
             DiagnosticSeverity::Warning,
         );
         result
+    }
+
+    pub fn completed_download_directory(&self, job_id: &str) -> BackendResult<PathBuf> {
+        let snapshot = self.downloads.snapshot()?;
+        let job = snapshot
+            .jobs
+            .iter()
+            .find(|job| job.id == job_id)
+            .ok_or_else(|| BackendError::new("download_job_not_found", "Download job was not found."))?;
+        if job.state != DownloadJobState::Completed {
+            return Err(BackendError::new(
+                "download_directory_not_ready",
+                "The download folder is available only after the download completes.",
+            ));
+        }
+        job.destination_directory.clone().ok_or_else(|| {
+            BackendError::new(
+                "download_directory_unavailable",
+                "This download does not have a user-selected destination folder.",
+            )
+        })
     }
 
     pub fn cancel_download(&self, job_id: &str) -> BackendResult<DownloadJob> {

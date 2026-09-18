@@ -97,7 +97,7 @@
   async function openFolder(job: DownloadJob): Promise<void> {
     if (job.state !== "completed" || !job.destinationDirectory) return;
     actionJobId = job.id;
-    const result = await runtimeProductFacade.openDownloadDirectory(job.destinationDirectory);
+    const result = await runtimeProductFacade.openDownloadDirectory(job.id);
     error = result.ok ? "" : result.error.message;
     actionJobId = null;
   }
