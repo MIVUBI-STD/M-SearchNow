@@ -246,7 +246,7 @@ impl DownloadExecutionRuntime {
 
         let transition = self.mutate_persist(|manager| {
             manager.mark_transferring(job_id)?;
-            manager.report_progress(job_id, 0, stream.total_bytes)
+            manager.report_progress(job_id, resume_offset, stream.total_bytes)
         });
         if let Err(error) = transition {
             if self.acknowledge_cancel_if_requested(job_id, &plan)? {
