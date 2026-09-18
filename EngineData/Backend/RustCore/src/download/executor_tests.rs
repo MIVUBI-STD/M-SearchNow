@@ -503,9 +503,10 @@ fn mismatched_sha256_fails_before_final_file_is_published() {
 
     let job = runtime.queue(request).expect("queue");
     let snapshot = wait_for(&runtime, |snapshot| {
-        snapshot.jobs.iter().any(|candidate| {
-            candidate.id == job.id && candidate.state == DownloadJobState::Failed
-        })
+        snapshot
+            .jobs
+            .iter()
+            .any(|candidate| candidate.id == job.id && candidate.state == DownloadJobState::Failed)
     });
     let failed = snapshot
         .jobs
