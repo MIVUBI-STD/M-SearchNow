@@ -45,10 +45,7 @@ pub async fn export_local_content<R: Runtime>(
     let suggested = state
         .local_content_export_file_name(&item_id)
         .map_err(CommandError::from)?;
-    let extension = if suggested
-        .to_ascii_lowercase()
-        .ends_with(".mcworld")
-    {
+    let extension = if suggested.to_ascii_lowercase().ends_with(".mcworld") {
         "mcworld"
     } else {
         "mcpack"
