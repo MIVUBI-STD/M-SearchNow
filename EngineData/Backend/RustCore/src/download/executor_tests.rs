@@ -520,7 +520,6 @@ fn mismatched_sha256_fails_before_final_file_is_published() {
     assert!(!directory.path().join("files/rejected.mcpack").exists());
 }
 
-
 #[test]
 fn shared_bandwidth_limiter_reserves_one_global_timeline() {
     let mut limiter = SharedBandwidthLimiter::new();
