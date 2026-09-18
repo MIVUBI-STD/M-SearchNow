@@ -17,28 +17,38 @@ use std::{
 const TRANSFER_BUFFER_BYTES: usize = 256 * 1024;
 const PROGRESS_CHECKPOINT_BYTES: u64 = 1024 * 1024;
 const PROGRESS_NOTIFICATION_INTERVAL: Duration = Duration::from_millis(200);
+const MIN_THROTTLED_CHUNK_BYTES: usize = 16 * 1024;
 
 type DownloadChangeNotifier = Arc<dyn Fn() + Send + Sync>;
 
-struct SharedBandwidthLimiter {
+pub(crate) struct SharedBandwidthLimiter {
     limit_bytes_per_second: Option<u64>,
     next_available: Instant,
 }
 
 impl SharedBandwidthLimiter {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             limit_bytes_per_second: None,
             next_available: Instant::now(),
         }
     }
 
-    fn set_limit(&mut self, limit_bytes_per_second: Option<u64>) {
+    pub(crate) fn set_limit(&mut self, limit_bytes_per_second: Option<u64>) {
         self.limit_bytes_per_second = limit_bytes_per_second;
         self.next_available = Instant::now();
     }
 
-    fn reserve(&mut self, bytes: usize) -> Duration {
+    pub(crate) fn max_read_bytes(&self) -> usize {
+        self.limit_bytes_per_second
+            .map(|limit| {
+                ((limit / 4) as usize)
+                    .clamp(MIN_THROTTLED_CHUNK_BYTES, TRANSFER_BUFFER_BYTES)
+            })
+            .unwrap_or(TRANSFER_BUFFER_BYTES)
+    }
+
+    pub(crate) fn reserve(&mut self, bytes: usize) -> Duration {
         let Some(limit) = self.limit_bytes_per_second else {
             return Duration::ZERO;
         };
@@ -330,7 +340,8 @@ impl DownloadExecutionRuntime {
                 return Ok(());
             }
 
-            let read = match stream.reader.read(&mut buffer) {
+            let read_limit = self.bandwidth_read_size();
+            let read = match stream.reader.read(&mut buffer[..read_limit]) {
                 Ok(read) => read,
                 Err(error) => {
                     let (code, retryable) = transfer_read_failure(error.kind());
@@ -446,6 +457,15 @@ impl DownloadExecutionRuntime {
         self.mutate_persist(|manager| manager.mark_completed(job_id))?;
         let _cleanup_result = cleanup_workspace(&plan);
         Ok(())
+    }
+
+    fn bandwidth_read_size(&self) -> usize {
+        let limiter = self
+            .inner
+            .bandwidth_limiter
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        limiter.max_read_bytes()
     }
 
     fn apply_bandwidth_limit(&self, bytes: usize) {

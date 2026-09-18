@@ -27,6 +27,8 @@ pub(crate) use workspace::{
 };
 
 #[cfg(test)]
+pub(crate) use executor::SharedBandwidthLimiter;
+#[cfg(test)]
 pub(crate) use http::PUBLIC_HTTPS_TRANSPORT_KEY;
 #[cfg(test)]
 pub(crate) use resolver::RESOLVED_PROVIDER_TRANSPORT_KEY;

@@ -31,6 +31,12 @@
         includeDevelopmentContent !== baselineSettings.minecraft.includeDevelopmentContent ||
         bandwidthLimitMib !== formatBandwidthLimit(baselineSettings.download.bandwidthLimitBytesPerSecond)),
   );
+  let bandwidthLimitInvalid = $derived.by(() => {
+    const value = bandwidthLimitMib.trim();
+    if (!value) return false;
+    const mib = Number(value);
+    return !Number.isFinite(mib) || mib < 0.0625 || mib > 1024;
+  });
   let discoveryLabel = $derived(
     discovery?.state === "found" ? "Found" : discovery?.state === "unsupportedPlatform" ? "Unsupported" : "Not found",
   );
@@ -78,7 +84,7 @@
   }
 
   async function save(): Promise<void> {
-    if (!active || !snapshot?.ready || saving || scanning || !dirty) return;
+    if (!active || !snapshot?.ready || saving || scanning || !dirty || bandwidthLimitInvalid) return;
     saving = true;
     saved = false;
     error = "";
@@ -145,7 +151,7 @@
       <h1>Settings</h1>
       <p>Choose where SearchNow looks for Minecraft content.</p>
     </div>
-    <button class="button button--primary" type="button" onclick={save} disabled={!active || !snapshot?.ready || loading || saving || scanning || !dirty}>
+    <button class="button button--primary" type="button" onclick={save} disabled={!active || !snapshot?.ready || loading || saving || scanning || !dirty || bandwidthLimitInvalid}>
       {#if saved && !saving}<Check size={15} aria-hidden="true" />{:else}<Save size={15} aria-hidden="true" />{/if}
       {saving ? "Saving" : saved ? "Saved" : "Save changes"}
     </button>
@@ -153,6 +159,8 @@
 
   {#if error}
     <Notice tone="error" title="Could not update settings." message={error} />
+  {:else if bandwidthLimitInvalid}
+    <Notice tone="warning" title="Invalid bandwidth limit" message="Enter a value from 0.0625 to 1024 MiB/s, or leave it empty for unlimited speed." />
   {:else if dirty}
     <Notice
       tone="info"
