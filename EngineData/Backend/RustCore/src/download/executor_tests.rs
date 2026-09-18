@@ -30,11 +30,28 @@ impl DownloadTransport for FixtureTransport {
 
     fn open(
         &self,
-        _source: &DownloadSourceRef,
+        source: &DownloadSourceRef,
     ) -> Result<DownloadTransportStream, DownloadTransportFailure> {
+        self.open_from(source, 0)
+    }
+
+    fn open_from(
+        &self,
+        _source: &DownloadSourceRef,
+        offset: u64,
+    ) -> Result<DownloadTransportStream, DownloadTransportFailure> {
+        if offset > self.payload.len() as u64 {
+            return Err(DownloadTransportFailure::new(
+                "fixture_resume_offset_invalid",
+                "Fixture resume offset exceeds payload size.",
+                false,
+            ));
+        }
+        let mut cursor = Cursor::new(self.payload.clone());
+        cursor.set_position(offset);
         Ok(DownloadTransportStream {
             reader: Box::new(SlowReader {
-                cursor: Cursor::new(self.payload.clone()),
+                cursor,
                 delay: self.delay,
                 max_chunk: 32 * 1024,
             }),
@@ -331,5 +348,83 @@ fn startup_removes_stale_destination_stage_before_retry() {
     assert_eq!(
         runtime.snapshot().expect("snapshot").jobs[0].state,
         DownloadJobState::Interrupted
+    );
+}
+
+
+#[test]
+fn paused_download_resumes_from_partial_payload_without_redownloading_prefix() {
+    let directory = tempfile::tempdir().expect("tempdir");
+    let payload = (0..(2 * 1024 * 1024))
+        .map(|index| (index % 251) as u8)
+        .collect::<Vec<_>>();
+    let runtime = fixture_runtime(
+        directory.path(),
+        DownloadPolicy::default(),
+        Some(FixtureTransport::new(
+            "resumable",
+            payload.clone(),
+            Duration::from_millis(4),
+        )),
+    );
+
+    let job = runtime
+        .queue(request(
+            "resumable",
+            "fixture".into(),
+            "resume-me",
+            payload.len(),
+        ))
+        .expect("queue");
+
+    wait_for(&runtime, |snapshot| {
+        snapshot.jobs.iter().any(|candidate| {
+            candidate.id == job.id
+                && candidate.state == DownloadJobState::Transferring
+                && candidate.progress.downloaded_bytes >= 128 * 1024
+        })
+    });
+    runtime.pause(&job.id).expect("pause");
+
+    let paused_snapshot = wait_for(&runtime, |snapshot| {
+        snapshot.jobs.iter().any(|candidate| {
+            candidate.id == job.id && candidate.state == DownloadJobState::Paused
+        })
+    });
+    let paused = paused_snapshot
+        .jobs
+        .iter()
+        .find(|candidate| candidate.id == job.id)
+        .expect("paused job");
+    assert!(paused.progress.downloaded_bytes > 0);
+    assert!(paused.progress.downloaded_bytes < payload.len() as u64);
+    let paused_bytes = paused.progress.downloaded_bytes;
+
+    let partial = directory
+        .path()
+        .join("workspace")
+        .join(&job.id)
+        .join("payload.part");
+    assert_eq!(
+        std::fs::metadata(&partial).expect("partial payload").len(),
+        paused_bytes
+    );
+
+    runtime.resume(&job.id).expect("resume");
+    let completed_snapshot = wait_for(&runtime, |snapshot| {
+        snapshot.jobs.iter().any(|candidate| {
+            candidate.id == job.id && candidate.state == DownloadJobState::Completed
+        })
+    });
+    let completed = completed_snapshot
+        .jobs
+        .iter()
+        .find(|candidate| candidate.id == job.id)
+        .expect("completed job");
+    assert_eq!(completed.attempt, 2);
+    assert_eq!(completed.progress.downloaded_bytes, payload.len() as u64);
+    assert_eq!(
+        std::fs::read(directory.path().join("files/resume-me.mcpack")).expect("final payload"),
+        payload
     );
 }

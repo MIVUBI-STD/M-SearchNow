@@ -326,3 +326,29 @@ fn store_rejects_unknown_nested_persisted_fields() {
         .expect_err("unknown persisted fields must fail closed");
     assert_eq!(error.code(), "download_state_invalid_json");
 }
+
+
+#[test]
+fn pause_and_resume_preserve_partial_progress() {
+    let mut manager = DownloadManager::new(DownloadPolicy::default()).expect("manager");
+    let job = manager.enqueue(request("pack")).expect("queue");
+    manager.claim_ready_jobs();
+    manager.mark_transferring(&job.id).expect("transfer");
+    manager
+        .report_progress(&job.id, 4, Some(10))
+        .expect("progress");
+
+    let pausing = manager.request_pause(&job.id).expect("pause request");
+    assert_eq!(pausing.state, DownloadJobState::PauseRequested);
+    manager
+        .report_progress(&job.id, 6, Some(10))
+        .expect("final in-flight progress");
+    let paused = manager.acknowledge_pause(&job.id).expect("pause ack");
+    assert_eq!(paused.state, DownloadJobState::Paused);
+    assert_eq!(paused.progress.downloaded_bytes, 6);
+
+    let resumed = manager.resume(&job.id).expect("resume");
+    assert_eq!(resumed.state, DownloadJobState::Queued);
+    assert_eq!(resumed.progress.downloaded_bytes, 6);
+    assert!(resumed.last_error.is_none());
+}
