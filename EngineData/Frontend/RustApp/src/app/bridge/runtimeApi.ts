@@ -49,6 +49,10 @@ export const runtimeApi = {
     return invoke<LocalBackendSnapshot>("remove_local_content", { itemId });
   },
 
+  exportLocalContent(itemId: string): Promise<string | null> {
+    return invoke<string | null>("export_local_content", { itemId });
+  },
+
   chooseAndInspectPackage(): Promise<PackageInspection | null> {
     return invoke<PackageInspection | null>("choose_and_inspect_package");
   },

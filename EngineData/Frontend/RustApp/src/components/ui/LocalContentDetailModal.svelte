@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FolderOpen, Trash2, X } from "@lucide/svelte";
+  import { Archive, FolderOpen, Trash2, X } from "@lucide/svelte";
   import { localContentTypeLabel } from "../../app/shared/format";
   import type { LocalContentItem } from "../../app/shared/types";
   import ContentTypeMark from "./ContentTypeMark.svelte";
@@ -10,6 +10,7 @@
     open,
     onClose,
     onOpenFolder,
+    onExport,
     onRemove,
     actionBusy = false,
   }: {
@@ -17,6 +18,7 @@
     open: boolean;
     onClose: () => void;
     onOpenFolder: () => void;
+    onExport: () => void;
     onRemove: () => void;
     actionBusy?: boolean;
   } = $props();
@@ -94,6 +96,10 @@
           <button class="button button--secondary" type="button" onclick={onOpenFolder} disabled={actionBusy}>
             <FolderOpen size={15} aria-hidden="true" />
             Open folder
+          </button>
+          <button class="button button--secondary" type="button" onclick={onExport} disabled={actionBusy}>
+            <Archive size={15} aria-hidden="true" />
+            Export backup
           </button>
           {#if confirmRemove}
             <button class="button button--primary" type="button" onclick={onRemove} disabled={actionBusy}>

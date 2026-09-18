@@ -87,6 +87,13 @@ export const runtimeProductFacade = {
     );
   },
 
+  exportLocalContent(itemId: string): Promise<ProductResult<string | null>> {
+    return productCall(
+      () => runtimeApi.exportLocalContent(itemId),
+      "SearchNow could not export this Minecraft content.",
+    );
+  },
+
   chooseAndInspectPackage(): Promise<ProductResult<PackageInspection | null>> {
     return productCall(
       () => runtimeApi.chooseAndInspectPackage(),

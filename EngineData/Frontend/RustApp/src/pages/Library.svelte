@@ -77,6 +77,21 @@
     if (!actionBusy) selectedItem = null;
   }
 
+  async function exportSelectedContent(): Promise<void> {
+    const item = selectedItem;
+    if (!item || actionBusy) return;
+    actionBusy = true;
+    error = "";
+    success = "";
+    const result = await runtimeProductFacade.exportLocalContent(item.id);
+    if (result.ok && result.data) {
+      success = `${result.data} exported successfully.`;
+    } else if (!result.ok) {
+      error = result.error.message;
+    }
+    actionBusy = false;
+  }
+
   async function removeSelectedContent(): Promise<void> {
     const item = selectedItem;
     if (!item || actionBusy) return;
@@ -299,6 +314,7 @@
   open={selectedItem !== null}
   onClose={closeDetails}
   onOpenFolder={openSelectedFolder}
+  onExport={exportSelectedContent}
   onRemove={removeSelectedContent}
   {actionBusy}
 />
