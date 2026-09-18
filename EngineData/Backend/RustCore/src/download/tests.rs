@@ -274,3 +274,22 @@ fn invalid_terminal_and_active_transitions_fail_closed() {
         .expect_err("finalizing job must not be cancelled");
     assert_eq!(error.code(), "download_cancel_too_late");
 }
+
+#[test]
+fn recovery_rejects_inconsistent_terminal_jobs() {
+    let mut manager = DownloadManager::new(DownloadPolicy::default()).expect("manager");
+    manager.enqueue(request("pack")).expect("queue");
+    let base = manager.persisted_state();
+
+    let mut completed = base.clone();
+    completed.jobs[0].state = DownloadJobState::Completed;
+    let error = DownloadManager::recover(DownloadPolicy::default(), completed)
+        .expect_err("incomplete completed job must fail closed");
+    assert_eq!(error.code(), "download_state_job_invalid");
+
+    let mut failed = base;
+    failed.jobs[0].state = DownloadJobState::Failed;
+    let error = DownloadManager::recover(DownloadPolicy::default(), failed)
+        .expect_err("failed job without error details must fail closed");
+    assert_eq!(error.code(), "download_state_job_invalid");
+}
