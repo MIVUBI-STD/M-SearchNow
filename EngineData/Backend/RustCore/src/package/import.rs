@@ -523,7 +523,6 @@ pub(crate) fn replace_bundle(
         .iter()
         .enumerate()
         .filter(|(_, plan)| !plan.skip_same_version)
-        .map(|(index, plan)| (index, plan))
         .collect::<Vec<_>>();
     if actionable.is_empty() {
         return Err(BackendError::new(
