@@ -39,6 +39,8 @@ Use only to answer **who owns what**. Exact procedures remain in the named owner
 | bounded safe diagnostics + health snapshot | `EngineData/Backend/RustCore/src/diagnostics.rs` |
 | typed settings + persistence | `EngineData/Backend/RustCore/src/settings.rs` |
 | platform/AppData context | `EngineData/Backend/RustCore/src/platform.rs` |
+| canonical provider/resource identity validation (crate-private utility) | `EngineData/Backend/RustCore/src/identity.rs` |
+| atomic file persistence primitive (crate-private utility) | `EngineData/Backend/RustCore/src/storage.rs` |
 | Minecraft storage discovery | `EngineData/Backend/RustCore/src/minecraft.rs` |
 | local content indexing | `EngineData/Backend/RustCore/src/library.rs` |
 | read-only package inspection + archive safety + BP/RP relationships | `EngineData/Backend/RustCore/src/package/` |

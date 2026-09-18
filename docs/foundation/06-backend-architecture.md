@@ -19,6 +19,8 @@ one SearchNow executable
 ```text
 EngineData/Backend/RustCore/src/
 ├─ settings.rs    typed/versioned settings + staged persistence
+├─ storage.rs     crate-private atomic persistence primitive
+├─ identity.rs    crate-private provider/resource validation primitive
 ├─ platform.rs    process/platform path context
 ├─ minecraft.rs   Bedrock storage discovery
 ├─ library.rs     bounded read-only local index

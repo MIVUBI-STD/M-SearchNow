@@ -3,7 +3,7 @@ pub mod catalog;
 pub mod diagnostics;
 pub mod download;
 pub mod error;
-pub mod identity;
+mod identity;
 pub mod library;
 pub mod minecraft;
 pub mod package;
@@ -12,7 +12,7 @@ pub mod provider_adapter;
 pub mod provider_session;
 pub mod runtime;
 pub mod settings;
-pub mod storage;
+mod storage;
 
 #[cfg(test)]
 mod app_runtime_tests;

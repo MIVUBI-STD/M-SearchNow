@@ -132,9 +132,10 @@ for (const forbidden of ["DownloadExecutionRuntime", "DownloadTransportRegistry"
 const lib = await readFile(resolve(backendRoot, "src/lib.rs"), "utf8");
 if (!lib.includes("pub mod app_runtime")) errors.push("RustCore must expose the application backend runtime");
 if (!lib.includes("pub mod catalog")) errors.push("RustCore must expose the provider-neutral catalog domain");
-if (!lib.includes("pub mod identity")) errors.push("RustCore must expose the canonical provider/resource identity contract");
+if (!lib.includes("mod identity;") || lib.includes("pub mod identity;")) errors.push("RustCore identity helpers must remain crate-private");
 if (!lib.includes("pub mod provider_session")) errors.push("RustCore must expose the shared provider-session runtime boundary");
 if (!lib.includes("pub mod provider_adapter")) errors.push("RustCore must expose the integrated provider adapter boundary");
+if (!lib.includes("mod storage;") || lib.includes("pub mod storage;")) errors.push("RustCore atomic storage helper must remain crate-private");
 
 const appRuntime = await readFile(resolve(backendRoot, "src/app_runtime.rs"), "utf8");
 const frontendTypes = await readFile(resolve(appRoot, "src/app/shared/types.ts"), "utf8");
