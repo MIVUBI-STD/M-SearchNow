@@ -80,6 +80,13 @@ export const runtimeProductFacade = {
     );
   },
 
+  removeLocalContent(itemId: string): Promise<ProductResult<LocalBackendSnapshot>> {
+    return productCall(
+      () => runtimeApi.removeLocalContent(itemId),
+      "SearchNow could not remove this Minecraft content.",
+    );
+  },
+
   chooseAndInspectPackage(): Promise<ProductResult<PackageInspection | null>> {
     return productCall(
       () => runtimeApi.chooseAndInspectPackage(),

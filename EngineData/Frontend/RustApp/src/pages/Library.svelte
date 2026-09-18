@@ -77,6 +77,23 @@
     if (!actionBusy) selectedItem = null;
   }
 
+  async function removeSelectedContent(): Promise<void> {
+    const item = selectedItem;
+    if (!item || actionBusy) return;
+    actionBusy = true;
+    error = "";
+    success = "";
+    const result = await runtimeProductFacade.removeLocalContent(item.id);
+    if (result.ok) {
+      snapshot = result.data;
+      success = `${item.title} removed from this device.`;
+      selectedItem = null;
+    } else {
+      error = result.error.message;
+    }
+    actionBusy = false;
+  }
+
   async function openSelectedFolder(): Promise<void> {
     const item = selectedItem;
     if (!item || actionBusy) return;
@@ -282,6 +299,7 @@
   open={selectedItem !== null}
   onClose={closeDetails}
   onOpenFolder={openSelectedFolder}
+  onRemove={removeSelectedContent}
   {actionBusy}
 />
 

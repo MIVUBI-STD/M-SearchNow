@@ -7,6 +7,7 @@ pub fn register<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         crate::commands::settings::save_app_settings,
         crate::commands::minecraft::discover_minecraft_storage_command,
         crate::commands::library::scan_local_library,
+        crate::commands::library::remove_local_content,
         crate::commands::package::choose_and_inspect_package,
         crate::commands::package::choose_and_inspect_package_folder,
         crate::commands::package::import_package,

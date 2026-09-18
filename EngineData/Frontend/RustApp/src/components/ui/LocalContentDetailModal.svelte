@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FolderOpen, X } from "@lucide/svelte";
+  import { FolderOpen, Trash2, X } from "@lucide/svelte";
   import { localContentTypeLabel } from "../../app/shared/format";
   import type { LocalContentItem } from "../../app/shared/types";
   import ContentTypeMark from "./ContentTypeMark.svelte";
@@ -10,14 +10,22 @@
     open,
     onClose,
     onOpenFolder,
+    onRemove,
     actionBusy = false,
   }: {
     item: LocalContentItem | null;
     open: boolean;
     onClose: () => void;
     onOpenFolder: () => void;
+    onRemove: () => void;
     actionBusy?: boolean;
   } = $props();
+
+  let confirmRemove = $state(false);
+
+  $effect(() => {
+    if (!open) confirmRemove = false;
+  });
 
   function handleBackdrop(event: MouseEvent): void {
     if (event.target === event.currentTarget && !actionBusy) onClose();
@@ -75,11 +83,29 @@
           ]}
         />
 
+        {#if confirmRemove}
+          <div class="catalog-modal__issue">
+            <strong>Remove permanently?</strong>
+            <span>This removes the selected Minecraft content folder from this device. SearchNow cannot undo this action.</span>
+          </div>
+        {/if}
+
         <div class="catalog-modal__footer">
           <button class="button button--secondary" type="button" onclick={onOpenFolder} disabled={actionBusy}>
             <FolderOpen size={15} aria-hidden="true" />
-            {actionBusy ? "Opening…" : "Open folder"}
+            Open folder
           </button>
+          {#if confirmRemove}
+            <button class="button button--primary" type="button" onclick={onRemove} disabled={actionBusy}>
+              <Trash2 size={15} aria-hidden="true" />
+              {actionBusy ? "Removing…" : "Remove permanently"}
+            </button>
+          {:else}
+            <button class="button button--ghost" type="button" onclick={() => (confirmRemove = true)} disabled={actionBusy}>
+              <Trash2 size={15} aria-hidden="true" />
+              Remove
+            </button>
+          {/if}
         </div>
       </div>
     </div>
