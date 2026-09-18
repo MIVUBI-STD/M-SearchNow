@@ -545,11 +545,11 @@ fn disabling_bandwidth_limit_removes_reservation_delay() {
 #[test]
 fn bandwidth_limit_reduces_read_quantum_for_responsive_control() {
     let mut limiter = SharedBandwidthLimiter::new();
-    assert_eq!(limiter.max_read_bytes(), TRANSFER_BUFFER_BYTES);
+    assert_eq!(limiter.max_read_bytes(), 256 * 1024);
 
     limiter.set_limit(Some(64 * 1024));
-    assert_eq!(limiter.max_read_bytes(), MIN_THROTTLED_CHUNK_BYTES);
+    assert_eq!(limiter.max_read_bytes(), 16 * 1024);
 
     limiter.set_limit(Some(1024 * 1024));
-    assert_eq!(limiter.max_read_bytes(), TRANSFER_BUFFER_BYTES);
+    assert_eq!(limiter.max_read_bytes(), 256 * 1024);
 }
