@@ -10,7 +10,8 @@ use crate::{
         DownloadTransportRegistry, HttpTransport, HttpTransportPolicy, ProviderResolvedTransport,
     },
     error::{BackendError, BackendResult},
-    library::{scan_library, valid_local_content_id},
+    library::{scan_library, valid_local_content_id, LocalContentType},
+    library_export::export_directory,
     minecraft::{discover_minecraft_storage, MinecraftDiscoverySnapshot},
     package::{
         import_archive, inspect_package, PackageImportRequest, PackageImportResult,
@@ -352,6 +353,53 @@ impl SearchNowBackendRuntime {
         import_archive(&request.source_path, &root.root, &root.id)
     }
 
+    pub fn local_content_export_file_name(&self, item_id: &str) -> BackendResult<String> {
+        let item = self.resolve_local_content(item_id)?;
+        let extension = match item.content_type {
+            LocalContentType::World => "mcworld",
+            LocalContentType::BehaviorPack
+            | LocalContentType::ResourcePack
+            | LocalContentType::SkinPack => "mcpack",
+        };
+        let mut base = item
+            .title
+            .chars()
+            .map(|character| {
+                if character.is_ascii_alphanumeric() || matches!(character, ' ' | '-' | '_' | '.') {
+                    character
+                } else {
+                    '_'
+                }
+            })
+            .collect::<String>();
+        base = base.trim_matches([' ', '.']).trim().to_string();
+        if base.is_empty() {
+            base = "Minecraft backup".into();
+        }
+        Ok(format!("{base}.{extension}"))
+    }
+
+    pub fn export_local_content(&self, item_id: &str, destination: &Path) -> BackendResult<()> {
+        let item = self.resolve_local_content(item_id)?;
+        let expected_extension = match item.content_type {
+            LocalContentType::World => "mcworld",
+            LocalContentType::BehaviorPack
+            | LocalContentType::ResourcePack
+            | LocalContentType::SkinPack => "mcpack",
+        };
+        let valid_extension = destination
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .is_some_and(|extension| extension.eq_ignore_ascii_case(expected_extension));
+        if !valid_extension {
+            return Err(BackendError::new(
+                "library_export_extension_invalid",
+                format!("This content must be exported as .{expected_extension}."),
+            ));
+        }
+        export_directory(&item.path, destination)
+    }
+
     pub fn remove_local_content(&self, item_id: &str) -> BackendResult<LocalBackendSnapshot> {
         if !valid_local_content_id(item_id) {
             return Err(BackendError::new(
@@ -419,6 +467,10 @@ impl SearchNowBackendRuntime {
     }
 
     pub fn local_content_directory(&self, item_id: &str) -> BackendResult<PathBuf> {
+        Ok(self.resolve_local_content(item_id)?.path)
+    }
+
+    fn resolve_local_content(&self, item_id: &str) -> BackendResult<crate::library::LocalContentItem> {
         if !valid_local_content_id(item_id) {
             return Err(BackendError::new(
                 "library_item_not_found",
@@ -429,9 +481,8 @@ impl SearchNowBackendRuntime {
         snapshot
             .library
             .items
-            .iter()
+            .into_iter()
             .find(|item| item.id == item_id)
-            .map(|item| item.path.clone())
             .ok_or_else(|| {
                 BackendError::new(
                     "library_item_not_found",

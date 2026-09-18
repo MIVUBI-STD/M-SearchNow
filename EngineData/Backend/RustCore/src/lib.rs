@@ -5,6 +5,7 @@ pub mod download;
 pub mod error;
 mod identity;
 pub mod library;
+mod library_export;
 pub mod minecraft;
 pub mod package;
 pub mod platform;

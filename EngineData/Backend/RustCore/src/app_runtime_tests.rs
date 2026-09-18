@@ -404,3 +404,51 @@ fn remove_local_content_deletes_only_current_library_item() {
     assert_eq!(after.library.summary.total, 1);
     assert_eq!(after.library.items[0].title, "Keep Me");
 }
+
+#[test]
+fn export_local_content_creates_reimportable_archive() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let root = temp.path().join("minecraft-root");
+    let pack = root.join("resource_packs/export-me");
+    fs::create_dir_all(pack.join("textures")).expect("pack");
+    fs::write(
+        pack.join("manifest.json"),
+        r#"{"header":{"name":"Export Me","uuid":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","version":[1,0,0]},"modules":[{"type":"resources","uuid":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb","version":[1,0,0]}]}"#,
+    )
+    .expect("manifest");
+    fs::write(pack.join("textures/example.txt"), "texture").expect("texture");
+
+    let runtime = SearchNowBackendRuntime::compose(
+        SearchNowBackendPaths::from_roots(temp.path().join("config"), temp.path().join("data")),
+        PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
+        Vec::new(),
+        HttpTransport::new_test_http(test_http_policy()).expect("test HTTP"),
+    )
+    .expect("runtime");
+    let mut settings = runtime.load_settings().expect("settings");
+    settings.minecraft.root_override = Some(root);
+    runtime.save_settings(&settings).expect("save settings");
+
+    let snapshot = runtime.scan_local_library().expect("library");
+    let item = snapshot
+        .library
+        .items
+        .iter()
+        .find(|item| item.title == "Export Me")
+        .expect("export item");
+    assert_eq!(
+        runtime
+            .local_content_export_file_name(&item.id)
+            .expect("export name"),
+        "Export Me.mcpack"
+    );
+
+    let destination = temp.path().join("Export Me.mcpack");
+    runtime
+        .export_local_content(&item.id, &destination)
+        .expect("export");
+    let inspection = runtime.inspect_package(&destination).expect("inspect export");
+    assert_eq!(inspection.status, crate::package::PackageInspectionStatus::Ready);
+    assert_eq!(inspection.packs.len(), 1);
+    assert_eq!(inspection.packs[0].name, "Export Me");
+}
