@@ -49,6 +49,10 @@ export const runtimeApi = {
     return invoke<PackageInspection | null>("choose_and_inspect_package");
   },
 
+  chooseAndInspectPackageFolder(): Promise<PackageInspection | null> {
+    return invoke<PackageInspection | null>("choose_and_inspect_package_folder");
+  },
+
   importPackage(request: PackageImportRequest): Promise<PackageImportResult> {
     return invoke<PackageImportResult>("import_package", { request });
   },

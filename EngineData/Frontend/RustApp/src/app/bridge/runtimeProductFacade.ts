@@ -87,6 +87,13 @@ export const runtimeProductFacade = {
     );
   },
 
+  chooseAndInspectPackageFolder(): Promise<ProductResult<PackageInspection | null>> {
+    return productCall(
+      () => runtimeApi.chooseAndInspectPackageFolder(),
+      "SearchNow could not inspect this Minecraft package folder.",
+    );
+  },
+
   importPackage(request: PackageImportRequest): Promise<ProductResult<PackageImportResult>> {
     return productCall(
       () => runtimeApi.importPackage(request),

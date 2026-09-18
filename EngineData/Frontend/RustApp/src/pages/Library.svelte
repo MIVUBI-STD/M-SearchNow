@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FileSearch, RefreshCw, Search } from "@lucide/svelte";
+  import { FileSearch, FolderOpen, RefreshCw, Search } from "@lucide/svelte";
   import { runtimeProductFacade } from "../app/bridge/runtimeProductFacade";
   import { localContentTypeLabel } from "../app/shared/format";
   import type { LocalBackendSnapshot, LocalContentItem, LocalContentType, PackageInspection } from "../app/shared/types";
@@ -23,6 +23,7 @@
   let inspectionBusy = $state(false);
   let packageInspection = $state<PackageInspection | null>(null);
   let importBusy = $state(false);
+  let success = $state("");
   let error = $state("");
   let query = $state("");
   let filter = $state<LibraryFilter>("all");
@@ -90,7 +91,19 @@
     if (!runtimeReady || inspectionBusy) return;
     inspectionBusy = true;
     error = "";
+    success = "";
     const result = await runtimeProductFacade.chooseAndInspectPackage();
+    if (result.ok) packageInspection = result.data;
+    else error = result.error.message;
+    inspectionBusy = false;
+  }
+
+  async function inspectPackageFolder(): Promise<void> {
+    if (!runtimeReady || inspectionBusy) return;
+    inspectionBusy = true;
+    error = "";
+    success = "";
+    const result = await runtimeProductFacade.chooseAndInspectPackageFolder();
     if (result.ok) packageInspection = result.data;
     else error = result.error.message;
     inspectionBusy = false;
@@ -101,11 +114,18 @@
     if (!inspection || importBusy) return;
     importBusy = true;
     error = "";
+    success = "";
     const result = await runtimeProductFacade.importPackage({
       sourcePath: inspection.sourcePath,
       rootId,
     });
     if (result.ok) {
+      const importedNames = result.data.world
+        ? [result.data.world.name]
+        : result.data.imported.map((item) => item.name);
+      success = importedNames.length === 1
+        ? `${importedNames[0]} imported successfully.`
+        : `${importedNames.length} items imported successfully.`;
       packageInspection = null;
       loaded = false;
       await refresh();
@@ -130,6 +150,7 @@
     if (runtimeReady) return;
     loaded = false;
     error = "";
+    success = "";
     actionBusy = false;
     selectedItem = null;
     packageInspection = null;
@@ -153,6 +174,10 @@
       <button class="button button--secondary" type="button" onclick={inspectPackage} disabled={!runtimeReady || inspectionBusy}>
         <FileSearch size={15} aria-hidden="true" />
         {inspectionBusy ? "Inspecting…" : "Inspect package"}
+      </button>
+      <button class="button button--secondary" type="button" onclick={inspectPackageFolder} disabled={!runtimeReady || inspectionBusy}>
+        <FolderOpen size={15} aria-hidden="true" />
+        Inspect folder
       </button>
       <button class="button button--secondary" type="button" onclick={refresh} disabled={!runtimeReady || loading}>
         <RefreshCw size={15} class={loading ? "spin" : ""} aria-hidden="true" />
@@ -204,6 +229,10 @@
       title="Some content could not be read"
       message={snapshot.library.warnings[0].message}
     />
+  {/if}
+
+  {#if success}
+    <Notice tone="success" title="Import complete" message={success} />
   {/if}
 
   {#if error}

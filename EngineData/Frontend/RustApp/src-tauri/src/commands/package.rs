@@ -54,3 +54,31 @@ pub async fn import_package(
         })?
         .map_err(CommandError::from)
 }
+
+#[tauri::command]
+pub async fn choose_and_inspect_package_folder<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, SearchNowBackendRuntime>,
+) -> Result<Option<PackageInspection>, CommandError> {
+    let selected = app.dialog().file().blocking_pick_folder();
+    let Some(selected) = selected else {
+        return Ok(None);
+    };
+    let path = selected.into_path().map_err(|_| {
+        CommandError::new(
+            "package_path_invalid",
+            "The selected package folder path could not be used.",
+        )
+    })?;
+    let runtime = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || runtime.inspect_package(&path))
+        .await
+        .map_err(|error| {
+            CommandError::new(
+                "package_inspection_task_failed",
+                format!("Package folder inspection task failed: {error}"),
+            )
+        })?
+        .map(Some)
+        .map_err(CommandError::from)
+}

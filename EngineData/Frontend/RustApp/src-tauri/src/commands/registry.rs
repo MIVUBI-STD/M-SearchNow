@@ -8,6 +8,7 @@ pub fn register<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         crate::commands::minecraft::discover_minecraft_storage_command,
         crate::commands::library::scan_local_library,
         crate::commands::package::choose_and_inspect_package,
+        crate::commands::package::choose_and_inspect_package_folder,
         crate::commands::package::import_package,
         crate::commands::catalog::query_catalog,
         crate::commands::desktop::choose_download_directory,
