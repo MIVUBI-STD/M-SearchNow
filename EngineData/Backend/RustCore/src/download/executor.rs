@@ -364,13 +364,7 @@ impl DownloadExecutionRuntime {
                     return Ok(());
                 }
                 Err(error) => {
-                    self.fail_job(
-                        job_id,
-                        &plan,
-                        error.code(),
-                        error.message(),
-                        true,
-                    )?;
+                    self.fail_job(job_id, &plan, error.code(), error.message(), true)?;
                     return Ok(());
                 }
             }
