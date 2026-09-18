@@ -441,7 +441,6 @@ fn paused_download_resumes_from_partial_payload_without_redownloading_prefix() {
     );
 }
 
-
 #[test]
 fn matching_sha256_allows_completed_download_to_publish() {
     let directory = tempfile::tempdir().expect("tempdir");

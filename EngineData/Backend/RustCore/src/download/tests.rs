@@ -353,7 +353,6 @@ fn pause_and_resume_preserve_partial_progress() {
     assert!(resumed.last_error.is_none());
 }
 
-
 #[test]
 fn malformed_sha256_is_rejected_before_enqueue() {
     let mut manager = DownloadManager::new(DownloadPolicy::default()).expect("manager");
@@ -373,5 +372,6 @@ fn sha256_is_normalized_when_enqueued() {
     request.expected_sha256 = Some("AB".repeat(32));
 
     let job = manager.enqueue(request).expect("queue");
-    assert_eq!(job.expected_sha256.as_deref(), Some("ab".repeat(32).as_str()));
+    let expected = "ab".repeat(32);
+    assert_eq!(job.expected_sha256.as_deref(), Some(expected.as_str()));
 }
