@@ -44,6 +44,12 @@ for (const code of mappedCodes) {
   }
 }
 
+for (const code of [...sourceCodes].filter((value) => value.startsWith("package_bundle_"))) {
+  if (!mappedCodes.has(code)) {
+    errors.push(`transactional package bundle backend code is missing friendly frontend copy: ${code}`);
+  }
+}
+
 for (const code of [
   "dialog_path_invalid",
   "directory_unavailable",
