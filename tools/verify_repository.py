@@ -166,13 +166,6 @@ for legacy_old in [
     if (ROOT / legacy_old).exists():
         errors.append(f"legacy document not normalized into docs/legacy/: {legacy_old}")
 
-if errors:
-    for error in errors:
-        print(f"ERROR: {error}")
-    sys.exit(1)
-
-print("SearchNow repository contracts: PASS")
-
 
 # Package bundle updates already exist in RustCore; keep the product path wired end-to-end.
 for rel, needle in [
@@ -184,3 +177,11 @@ for rel, needle in [
     path = ROOT / rel
     if path.exists() and needle not in path.read_text(encoding="utf-8", errors="replace"):
         errors.append(f"{rel}: transactional package bundle update product wiring is missing {needle!r}")
+
+if errors:
+    for error in errors:
+        print(f"ERROR: {error}")
+    sys.exit(1)
+
+print("SearchNow repository contracts: PASS")
+
