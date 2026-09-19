@@ -393,3 +393,8 @@ export type PackageReplaceRequest = {
   sourcePath: string;
   rootId: string;
 };
+
+export type PackageBundleUpdateRequest = {
+  sourcePath: string;
+  rootId: string;
+};
