@@ -102,6 +102,7 @@ export type MinecraftSettings = {
 
 export type DownloadSettings = {
   bandwidthLimitBytesPerSecond: number | null;
+  defaultDirectory: string | null;
 };
 
 export type AppSettings = {
