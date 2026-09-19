@@ -103,7 +103,6 @@ pub async fn replace_package(
         .map_err(CommandError::from)
 }
 
-
 #[tauri::command]
 pub async fn replace_package_bundle(
     state: State<'_, SearchNowBackendRuntime>,
