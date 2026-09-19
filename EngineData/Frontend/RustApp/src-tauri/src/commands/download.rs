@@ -72,3 +72,10 @@ pub fn remove_download(
 ) -> Result<DownloadManagerSnapshot, CommandError> {
     state.remove_download(&job_id).map_err(CommandError::from)
 }
+
+#[tauri::command]
+pub fn clear_completed_downloads(
+    state: State<'_, SearchNowBackendRuntime>,
+) -> Result<DownloadManagerSnapshot, CommandError> {
+    state.clear_completed_downloads().map_err(CommandError::from)
+}
