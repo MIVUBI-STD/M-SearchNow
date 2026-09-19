@@ -81,7 +81,7 @@ impl CurseForgeClient {
             .set("x-api-key", &session.api_key)
             .call()
             .map_err(map_http_error)?;
-        response.into_json::<T>().map_err(|_| ProviderHttpFailure {
+        serde_json::from_reader(response.into_reader()).map_err(|_| ProviderHttpFailure {
             code: "curseforge_response_invalid",
             retryable: false,
         })
