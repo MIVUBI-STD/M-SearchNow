@@ -1034,6 +1034,22 @@ impl SearchNowBackendRuntime {
         result
     }
 
+    pub fn clear_completed_downloads(&self) -> BackendResult<DownloadManagerSnapshot> {
+        let started = Instant::now();
+        let result = self.downloads.remove_completed();
+        self.diagnostics.record_outcome(
+            DiagnosticComponent::Download,
+            started,
+            result.is_ok(),
+            "download_clear_completed_ok",
+            "Completed download jobs cleared.",
+            "download_clear_completed_failed",
+            "Completed download jobs could not be cleared.",
+            DiagnosticSeverity::Warning,
+        );
+        result
+    }
+
     fn discover_minecraft_raw(&self) -> BackendResult<MinecraftDiscoverySnapshot> {
         let settings = self.settings.load()?;
         Ok(discover_minecraft_storage(
