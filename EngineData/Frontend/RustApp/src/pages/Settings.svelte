@@ -166,7 +166,7 @@
     <div>
       <span class="eyebrow">Application</span>
       <h1>Settings</h1>
-      <p>Choose where SearchNow looks for Minecraft content.</p>
+      <p>Configure Minecraft locations and download behavior.</p>
     </div>
     <button class="button button--primary" type="button" onclick={save} disabled={!active || !snapshot?.ready || loading || saving || scanning || !dirty || bandwidthLimitInvalid}>
       {#if saved && !saving}<Check size={15} aria-hidden="true" />{:else}<Save size={15} aria-hidden="true" />{/if}
