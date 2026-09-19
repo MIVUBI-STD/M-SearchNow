@@ -248,6 +248,12 @@ export const runtimeProductFacade = {
       "SearchNow could not remove this download from the list.",
     );
   },
+  clearCompletedDownloads(): Promise<ProductResult<DownloadManagerSnapshot>> {
+    return productCall(
+      () => runtimeApi.clearCompletedDownloads(),
+      "SearchNow could not clear completed downloads.",
+    );
+  },
 
   loadDiagnostics(): Promise<ProductResult<BackendDiagnosticsSnapshot>> {
     return productCall(
