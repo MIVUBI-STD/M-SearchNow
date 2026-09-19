@@ -15,6 +15,7 @@ import type {
   PackageImportRequest,
   PackageImportResult,
   PackageReplaceRequest,
+  PackageBundleUpdateRequest,
 } from "../shared/types";
 import { toProductError } from "../shared/productErrors";
 import { runtimeApi } from "./runtimeApi";
@@ -130,6 +131,13 @@ export const runtimeProductFacade = {
     return productCall(
       () => runtimeApi.replacePackage(request),
       "SearchNow could not update this installed Minecraft pack.",
+    );
+  },
+
+  replacePackageBundle(request: PackageBundleUpdateRequest): Promise<ProductResult<PackageImportResult>> {
+    return productCall(
+      () => runtimeApi.replacePackageBundle(request),
+      "SearchNow could not update this Minecraft add-on bundle.",
     );
   },
 
