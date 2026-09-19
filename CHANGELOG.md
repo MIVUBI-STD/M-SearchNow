@@ -37,6 +37,7 @@ All notable SearchNow repository/product changes will be recorded here.
 - Session-only restoration of the last active route.
 - User-facing Minecraft channel/storage-kind labels in Settings.
 - Dedicated final visual-polish layer for card rhythm, density, metric readability, hover/focus feedback, form affordance, mobile spacing, and loading-state presentation.
+- Windows NSIS installer build plus hosted lifecycle proof for silent install, installed launch, uninstall, uninstall user-state preservation, and version upgrade with persisted settings/download state preserved.
 
 ### Changed
 
