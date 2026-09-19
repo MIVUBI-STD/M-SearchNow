@@ -8,6 +8,7 @@ import "./styles/content-details.css";
 import "./styles/catalog.css";
 import "./styles/catalog-modal.css";
 import "./styles/presentation.css";
+import "./styles/workspace.css";
 
 const target = document.getElementById("app");
 if (!target) throw new Error("SearchNow app root was not found.");

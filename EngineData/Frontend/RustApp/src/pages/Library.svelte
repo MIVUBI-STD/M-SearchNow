@@ -41,13 +41,18 @@
   let duplicateIds = $derived(findDuplicateIds(snapshot?.library.items ?? []));
   let missingDependencyIds = $derived(findMissingDependencyIds(snapshot?.library.items ?? []));
   let outdatedDependencyIds = $derived(findOutdatedDependencyIds(snapshot?.library.items ?? []));
-  let selectedDuplicates = $derived(findDuplicatesForItem(selectedItem, snapshot?.library.items ?? []));
   let filteredItems = $derived(
     (snapshot?.library.items ?? [])
       .filter((item) => matchesCurrentFilter(item))
       .slice()
       .sort(compareItems),
   );
+  let detailItem = $derived(
+    selectedItem && filteredItems.some((item) => item.id === selectedItem?.id)
+      ? selectedItem
+      : (filteredItems[0] ?? null),
+  );
+  let selectedDuplicates = $derived(findDuplicatesForItem(detailItem, snapshot?.library.items ?? []));
   let controlsChanged = $derived(
     query.trim().length > 0 ||
     filter !== "all" ||
@@ -225,7 +230,7 @@
 
 
   async function exportSelectedContent(): Promise<void> {
-    const item = selectedItem;
+    const item = detailItem;
     if (!item || actionBusy) return;
     actionBusy = true;
     error = "";
@@ -240,7 +245,7 @@
   }
 
   async function removeSelectedContent(): Promise<void> {
-    const item = selectedItem;
+    const item = detailItem;
     if (!item || actionBusy) return;
     actionBusy = true;
     error = "";
@@ -257,7 +262,7 @@
   }
 
   async function openSelectedFolder(): Promise<void> {
-    const item = selectedItem;
+    const item = detailItem;
     if (!item || actionBusy) return;
     actionBusy = true;
     const result = await runtimeProductFacade.openLocalContentDirectory(item.id);
@@ -512,7 +517,7 @@
         <button
           class="library-row"
           class:library-row--selected={selectedIds.includes(item.id)}
-          class:library-row--active={!selectionMode && selectedItem?.id === item.id}
+          class:library-row--active={!selectionMode && detailItem?.id === item.id}
           type="button"
           aria-pressed={selectionMode ? selectedIds.includes(item.id) : undefined}
           onclick={() => openDetails(item)}
@@ -546,9 +551,9 @@
       </div>
 
       <LibraryDetailPanel
-        item={selectedItem ?? filteredItems[0] ?? null}
+        item={detailItem}
         libraryItems={snapshot.library.items}
-        duplicates={selectedItem ? selectedDuplicates : []}
+        duplicates={selectedDuplicates}
         rootLabel={rootLabel}
         onOpenFolder={openSelectedFolder}
         onExport={exportSelectedContent}
