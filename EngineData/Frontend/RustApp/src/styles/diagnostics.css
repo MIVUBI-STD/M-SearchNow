@@ -1,29 +1,5 @@
 .settings-section__heading .button--compact { margin-top: 0; }
 
-.diagnostic-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
-.diagnostic-summary > div { border: 1px solid var(--sn-border); border-radius: var(--sn-radius-md); background: var(--sn-surface-soft); padding: 11px; }
-.diagnostic-summary span, .diagnostic-summary strong { display: block; }
-.diagnostic-summary span { color: var(--sn-text-soft); font-size: 8px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
-.diagnostic-summary strong { margin-top: 7px; font-size: 13px; text-transform: capitalize; }
-.diagnostics-details { margin-top: 14px; border-top: 1px solid var(--sn-border); padding-top: 12px; }
-.diagnostics-details > summary { color: var(--sn-text-muted); font-size: 10px; font-weight: 650; cursor: pointer; user-select: none; }
-.diagnostic-list { display: grid; gap: 6px; margin-top: 11px; }
-.diagnostic-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border: 1px solid var(--sn-border); border-radius: var(--sn-radius-md); background: var(--sn-surface-soft); padding: 10px 11px; }
-.diagnostic-row strong, .diagnostic-row span { display: block; }
-.diagnostic-row strong { color: var(--sn-text-muted); font-size: 10px; font-weight: 600; }
-.diagnostic-row span { margin-top: 3px; color: var(--sn-text-soft); font-size: 8px; text-transform: capitalize; }
-.diagnostic-row time { flex: 0 0 auto; color: var(--sn-text-soft); font-size: 8px; }
-.diagnostic-row--warning { border-color: #584622; }
-.diagnostic-row--error { border-color: #60353a; }
-.diagnostic-empty { display: flex; align-items: center; gap: 8px; margin-top: 14px; border: 1px dashed var(--sn-border); border-radius: var(--sn-radius-md); padding: 12px; color: var(--sn-text-soft); font-size: 10px; }
-.diagnostic-empty--error { border-color: #60353a; color: #f0a0aa; }
-
-@media (max-width: 720px) {
-  .diagnostic-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .diagnostic-row { flex-direction: column; gap: 6px; }
-}
-
-
 .diagnostics-panel {
   margin-top: 16px;
   border-top: 1px solid var(--sn-border);
@@ -49,7 +25,7 @@
 .diagnostics-panel__heading span,
 .diagnostics-panel__copy {
   color: var(--sn-text-soft);
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.5;
 }
 
@@ -58,28 +34,112 @@
 }
 
 .diagnostic-summary {
+  display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
+  margin-top: 16px;
 }
 
 .diagnostic-summary > div {
+  border: 1px solid var(--sn-border);
   border-radius: 8px;
   background: #111923;
   padding: 9px 10px;
+}
+
+.diagnostic-summary span,
+.diagnostic-summary strong {
+  display: block;
+}
+
+.diagnostic-summary span {
+  color: var(--sn-text-soft);
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .diagnostic-summary strong {
   margin-top: 4px;
-  font-size: 11px;
+  font-size: 12px;
+  text-transform: capitalize;
 }
 
 .diagnostics-details {
   margin-top: 12px;
+  border-top: 1px solid var(--sn-border);
   padding-top: 10px;
 }
 
+.diagnostics-details > summary {
+  color: var(--sn-text-muted);
+  font-size: 10px;
+  font-weight: 650;
+  cursor: pointer;
+  user-select: none;
+}
+
+.diagnostic-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 11px;
+}
+
 .diagnostic-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--sn-border);
   border-radius: 8px;
   background: #111923;
   padding: 9px 10px;
+}
+
+.diagnostic-row strong,
+.diagnostic-row span {
+  display: block;
+}
+
+.diagnostic-row strong {
+  color: var(--sn-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.diagnostic-row span {
+  margin-top: 3px;
+  color: var(--sn-text-soft);
+  font-size: 10px;
+}
+
+.diagnostic-row time {
+  flex: 0 0 auto;
+  color: var(--sn-text-soft);
+  font-size: 10px;
+}
+
+.diagnostic-row--warning { border-color: #584622; }
+.diagnostic-row--error { border-color: #60353a; }
+
+.diagnostic-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  border: 1px dashed var(--sn-border);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--sn-text-soft);
+  font-size: 10px;
+}
+
+.diagnostic-empty--error {
+  border-color: #60353a;
+  color: #f0a0aa;
+}
+
+@media (max-width: 900px) {
+  .diagnostic-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

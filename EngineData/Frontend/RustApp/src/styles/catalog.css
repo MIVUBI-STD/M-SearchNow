@@ -11,14 +11,12 @@
   cursor: pointer;
   transition:
     border-color 130ms ease,
-    background-color 130ms ease,
-    transform 130ms ease;
+    background-color 130ms ease;
 }
 
 .catalog-card:hover {
   border-color: #3a4d64;
   background: #141d28;
-  transform: translateY(-1px);
 }
 
 .catalog-card:focus-visible {
@@ -33,8 +31,7 @@
   min-height: 0;
   place-items: center;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 34% 18%, #243246 0, #17212d 48%, #101720 100%);
+  background: #151f2b;
 }
 
 .catalog-card__thumbnail img {
@@ -42,11 +39,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 180ms ease;
-}
-
-.catalog-card:hover .catalog-card__thumbnail img {
-  transform: scale(1.015);
 }
 
 .catalog-card__thumbnail .content-type-mark {
@@ -64,7 +56,7 @@
   background: rgb(8 12 17 / 0.82);
   padding: 4px 7px;
   color: #dce4ee;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   backdrop-filter: blur(8px);
 }
@@ -88,7 +80,7 @@
   overflow: hidden;
   margin-top: 4px;
   color: var(--sn-text-soft);
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -105,12 +97,12 @@
 
 .catalog-card__facts {
   color: var(--sn-text-soft);
-  font-size: 8px;
+  font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
 
 .catalog-card__availability {
   color: var(--sn-success);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 650;
 }
