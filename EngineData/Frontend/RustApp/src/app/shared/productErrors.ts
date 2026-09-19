@@ -55,6 +55,7 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
   download_directory_unavailable: "This download no longer has an available save folder.",
   settings_load_failed: "SearchNow could not load your settings.",
   settings_save_failed: "SearchNow could not save your settings.",
+  settings_download_directory_invalid: "The default download folder is not valid. Choose another folder or use Ask every time.",
   package_import_conflict: "This package is already installed in the selected Minecraft storage.",
   package_import_not_ready: "This package must pass inspection before it can be imported.",
   package_import_root_unavailable: "The selected Minecraft storage is no longer available.",
