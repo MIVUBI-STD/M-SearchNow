@@ -42,7 +42,7 @@ Do not add Python, a local HTTP server, or another backend process unless a conc
 
 ## Sequencing note
 
-Phase numbers describe capability/verification boundaries. The owner has intentionally deferred Phase 8 target-Windows runtime smoke and continued provider-independent frontend implementation remotely. This does not waive Phase 8 evidence; it only changes the immediate work order.
+Phase numbers describe capability/verification boundaries. Hosted Windows CI now covers executable and NSIS lifecycle smoke. Phase 8 remains the owner-machine acceptance boundary for real Minecraft/AppData discovery, native interaction, representative data, and performance; hosted CI does not waive that evidence.
 
 ## Phase status
 
@@ -78,7 +78,7 @@ No real provider endpoint/login is implemented yet.
 
 ### Phase 6 — Application Runtime + Observability
 
-**Remote foundation complete.** Tauri manages one `SearchNowBackendRuntime`; Settings/Downloads share one atomic persistence owner; current health is separated from historical diagnostics; scheduler continuation failures are surfaced; raw transport selection is kept behind the backend boundary; hosted Linux and Windows verification are green.
+**Remote foundation complete.** Tauri manages one `SearchNowBackendRuntime`; Settings/Downloads share one atomic persistence owner; current health is separated from historical diagnostics; scheduler continuation failures are surfaced; raw transport selection is kept behind the backend boundary; hosted Linux verification and hosted Windows executable/installer lifecycle gates are established.
 
 Settings now exposes safe runtime diagnostics without introducing a second logging system.
 
@@ -86,11 +86,11 @@ Settings now exposes safe runtime diagnostics without introducing a second loggi
 
 **Complete for repository verification.** npm and both Rust application scopes have committed lockfiles. Repository, Local-promotion, and stable-release workflows use `npm ci` and Cargo `--locked`, with current GitHub Actions runtime versions.
 
-### Phase 8 — Target-Windows Runtime Smoke
+### Phase 8 — Owner Target-Windows Acceptance
 
-**Required, currently deferred by owner.** Run non-destructive local Windows evidence for AppData resolution, current GDK/UWP discovery, settings save/reload, package inspection, download finalization, diagnostics, and actual Tauri application launch.
+**Required, currently deferred by owner.** Run non-destructive owner-machine evidence for real AppData resolution, current GDK/UWP discovery, settings save/reload, native folder-picker/permission behavior, package inspection, representative download finalization, diagnostics, UI interaction, and representative performance.
 
-Hosted Windows compilation is prerequisite evidence, not a substitute for this phase.
+Hosted Windows CI now proves a bounded executable + NSIS lifecycle, but it is not a substitute for this owner-machine acceptance phase.
 
 ### Phase 9 — Real Provider Integration
 
@@ -106,7 +106,7 @@ Live Discover results still depend on Phase 9. A Discover download action must n
 
 ### Phase 11 — Release Acceptance
 
-Representative large-library/network fixtures, installer/bundle/branding, clean-machine verification, and Local → main promotion.
+Representative large-library/network fixtures, final branding/code signing, owner clean-machine verification, and Local → main promotion.
 
 ## Quality rules
 
@@ -116,7 +116,7 @@ Representative large-library/network fixtures, installer/bundle/branding, clean-
 4. No business logic inside command wrappers.
 5. Keep source-size budgets green; split ownership before god-objects form.
 6. Network operations must map to identifiable product behavior.
-7. Repository/static/hosted compile proof never upgrades itself to installed Windows runtime proof.
+7. Hosted Windows lifecycle proof never upgrades itself to owner-machine acceptance proof.
 8. Do not freeze temporary workarounds into repository contracts.
 9. Verification must use committed dependency graphs; update lockfiles only as an explicit dependency change.
 10. Frontend must not fabricate provider/local-runtime capabilities merely to make a screen look complete.
