@@ -633,6 +633,11 @@ struct ApiFile {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::{
+        io::{Read, Write},
+        net::TcpListener,
+        thread,
+    };
 
     #[test]
     fn resource_identity_round_trips() {
@@ -686,12 +691,6 @@ mod tests {
             catalog::{CatalogPageRequest, CatalogRequest},
             provider_adapter::ProviderAdapterRuntime,
         };
-        use std::{
-            io::{Read, Write},
-            net::{TcpListener, TcpStream},
-            thread,
-        };
-
         const API_KEY: &str = "fixture-curseforge-key";
         let listener = TcpListener::bind("127.0.0.1:0").expect("listener");
         let address = listener.local_addr().expect("address");
