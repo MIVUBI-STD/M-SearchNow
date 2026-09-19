@@ -85,3 +85,43 @@ jobs:
           }
           Write-Host "Installer:" $installers[0].FullName
           Write-Host "Bytes:" $installers[0].Length
+      - name: Smoke install, launch, and uninstall NSIS package
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem "EngineData/Frontend/RustApp/src-tauri/target/release/bundle/nsis/*-setup.exe" | Select-Object -First 1
+          $installRoot = Join-Path $env:RUNNER_TEMP "SearchNowLifecycleSmoke"
+          if (Test-Path $installRoot) {
+            Remove-Item $installRoot -Recurse -Force
+          }
+
+          $install = Start-Process -FilePath $installer.FullName -ArgumentList @("/S", "/D=$installRoot") -PassThru -Wait
+          if ($install.ExitCode -ne 0) {
+            throw "NSIS silent install failed with code $($install.ExitCode)."
+          }
+
+          $installedExe = Join-Path $installRoot "SearchNow.exe"
+          if (!(Test-Path $installedExe)) {
+            throw "Installed SearchNow executable was not found at $installedExe."
+          }
+
+          $process = Start-Process -FilePath $installedExe -PassThru
+          Start-Sleep -Seconds 5
+          if ($process.HasExited) {
+            throw "Installed SearchNow exited during lifecycle smoke with code $($process.ExitCode)."
+          }
+          Stop-Process -Id $process.Id -Force
+
+          $uninstaller = Join-Path $installRoot "uninstall.exe"
+          if (!(Test-Path $uninstaller)) {
+            throw "NSIS uninstaller was not created."
+          }
+
+          $uninstall = Start-Process -FilePath $uninstaller -ArgumentList @("/S", "_?=$installRoot") -PassThru -Wait
+          if ($uninstall.ExitCode -ne 0) {
+            throw "NSIS silent uninstall failed with code $($uninstall.ExitCode)."
+          }
+
+          Start-Sleep -Seconds 2
+          if (Test-Path $installedExe) {
+            throw "SearchNow executable remained after silent uninstall."
+          }
