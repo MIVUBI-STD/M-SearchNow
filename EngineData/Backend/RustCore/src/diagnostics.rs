@@ -23,6 +23,7 @@ pub enum DiagnosticComponent {
     Settings,
     Minecraft,
     Library,
+    Package,
     Catalog,
     Provider,
     Download,
