@@ -105,12 +105,47 @@
     return "same";
   }
 
-  function canAutoUpdate(): boolean {
+  function canAutoUpdateSingle(): boolean {
     if (!inspection || inspection.status !== "ready") return false;
     const target = updateTarget();
     if (!target) return false;
     const kind = inspection.packs[0].kind;
     return kind === "behaviorPack" || kind === "resourcePack" || kind === "skinPack";
+  }
+
+  function canAutoUpdateBundle(): boolean {
+    if (
+      !inspection ||
+      inspection.status !== "ready" ||
+      inspection.inputKind !== "mcAddon" ||
+      inspection.packs.length < 2 ||
+      !selectedRootId
+    ) return false;
+
+    const installedByUuid = new Map(
+      installedItems
+        .filter((item) => item.rootId === selectedRootId && item.manifestUuid !== null)
+        .map((item) => [item.manifestUuid!.toLowerCase(), item] as const),
+    );
+    let hasChange = false;
+
+    for (const pack of inspection.packs) {
+      if (!pack.uuid) return false;
+      if (pack.kind !== "behaviorPack" && pack.kind !== "resourcePack" && pack.kind !== "skinPack") return false;
+      const installed = installedByUuid.get(pack.uuid.toLowerCase());
+      if (!installed) {
+        hasChange = true;
+        continue;
+      }
+      const comparison = compareVersions(pack.version, installed.version);
+      if (comparison === null || comparison < 0) return false;
+      if (comparison > 0) hasChange = true;
+    }
+    return hasChange;
+  }
+
+  function canAutoUpdate(): boolean {
+    return canAutoUpdateSingle() || canAutoUpdateBundle();
   }
 
   function canAutoImport(): boolean {
@@ -125,7 +160,8 @@
     if (!inspection) return "";
     if (inspection.status === "rejected") return "Rejected";
     if (inspection.status === "issues") return "Needs review";
-    if (canAutoUpdate()) return "Update available";
+    if (canAutoUpdateBundle()) return "Bundle update available";
+    if (canAutoUpdateSingle()) return "Update available";
     if (conflictVersionState() === "older") return "Older package";
     if (conflictingItems().length > 0) return "Already installed";
     return canAutoImport() ? "Ready to import" : "Inspection passed";
@@ -223,7 +259,7 @@
               disabled={roots.length === 0 || importBusy}
               onclick={() => onUpdate(selectedRootId)}
             >
-              {importBusy ? "Updating…" : "Update installed pack"}
+              {importBusy ? "Updating…" : inspection.inputKind === "mcAddon" ? "Update add-on bundle" : "Update installed pack"}
             </button>
           {:else}
             <button
