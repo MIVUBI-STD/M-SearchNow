@@ -30,18 +30,21 @@ Sources may include:
 - completed downloads;
 - local projects/exports.
 
-Default presentation should use content cards rather than technical tables.
+Default presentation should use a compact content-management list. Library is a management surface, not a dashboard: avoid large metric cards, oversized content cards, and repeated decorative containers when a dense row communicates the same state more clearly.
+
+Each row should prioritize title, content type, meaningful status, version, and only the minimum contextual metadata needed to distinguish storage or issues.
 
 Example information:
 
 ```text
-[Thumbnail]
 Adventure World
-World Template
-Installed
+World · v1.4                         Ready
 
-[Open]
+Furniture Pack
+Resource Pack · Development          Needs review
 ```
+
+Use visual cards primarily in Discover, where artwork and browsing are part of the task.
 
 Advanced identifiers should only appear under an expandable `Technical details` section.
 

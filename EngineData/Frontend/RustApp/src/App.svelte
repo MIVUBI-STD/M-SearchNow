@@ -57,14 +57,17 @@
   <Sidebar {route} onNavigate={navigate} />
 
   <main class="app-main">
-    <header class="topbar">
-      <div class="topbar__actions topbar__actions--end">
-        <button class="icon-button icon-button--quiet" type="button" title="Refresh app status" aria-label="Refresh app status" onclick={refreshRuntime} disabled={booting || refreshing}>
+    {#if !booting && (refreshing || runtimeTone === "warning")}
+      <header class="runtime-strip">
+        <div class="runtime-strip__message">
+          <span>{refreshing ? "Refreshing SearchNow status" : "SearchNow needs attention"}</span>
+          <StatusBadge label={runtimeLabel} tone={runtimeTone} />
+        </div>
+        <button class="icon-button icon-button--quiet" type="button" title="Refresh app status" aria-label="Refresh app status" onclick={refreshRuntime} disabled={refreshing}>
           <RefreshCw size={15} class={refreshing ? "spin" : ""} aria-hidden="true" />
         </button>
-        <StatusBadge label={runtimeLabel} tone={runtimeTone} />
-      </div>
-    </header>
+      </header>
+    {/if}
 
     <div class="content-frame">
       {#if booting}

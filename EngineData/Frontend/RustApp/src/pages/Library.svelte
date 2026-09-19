@@ -5,7 +5,6 @@
   import type { LocalBackendSnapshot, LocalContentItem, LocalContentType, PackageInspection } from "../app/shared/types";
   import ContentTypeMark from "../components/ui/ContentTypeMark.svelte";
   import LocalContentDetailModal from "../components/ui/LocalContentDetailModal.svelte";
-  import MetricCard from "../components/ui/MetricCard.svelte";
   import Notice from "../components/ui/Notice.svelte";
   import PackageInspectionModal from "../components/ui/PackageInspectionModal.svelte";
   import PageState from "../components/ui/PageState.svelte";
@@ -54,11 +53,6 @@
     filter !== "all" ||
     rootFilter !== "all" ||
     sort !== "nameAsc",
-  );
-  let packCount = $derived(
-    snapshot
-      ? snapshot.library.summary.behaviorPacks + snapshot.library.summary.resourcePacks + snapshot.library.summary.skinPacks
-      : "—",
   );
 
   function findDuplicatesForItem(
@@ -386,16 +380,28 @@
   <div class="page-heading page-heading--actions">
     <div>
       <h1>Library</h1>
-      <p>Browse Minecraft Bedrock worlds and packs detected on this device.</p>
+      <p>Worlds and packs detected on this device.</p>
+      <div class="library-summary">
+        {#if snapshot}
+          <span>{snapshot.library.summary.total} items</span>
+          <span>{snapshot.library.summary.worlds} worlds</span>
+          <span>{snapshot.library.summary.behaviorPacks + snapshot.library.summary.resourcePacks + snapshot.library.summary.skinPacks} packs</span>
+          {#if snapshot.library.summary.invalidItems > 0}
+            <span class="library-summary__warning">{snapshot.library.summary.invalidItems} need review</span>
+          {/if}
+        {:else}
+          <span>Local Minecraft content</span>
+        {/if}
+      </div>
     </div>
     <div class="page-heading__actions">
       <button class="button button--secondary" type="button" onclick={inspectPackage} disabled={!runtimeReady || inspectionBusy}>
         <FileSearch size={15} aria-hidden="true" />
-        {inspectionBusy ? "Inspecting…" : "Inspect package"}
+        {inspectionBusy ? "Inspecting…" : "Import file"}
       </button>
       <button class="button button--secondary" type="button" onclick={inspectPackageFolder} disabled={!runtimeReady || inspectionBusy}>
         <FolderOpen size={15} aria-hidden="true" />
-        Inspect folder
+        Import folder
       </button>
       <button
         class="button button--secondary"
@@ -411,16 +417,9 @@
       </button>
       <button class="button button--secondary" type="button" onclick={refresh} disabled={!runtimeReady || loading || batchBusy}>
         <RefreshCw size={15} class={loading ? "spin" : ""} aria-hidden="true" />
-        {loading ? "Scanning" : "Scan again"}
+        {loading ? "Scanning" : "Rescan"}
       </button>
     </div>
-  </div>
-
-  <div class="metric-grid metric-grid--four">
-    <MetricCard label="Total" value={snapshot?.library.summary.total ?? "—"} detail="Detected content" />
-    <MetricCard label="Worlds" value={snapshot?.library.summary.worlds ?? "—"} detail="Minecraft worlds" />
-    <MetricCard label="Packs" value={packCount} detail="Behavior, resource, and skin packs" />
-    <MetricCard label="Needs review" value={snapshot?.library.summary.invalidItems ?? "—"} detail="Content with metadata issues" />
   </div>
 
   {#if snapshot}
@@ -504,34 +503,38 @@
   {:else if loading && !loaded}
     <PageState kind="loading" title="Scanning content" message="Checking your Minecraft locations." />
   {:else if snapshot && filteredItems.length > 0}
-    <div class="content-grid">
+    <div class="library-list">
       {#each filteredItems as item (item.id)}
         <button
-          class="content-card content-card--interactive w-full p-0 text-left"
-          class:ring-2={selectedIds.includes(item.id)}
+          class="library-row"
+          class:library-row--selected={selectedIds.includes(item.id)}
           type="button"
           aria-pressed={selectionMode ? selectedIds.includes(item.id) : undefined}
           onclick={() => openDetails(item)}
         >
-          <div class="content-card__preview">
+          <div class="library-row__icon">
             <ContentTypeMark kind={item.contentType} />
           </div>
-          <div class="content-card__body">
-            <div class="content-card__meta">
-              <span>{localContentTypeLabel(item.contentType)}</span>
+
+          <div class="library-row__main">
+            <div class="library-row__title-line">
+              <h2 title={item.title}>{item.title}</h2>
               {#if item.isDevelopment}<span class="chip">Development</span>{/if}
-              {#if snapshot.minecraft.roots.length > 1}<span class="chip">{rootLabel(item.rootId)}</span>{/if}
-              {#if duplicateIds.has(item.id)}<span class="chip">Duplicate UUID</span>{/if}
-              {#if missingDependencyIds.has(item.id)}<span class="chip">Missing dependency</span>{/if}
-              {#if outdatedDependencyIds.has(item.id)}<span class="chip">Outdated dependency</span>{/if}
             </div>
-            <h2 title={item.title}>{item.title}</h2>
-            <div class="content-card__footer">
-              <span class:state-text--warning={item.status === "invalidMetadata"} class="state-text">
-                {item.status === "ready" ? "Ready" : "Needs review"}
-              </span>
-              {#if item.version.length}<span>v{item.version.join(".")}</span>{/if}
+            <div class="library-row__meta">
+              <span>{localContentTypeLabel(item.contentType)}</span>
+              {#if snapshot.minecraft.roots.length > 1}<span>{rootLabel(item.rootId)}</span>{/if}
+              {#if duplicateIds.has(item.id)}<span class="library-row__issue">Duplicate UUID</span>{/if}
+              {#if missingDependencyIds.has(item.id)}<span class="library-row__issue">Missing dependency</span>{/if}
+              {#if outdatedDependencyIds.has(item.id)}<span class="library-row__issue">Outdated dependency</span>{/if}
             </div>
+          </div>
+
+          <div class="library-row__status">
+            <span class:state-text--warning={item.status === "invalidMetadata"} class="state-text">
+              {item.status === "ready" ? "Ready" : "Needs review"}
+            </span>
+            {#if item.version.length}<span class="library-row__version">v{item.version.join(".")}</span>{/if}
           </div>
         </button>
       {/each}
