@@ -77,6 +77,7 @@ Implemented at repository/runtime-core level:
 Implemented remotely against the existing runtime contracts:
 
 - runtime/health bootstrap and refresh;
+- package file/folder inspection, safe `.mcpack` / `.mcaddon` / `.mcworld` import, single-pack update, transactional `.mcaddon` bundle update, local export, and content removal;
 - Library scan, summary, search/filter, warning/error/empty states, and collapsed technical details;
 - Downloads queue/history, progress, adaptive refresh, cancel/retry/remove actions, and scheduler-error state;
 - Settings load/save with dirty-state protection and Minecraft storage rescan;
@@ -89,7 +90,6 @@ Not implemented yet:
 - real provider login/credentials/endpoints;
 - Marketplace/PlayFab-specific integration and live catalog data;
 - Discover download action until provider metadata supplies a deterministic safe output descriptor;
-- package file-picker/import interaction;
 - final release branding/signing and owner clean-machine acceptance.
 
 Hosted Windows CI now proves a bounded executable + NSIS lifecycle, including upgrade-state compatibility. Owner target-Windows acceptance is still required for real Minecraft/AppData discovery, native picker/permission behavior, representative performance, branding/signing, and clean-machine release acceptance.
