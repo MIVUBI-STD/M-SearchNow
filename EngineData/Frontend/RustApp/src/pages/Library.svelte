@@ -303,13 +303,18 @@
     importBusy = true;
     error = "";
     success = "";
-    const result = await runtimeProductFacade.replacePackage({
+    const request = {
       sourcePath: inspection.sourcePath,
       rootId,
-    });
+    };
+    const result = inspection.inputKind === "mcAddon"
+      ? await runtimeProductFacade.replacePackageBundle(request)
+      : await runtimeProductFacade.replacePackage(request);
     if (result.ok) {
-      const name = result.data.imported[0]?.name ?? "Pack";
-      success = `${name} updated successfully.`;
+      const names = result.data.imported.map((item) => item.name);
+      success = names.length === 1
+        ? `${names[0]} updated successfully.`
+        : `${names.length} bundle items updated/imported successfully.`;
       packageInspection = null;
       loaded = false;
       await refresh();
