@@ -2,7 +2,8 @@ use super::error::CommandError;
 use searchnow_core::{
     app_runtime::SearchNowBackendRuntime,
     package::{
-        PackageImportRequest, PackageImportResult, PackageInspection, PackageReplaceRequest,
+        PackageBundleUpdateRequest, PackageImportRequest, PackageImportResult, PackageInspection,
+        PackageReplaceRequest,
     },
 };
 use tauri::{AppHandle, Runtime, State};
@@ -97,6 +98,24 @@ pub async fn replace_package(
             CommandError::new(
                 "package_replace_task_failed",
                 format!("Package update task failed: {error}"),
+            )
+        })?
+        .map_err(CommandError::from)
+}
+
+
+#[tauri::command]
+pub async fn replace_package_bundle(
+    state: State<'_, SearchNowBackendRuntime>,
+    request: PackageBundleUpdateRequest,
+) -> Result<PackageImportResult, CommandError> {
+    let runtime = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || runtime.replace_package_bundle(request))
+        .await
+        .map_err(|error| {
+            CommandError::new(
+                "package_bundle_replace_task_failed",
+                format!("Package bundle update task failed: {error}"),
             )
         })?
         .map_err(CommandError::from)
