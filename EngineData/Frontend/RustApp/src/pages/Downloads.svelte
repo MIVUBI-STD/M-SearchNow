@@ -32,6 +32,7 @@
   let loading = $state(false);
   let error = $state("");
   let actionJobId = $state<string | null>(null);
+  let clearingCompleted = $state(false);
   let query = $state("");
   let filter = $state<DownloadFilter>("all");
   let refreshSequence = 0;
@@ -225,6 +226,19 @@
     actionJobId = null;
   }
 
+  async function clearCompleted(): Promise<void> {
+    if (clearingCompleted || completedJobs === 0) return;
+    clearingCompleted = true;
+    const result = await runtimeProductFacade.clearCompletedDownloads();
+    if (result.ok) {
+      snapshot = result.data;
+      error = "";
+    } else {
+      error = result.error.message;
+    }
+    clearingCompleted = false;
+  }
+
   async function openFolder(job: DownloadJob): Promise<void> {
     if (job.state !== "completed" || !job.destinationDirectory) return;
     actionJobId = job.id;
@@ -294,10 +308,18 @@
       <h1>Downloads</h1>
       <p>See current downloads and recently saved files.</p>
     </div>
-    <button class="button button--secondary" type="button" onclick={() => refresh()} disabled={!runtimeReady || loading}>
-      <RefreshCw size={15} class={loading ? "spin" : ""} aria-hidden="true" />
-      Refresh
-    </button>
+    <div class="catalog-modal__footer">
+      {#if completedJobs > 0}
+        <button class="button button--ghost" type="button" onclick={clearCompleted} disabled={!runtimeReady || clearingCompleted || actionJobId !== null}>
+          <Trash2 size={15} aria-hidden="true" />
+          {clearingCompleted ? "Clearing" : "Clear completed"}
+        </button>
+      {/if}
+      <button class="button button--secondary" type="button" onclick={() => refresh()} disabled={!runtimeReady || loading || clearingCompleted}>
+        <RefreshCw size={15} class={loading ? "spin" : ""} aria-hidden="true" />
+        Refresh
+      </button>
+    </div>
   </div>
 
   <div class="metric-grid">
