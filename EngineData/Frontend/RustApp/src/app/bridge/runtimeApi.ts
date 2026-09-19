@@ -15,6 +15,7 @@ import type {
   PackageImportRequest,
   PackageImportResult,
   PackageReplaceRequest,
+  PackageBundleUpdateRequest,
 } from "../shared/types";
 
 export const runtimeApi = {
@@ -72,6 +73,10 @@ export const runtimeApi = {
 
   replacePackage(request: PackageReplaceRequest): Promise<PackageImportResult> {
     return invoke<PackageImportResult>("replace_package", { request });
+  },
+
+  replacePackageBundle(request: PackageBundleUpdateRequest): Promise<PackageImportResult> {
+    return invoke<PackageImportResult>("replace_package_bundle", { request });
   },
 
   chooseDownloadDirectory(): Promise<string | null> {
