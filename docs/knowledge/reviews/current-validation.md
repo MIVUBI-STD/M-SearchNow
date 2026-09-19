@@ -1,6 +1,6 @@
 # Current Validation
 
-Reviewed: **2026-09-18**
+Reviewed: **2026-09-19**
 
 ## Purpose
 
@@ -23,7 +23,12 @@ A successful current `Repository Verify` run proves:
 - production frontend build;
 - hosted Windows RustCore tests;
 - hosted Windows frontend build;
-- hosted Windows Tauri compilation.
+- hosted Windows Tauri compilation;
+- release executable build and launch smoke;
+- NSIS installer production and artifact sanity;
+- silent install → installed launch → uninstall lifecycle;
+- uninstall preservation of user-owned AppData state;
+- synthetic prior-version → current-version installer upgrade with persisted settings/download state preserved.
 
 A queued, running, cancelled, skipped, or failed workflow is **not** a verified baseline.
 
@@ -54,7 +59,7 @@ The gate also protects current repository contracts around:
 
 Remote verification does **not** prove:
 
-- installed SearchNow launch/interaction on the owner's target Windows machine;
+- SearchNow interaction on the owner's actual target Windows machine;
 - real AppData/Minecraft discovery against the target installation;
 - representative real local libraries at user scale;
 - actual native folder picker and filesystem permission behavior;
@@ -62,7 +67,7 @@ Remote verification does **not** prove:
 - Marketplace/PlayFab or other real provider endpoint compatibility;
 - production TLS/CDN behavior;
 - real-world performance, memory usage or long-running stability;
-- installer/signing/update/clean-machine release behavior.
+- code signing, final branding, OS reputation/SmartScreen behavior, and owner clean-machine release acceptance.
 
 ## Evidence rule
 
@@ -71,9 +76,9 @@ Use the strongest evidence actually available:
 ```text
 repository/static
 → executed source/unit
-→ integration/hosted compile
-→ rendered/live app
-→ target-Windows installed acceptance
+→ hosted integration/runtime/installer lifecycle
+→ rendered/live interaction
+→ owner target-Windows acceptance
 ```
 
 Do not report a stronger level than the highest level actually exercised.
