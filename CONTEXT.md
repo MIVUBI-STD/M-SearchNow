@@ -1,6 +1,6 @@
 # SearchNow Context
 
-Status: remote backend foundation + provider-independent frontend ready; target-Windows runtime smoke pending  
+Status: remote foundation + hosted Windows executable/installer lifecycle verified; target-machine acceptance and real-provider evidence pending  
 Development branch: `develop`  
 Verified integration baseline: `Local`  
 Stable branch: `main`
@@ -36,7 +36,7 @@ Downloads
 Settings
 ```
 
-Library, Downloads, Settings, runtime health/diagnostics, and the provider-neutral Discover query surface are now wired remotely to the existing application runtime. Real provider login/network behavior and installed target-Windows interaction remain separate future evidence boundaries.
+Library, Downloads, Settings, runtime health/diagnostics, and the provider-neutral Discover query surface are wired to the application runtime. Hosted Windows CI now builds and launches the release executable, builds the NSIS installer, exercises silent install/launch/uninstall, verifies uninstall preserves user state, and verifies version upgrade preserves persisted settings/download state. Real provider login/network behavior and owner target-machine interaction remain separate future evidence boundaries.
 
 ## Current architecture
 
@@ -78,11 +78,11 @@ legacy binary evidence
 → approved SearchNow requirements
 → docs/foundation/ architecture
 → implementation source
-→ repository/static + hosted Windows compile proof
-→ target-Windows installed runtime proof
+→ repository/static + hosted Windows compile/runtime/installer proof
+→ owner target-Windows installed acceptance proof
 ```
 
-Source/build success is not proof of installed Windows behavior. The owner has intentionally deferred target-Windows runtime smoke while provider-independent frontend implementation continues remotely.
+Hosted CI proves a bounded Windows executable and NSIS lifecycle on GitHub-hosted Windows, but it is not a substitute for owner target-machine acceptance, representative Minecraft/AppData discovery, real provider/network behavior, or release signing.
 
 ## Safety/privacy boundary
 
