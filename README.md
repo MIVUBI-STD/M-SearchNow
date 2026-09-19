@@ -70,7 +70,7 @@ Implemented at repository/runtime-core level:
 - one consolidated `SearchNowBackendRuntime` managed by Tauri;
 - bounded secret-safe diagnostics with current component health;
 - committed npm/Rust lockfiles and deterministic `npm ci` / Cargo `--locked` verification;
-- hosted Linux verification and native Windows RustCore/Tauri compile gates.
+- hosted Linux verification plus Windows RustCore/Tauri build, executable launch smoke, NSIS artifact build, install/launch/uninstall lifecycle, uninstall user-state preservation, and version-upgrade state-preservation gates.
 
 ## Current Frontend Status
 
@@ -90,9 +90,9 @@ Not implemented yet:
 - Marketplace/PlayFab-specific integration and live catalog data;
 - Discover download action until provider metadata supplies a deterministic safe output descriptor;
 - package file-picker/import interaction;
-- installer/release branding and clean-machine acceptance.
+- final release branding/signing and owner clean-machine acceptance.
 
-Target-Windows installed/runtime smoke is still required. It is currently deferred by the owner and is not replaced by hosted compilation.
+Hosted Windows CI now proves a bounded executable + NSIS lifecycle, including upgrade-state compatibility. Owner target-Windows acceptance is still required for real Minecraft/AppData discovery, native picker/permission behavior, representative performance, branding/signing, and clean-machine release acceptance.
 
 ## Source Map
 
