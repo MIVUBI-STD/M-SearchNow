@@ -134,6 +134,7 @@
       expectedSha256: item.expectedSha256,
     };
     let result = await runtimeProductFacade.queueCatalogDownload(request);
+    let recoveredDefaultDirectory: string | null = null;
 
     const staleDefaultDirectory =
       settings.ok &&
@@ -152,9 +153,20 @@
         downloadBusy = false;
         return;
       }
+      recoveredDefaultDirectory = picker.data;
       result = await runtimeProductFacade.queueCatalogDownload({
         ...request,
-        destinationDirectory: picker.data,
+        destinationDirectory: recoveredDefaultDirectory,
+      });
+    }
+
+    if (result.ok && recoveredDefaultDirectory && settings.ok) {
+      void runtimeProductFacade.saveSettings({
+        ...settings.data,
+        download: {
+          ...settings.data.download,
+          defaultDirectory: recoveredDefaultDirectory,
+        },
       });
     }
 
