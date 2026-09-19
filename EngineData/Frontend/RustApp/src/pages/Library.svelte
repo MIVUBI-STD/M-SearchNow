@@ -4,7 +4,7 @@
   import { localContentTypeLabel } from "../app/shared/format";
   import type { LocalBackendSnapshot, LocalContentItem, LocalContentType, PackageInspection } from "../app/shared/types";
   import ContentTypeMark from "../components/ui/ContentTypeMark.svelte";
-  import LocalContentDetailModal from "../components/ui/LocalContentDetailModal.svelte";
+  import LibraryDetailPanel from "../components/library/LibraryDetailPanel.svelte";
   import Notice from "../components/ui/Notice.svelte";
   import PackageInspectionModal from "../components/ui/PackageInspectionModal.svelte";
   import PageState from "../components/ui/PageState.svelte";
@@ -223,9 +223,6 @@
     batchBusy = false;
   }
 
-  function closeDetails(): void {
-    if (!actionBusy) selectedItem = null;
-  }
 
   async function exportSelectedContent(): Promise<void> {
     const item = selectedItem;
@@ -509,11 +506,13 @@
   {:else if loading && !loaded}
     <PageState kind="loading" title="Scanning content" message="Checking your Minecraft locations." />
   {:else if snapshot && filteredItems.length > 0}
-    <div class="library-list">
+    <div class="library-workspace">
+      <div class="library-list">
       {#each filteredItems as item (item.id)}
         <button
           class="library-row"
           class:library-row--selected={selectedIds.includes(item.id)}
+          class:library-row--active={!selectionMode && selectedItem?.id === item.id}
           type="button"
           aria-pressed={selectionMode ? selectedIds.includes(item.id) : undefined}
           onclick={() => openDetails(item)}
@@ -544,6 +543,19 @@
           </div>
         </button>
       {/each}
+      </div>
+
+      <LibraryDetailPanel
+        item={selectedItem ?? filteredItems[0] ?? null}
+        libraryItems={snapshot.library.items}
+        duplicates={selectedItem ? selectedDuplicates : []}
+        rootLabel={rootLabel}
+        onOpenFolder={openSelectedFolder}
+        onExport={exportSelectedContent}
+        onRemove={removeSelectedContent}
+        onSelectRelated={(item) => (selectedItem = item)}
+        {actionBusy}
+      />
     </div>
   {:else if snapshot}
     <PageState
@@ -555,19 +567,6 @@
     />
   {/if}
 </section>
-
-<LocalContentDetailModal
-  item={selectedItem}
-  libraryItems={snapshot?.library.items ?? []}
-  duplicates={selectedDuplicates}
-  open={selectedItem !== null}
-  onClose={closeDetails}
-  onOpenFolder={openSelectedFolder}
-  onExport={exportSelectedContent}
-  onRemove={removeSelectedContent}
-  onSelectRelated={(item) => (selectedItem = item)}
-  {actionBusy}
-/>
 
 <PackageInspectionModal
   inspection={packageInspection}
