@@ -125,14 +125,39 @@
       destinationDirectory = picker.data;
     }
 
-    const result = await runtimeProductFacade.queueCatalogDownload({
+    const request = {
       download: item.download,
       displayName: item.title,
       destinationFileName: item.fileName,
       destinationDirectory,
       expectedBytes: item.expectedBytes,
       expectedSha256: item.expectedSha256,
-    });
+    };
+    let result = await runtimeProductFacade.queueCatalogDownload(request);
+
+    const staleDefaultDirectory =
+      settings.ok &&
+      settings.data.download.defaultDirectory !== null &&
+      !result.ok &&
+      ["download_destination_directory_invalid", "download_destination_create_failed"].includes(result.error.code);
+
+    if (staleDefaultDirectory) {
+      const picker = await runtimeProductFacade.chooseDownloadDirectory();
+      if (!picker.ok) {
+        downloadMessage = picker.error.message;
+        downloadBusy = false;
+        return;
+      }
+      if (!picker.data) {
+        downloadBusy = false;
+        return;
+      }
+      result = await runtimeProductFacade.queueCatalogDownload({
+        ...request,
+        destinationDirectory: picker.data,
+      });
+    }
+
     if (result.ok) {
       selectedItem = null;
       downloadMessage = `${item.title} was added to Downloads.`;
