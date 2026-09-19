@@ -514,6 +514,13 @@ impl DownloadManager {
         Ok(())
     }
 
+    pub fn remove_completed(&mut self) -> usize {
+        let before = self.jobs.len();
+        self.jobs
+            .retain(|job| job.state != DownloadJobState::Completed);
+        before - self.jobs.len()
+    }
+
     fn job_mut(&mut self, job_id: &str) -> BackendResult<&mut DownloadJob> {
         self.jobs
             .iter_mut()
