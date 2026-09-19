@@ -11,7 +11,6 @@ pub mod package;
 pub mod platform;
 pub mod provider_adapter;
 pub mod provider_session;
-pub mod providers;
 pub mod runtime;
 pub mod settings;
 mod storage;
