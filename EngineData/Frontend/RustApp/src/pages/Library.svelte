@@ -415,15 +415,11 @@
         <CheckSquare size={15} aria-hidden="true" />
         {selectionMode ? "Selecting…" : "Select"}
       </button>
-      <button class="button button--secondary" type="button" onclick={refresh} disabled={!runtimeReady || loading || batchBusy}>
-        <RefreshCw size={15} class={loading ? "spin" : ""} aria-hidden="true" />
-        {loading ? "Scanning" : "Rescan"}
-      </button>
     </div>
   </div>
 
   {#if snapshot}
-    <div class="toolbar">
+    <div class="toolbar toolbar--library">
       <label class="search-field">
         <Search size={15} aria-hidden="true" />
         <input bind:value={query} type="search" placeholder="Search your library" aria-label="Search your library" />
@@ -453,6 +449,16 @@
         <option value="type">Content type</option>
         <option value="status">Needs review first</option>
       </select>
+      <button
+        class="icon-button icon-button--quiet library-refresh"
+        type="button"
+        title="Rescan library"
+        aria-label="Rescan library"
+        onclick={refresh}
+        disabled={!runtimeReady || loading || batchBusy}
+      >
+        <RefreshCw size={15} class={loading ? "spin" : ""} aria-hidden="true" />
+      </button>
     </div>
     <ResultsBar
       label={`${filteredItems.length} of ${snapshot.library.items.length} item${snapshot.library.items.length === 1 ? "" : "s"}`}

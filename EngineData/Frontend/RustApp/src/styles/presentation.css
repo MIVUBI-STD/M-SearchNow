@@ -776,3 +776,65 @@ summary:focus-visible {
     gap: 8px;
   }
 }
+
+
+/* Library control-density refinement. */
+.page-heading h1 {
+  font-size: clamp(26px, 2.4vw, 34px);
+}
+
+.page-heading__actions .button {
+  min-height: 36px;
+  padding-inline: 11px;
+}
+
+.toolbar--library {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.toolbar--library .search-field,
+.toolbar--library .select-field {
+  border-color: var(--sn-border);
+  background: #111821;
+}
+
+.toolbar--library .search-field {
+  min-width: 320px;
+}
+
+.toolbar--library .select-field {
+  min-width: 142px;
+}
+
+.library-refresh {
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 42px;
+  height: auto;
+  min-height: 42px;
+  background: #111821;
+}
+
+.toolbar--library + .results-bar {
+  min-height: 26px;
+  border: 0;
+  padding: 0 2px;
+}
+
+.library-list {
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.library-row {
+  padding-block: 11px;
+}
+
+@media (max-width: 1100px) {
+  .toolbar--library .search-field {
+    flex-basis: 100%;
+  }
+}
