@@ -4,13 +4,13 @@
 
 During normal `develop` work, run the cheapest check that can falsify the changed claim.
 
-Current repository-only baseline:
+Current repository contract baseline:
 
 ```bash
 python tools/verify_repository.py
 ```
 
-When executable source is introduced, add module-specific formatting, static analysis, build, unit, integration, and runtime/UI tests according to the selected stack. Do not invent gates before the underlying implementation exists.
+Executable source is now present. Shared verification therefore includes module formatting/static analysis/tests/build plus hosted Windows executable and NSIS lifecycle checks. New gates should still be added only when they falsify a concrete product or release claim.
 
 ## Promotion boundary
 
@@ -47,9 +47,9 @@ Use only:
 ```text
 implemented
 repository/static verified
-integration verified
-runtime/UI verified
+hosted integration/runtime verified
+owner target-machine verified
 not verified
 ```
 
-A passing repository structure check does not prove application runtime behavior.
+A passing repository structure check does not prove runtime behavior, and a passing hosted Windows lifecycle does not prove owner target-machine behavior.
