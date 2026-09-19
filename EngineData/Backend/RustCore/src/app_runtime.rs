@@ -353,7 +353,19 @@ impl SearchNowBackendRuntime {
     }
 
     pub fn inspect_package(&self, path: &Path) -> BackendResult<PackageInspection> {
-        inspect_package(path)
+        let started = Instant::now();
+        let result = inspect_package(path);
+        self.diagnostics.record_outcome(
+            DiagnosticComponent::Package,
+            started,
+            result.is_ok(),
+            "package_inspection_ok",
+            "Minecraft package inspection completed.",
+            "package_inspection_failed",
+            "Minecraft package inspection could not complete.",
+            DiagnosticSeverity::Warning,
+        );
+        result
     }
 
     pub fn import_package(
