@@ -126,6 +126,7 @@ if shared_workflow.exists():
         "cargo test --locked --manifest-path EngineData/Backend/RustCore/Cargo.toml",
         "cargo clippy --locked --manifest-path EngineData/Backend/RustCore/Cargo.toml",
         "cargo check --locked --manifest-path EngineData/Frontend/RustApp/src-tauri/Cargo.toml",
+        "crate::commands::package::replace_package_bundle",
     ]:
         if needle not in text:
             errors.append(f"{shared_workflow_rel}: missing deterministic verification contract {needle!r}")
@@ -171,3 +172,15 @@ if errors:
     sys.exit(1)
 
 print("SearchNow repository contracts: PASS")
+
+
+# Package bundle updates already exist in RustCore; keep the product path wired end-to-end.
+for rel, needle in [
+    ("EngineData/Frontend/RustApp/src/app/bridge/runtimeApi.ts", '"replace_package_bundle"'),
+    ("EngineData/Frontend/RustApp/src/app/bridge/runtimeProductFacade.ts", "replacePackageBundle"),
+    ("EngineData/Frontend/RustApp/src/pages/Library.svelte", "replacePackageBundle"),
+    ("EngineData/Frontend/RustApp/src/components/ui/PackageInspectionModal.svelte", "canAutoUpdateBundle"),
+]:
+    path = ROOT / rel
+    if path.exists() and needle not in path.read_text(encoding="utf-8", errors="replace"):
+        errors.append(f"{rel}: transactional package bundle update product wiring is missing {needle!r}")
