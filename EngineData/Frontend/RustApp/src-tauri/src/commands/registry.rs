@@ -27,5 +27,6 @@ pub fn register<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         crate::commands::download::cancel_download,
         crate::commands::download::retry_download,
         crate::commands::download::remove_download,
+        crate::commands::download::clear_completed_downloads,
     ])
 }
