@@ -98,6 +98,7 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
   package_bundle_replace_backup_failed: "SearchNow could not preserve the installed packs before updating this add-on.",
   package_bundle_replace_manifest_missing: "The add-on changed after inspection and can no longer be applied safely.",
   package_bundle_replace_commit_failed: "SearchNow could not apply the add-on update. Existing packs were restored when possible.",
+  package_bundle_replace_task_failed: "SearchNow could not complete the add-on update operation. Try again.",
 };
 
 export function toProductError(error: unknown, fallbackMessage: string): ProductError {
