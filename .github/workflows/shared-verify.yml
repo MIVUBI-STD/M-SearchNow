@@ -37,7 +37,7 @@ jobs:
         run: npm run validate:quick
 
   windows-readiness:
-    name: Windows Rust/Tauri compile gate
+    name: Windows runtime / installer gate
     needs: verify
     runs-on: windows-latest
     timeout-minutes: 30
