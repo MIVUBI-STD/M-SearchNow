@@ -22,3 +22,64 @@
   .diagnostic-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .diagnostic-row { flex-direction: column; gap: 6px; }
 }
+
+
+.diagnostics-panel {
+  margin-top: 16px;
+  border-top: 1px solid var(--sn-border);
+  padding-top: 16px;
+}
+
+.diagnostics-panel__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.diagnostics-panel__heading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.diagnostics-panel__heading strong {
+  font-size: 11px;
+}
+
+.diagnostics-panel__heading span,
+.diagnostics-panel__copy {
+  color: var(--sn-text-soft);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.diagnostics-panel__copy {
+  margin: 8px 0 0;
+}
+
+.diagnostic-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.diagnostic-summary > div {
+  border-radius: 8px;
+  background: #111923;
+  padding: 9px 10px;
+}
+
+.diagnostic-summary strong {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+.diagnostics-details {
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+.diagnostic-row {
+  border-radius: 8px;
+  background: #111923;
+  padding: 9px 10px;
+}

@@ -36,15 +36,15 @@
   });
 </script>
 
-<article class="settings-section">
-  <div class="settings-section__heading">
-    <div><span class="eyebrow">Advanced</span><h2>Runtime diagnostics</h2></div>
+<div class="diagnostics-panel">
+  <div class="diagnostics-panel__heading">
+    <div><strong>Runtime diagnostics</strong><span>Recent runtime events and health counters.</span></div>
     <button class="button button--secondary button--compact" type="button" onclick={refresh} disabled={!active || !runtimeReady || loading}>
       <RefreshCw size={14} class={loading ? "spin" : ""} />Refresh
     </button>
   </div>
 
-  <p class="section-copy">Safe runtime health and recent diagnostic events. Credentials, provider payloads, and sensitive paths are excluded by the backend contract.</p>
+  <p class="diagnostics-panel__copy">Credentials, provider payloads, and sensitive paths are excluded.</p>
 
   {#if error}
     <Notice tone="error" title="Diagnostics unavailable." message={error} />
@@ -79,4 +79,4 @@
       {/if}
     </details>
   {/if}
-</article>
+</div>

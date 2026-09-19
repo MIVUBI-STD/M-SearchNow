@@ -191,11 +191,18 @@
     <Notice tone="success" title="Changes saved." message="Scan again to refresh detected Minecraft locations." />
   {/if}
 
-  <div class="settings-layout">
-    <div class="settings-stack">
-      <article class="settings-section">
+  <div class="settings-workspace">
+    <nav class="settings-nav" aria-label="Settings sections">
+      <a href="#settings-minecraft">Minecraft</a>
+      <a href="#settings-downloads">Downloads</a>
+      <a href="#settings-storage">Detected storage</a>
+      <a href="#settings-advanced">Advanced</a>
+    </nav>
+
+    <div class="settings-main">
+      <section class="settings-section" id="settings-minecraft">
         <div class="settings-section__heading">
-          <div><span class="eyebrow">Minecraft</span><h2>Minecraft locations</h2></div>
+          <div><h2>Minecraft</h2><p>Control which Minecraft locations SearchNow scans.</p></div>
           <button
             class="button button--secondary button--compact"
             type="button"
@@ -227,11 +234,11 @@
             <input bind:checked={includeDevelopmentContent} type="checkbox" disabled={!active || !snapshot?.ready || loading || saving || scanning} />
           </label>
         </div>
-      </article>
+      </section>
 
-      <article class="settings-section">
+      <section class="settings-section" id="settings-downloads">
         <div class="settings-section__heading">
-          <div><span class="eyebrow">Downloads</span><h2>Download preferences</h2></div>
+          <div><h2>Downloads</h2><p>Choose where downloads go and limit transfer speed when needed.</p></div>
         </div>
 
         <label class="field">
@@ -271,11 +278,11 @@
           />
           <small>Leave empty for unlimited speed. One global limit is shared fairly by concurrent downloads.</small>
         </label>
-      </article>
+      </section>
 
-      <article class="settings-section">
+      <section class="settings-section" id="settings-storage">
         <div class="settings-section__heading">
-          <div><span class="eyebrow">Detected storage</span><h2>Detected Minecraft locations</h2></div>
+          <div><h2>Detected storage</h2><p>Locations found by SearchNow on this device.</p></div>
           <StatePill state={discoveryTone} label={discoveryLabel} />
         </div>
         <p class="section-copy">{discovery?.message ?? "Minecraft locations have not been checked yet."}</p>
@@ -290,22 +297,28 @@
             {/each}
           </div>
         {/if}
-      </article>
+      </section>
 
-      <DiagnosticsPanel runtimeReady={snapshot?.ready ?? false} {active} />
+      <section class="settings-section settings-section--advanced" id="settings-advanced">
+        <div class="settings-section__heading">
+          <div><h2>Advanced</h2><p>Runtime health and diagnostics for troubleshooting.</p></div>
+        </div>
+
+        <div class="settings-health">
+          <div>
+            <span>Connection</span>
+            <strong>{snapshot?.ready ? "Connected" : "Unavailable"}</strong>
+            <small>{snapshot?.summary ?? "Checking app status..."}</small>
+          </div>
+          <div>
+            <span>Health</span>
+            <strong>{snapshot?.backend?.diagnostics.health.state ?? "Unknown"}</strong>
+            <small>{snapshot?.backend ? `${snapshot.backend.diagnostics.health.errorEvents} errors · ${snapshot.backend.diagnostics.health.warningEvents} warnings` : "Health information is not available yet."}</small>
+          </div>
+        </div>
+
+        <DiagnosticsPanel runtimeReady={snapshot?.ready ?? false} {active} />
+      </section>
     </div>
-
-    <aside class="settings-stack">
-      <article class="settings-card settings-card--large">
-        <span class="settings-card__label">App connection</span>
-        <strong>{snapshot?.ready ? "Connected" : "Unavailable"}</strong>
-        <p>{snapshot?.summary ?? "Checking app status..."}</p>
-      </article>
-      <article class="settings-card settings-card--large">
-        <span class="settings-card__label">App health</span>
-        <strong>{snapshot?.backend?.diagnostics.health.state ?? "Unknown"}</strong>
-        <p>{snapshot?.backend ? `${snapshot.backend.diagnostics.health.errorEvents} errors · ${snapshot.backend.diagnostics.health.warningEvents} warnings` : "Health information is not available yet."}</p>
-      </article>
-    </aside>
   </div>
 </section>
