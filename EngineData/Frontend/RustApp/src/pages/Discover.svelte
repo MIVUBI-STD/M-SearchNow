@@ -264,33 +264,39 @@
   </div>
 
   {#if catalogProviders.length > 0}
-    <div class="toolbar toolbar--catalog">
-      <label class="search-field search-field--wide">
-        <Search size={15} aria-hidden="true" />
-        <input bind:value={query} type="search" placeholder="Search content" aria-label="Search content" />
+    <div class="discover-controls">
+      <label class="search-field search-field--discover">
+        <Search size={17} aria-hidden="true" />
+        <input bind:value={query} type="search" placeholder="Search worlds, add-ons, packs, skins…" aria-label="Search content" />
       </label>
-      {#if catalogProviders.length > 1}
-        <select class="select-field" bind:value={selectedProvider} aria-label="Content source">
-          {#each catalogProviders as provider (provider.capabilities.provider)}
-            <option value={provider.capabilities.provider}>{provider.capabilities.provider}</option>
-          {/each}
-        </select>
-      {/if}
-      <select class="select-field" bind:value={contentFilter} aria-label="Content type">
-        <option value="all">All types</option>
-        <option value="world">Worlds</option>
-        <option value="addon">Add-Ons</option>
-        <option value="resourcePack">Resource Packs</option>
-        <option value="skin">Skins</option>
-        <option value="persona">Persona</option>
-      </select>
-      <select class="select-field" bind:value={sort} aria-label="Sort results">
-        <option value="relevance">Most relevant</option>
-        <option value="newest">Newest first</option>
-        <option value="oldest">Oldest first</option>
-        <option value="nameAsc">Name A–Z</option>
-        <option value="nameDesc">Name Z–A</option>
-      </select>
+
+      <div class="discover-controls__row">
+        <div class="discover-tabs" role="group" aria-label="Content type">
+          <button class:discover-tab--active={contentFilter === "all"} class="discover-tab" type="button" onclick={() => (contentFilter = "all")}>All</button>
+          <button class:discover-tab--active={contentFilter === "world"} class="discover-tab" type="button" onclick={() => (contentFilter = "world")}>Worlds</button>
+          <button class:discover-tab--active={contentFilter === "addon"} class="discover-tab" type="button" onclick={() => (contentFilter = "addon")}>Add-Ons</button>
+          <button class:discover-tab--active={contentFilter === "resourcePack"} class="discover-tab" type="button" onclick={() => (contentFilter = "resourcePack")}>Resource Packs</button>
+          <button class:discover-tab--active={contentFilter === "skin"} class="discover-tab" type="button" onclick={() => (contentFilter = "skin")}>Skins</button>
+          <button class:discover-tab--active={contentFilter === "persona"} class="discover-tab" type="button" onclick={() => (contentFilter = "persona")}>Persona</button>
+        </div>
+
+        <div class="discover-controls__secondary">
+          {#if catalogProviders.length > 1}
+            <select class="select-field" bind:value={selectedProvider} aria-label="Content source">
+              {#each catalogProviders as provider (provider.capabilities.provider)}
+                <option value={provider.capabilities.provider}>{provider.capabilities.provider}</option>
+              {/each}
+            </select>
+          {/if}
+          <select class="select-field" bind:value={sort} aria-label="Sort results">
+            <option value="relevance">Most relevant</option>
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="nameAsc">Name A–Z</option>
+            <option value="nameDesc">Name Z–A</option>
+          </select>
+        </div>
+      </div>
     </div>
     {#if page}
       <ResultsBar
@@ -332,8 +338,8 @@
   {:else if page && page.items.length > 0}
     <div class="content-grid content-grid--catalog" aria-busy={loading}>
       {#each page.items as item (`${item.provider}:${item.itemId}`)}
-        <article class="content-card content-card--catalog catalog-card">
-          <div class="content-card__preview catalog-card__thumbnail">
+        <button class="catalog-card" type="button" onclick={() => openDetails(item)}>
+          <div class="catalog-card__thumbnail">
             {#if item.thumbnailUrl}
               <img src={item.thumbnailUrl} alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
             {:else}
@@ -341,19 +347,17 @@
             {/if}
             <span class="catalog-card__type">{catalogContentTypeLabel(item.contentType)}</span>
           </div>
-          <div class="content-card__body">
+          <div class="catalog-card__body">
             <h2 title={item.title}>{item.title}</h2>
             <div class="catalog-card__creator">{item.creatorName ? `By ${item.creatorName}` : item.provider}</div>
-            <div class="catalog-card__facts">
-              {#if item.publishedAtMs}<span>Released {formatDate(item.publishedAtMs)}</span>{/if}
-              {#if item.updatedAtMs && item.updatedAtMs !== item.publishedAtMs}<span>Updated {formatDate(item.updatedAtMs)}</span>{/if}
-            </div>
-            <div class="content-card__footer">
-              <span class="state-text">{item.download && item.fileName ? "Download available" : "View details"}</span>
-              <button class="button button--secondary button--compact" type="button" onclick={() => openDetails(item)}>View details</button>
+            <div class="catalog-card__bottom">
+              <div class="catalog-card__facts">
+                {#if item.updatedAtMs}<span>{formatDate(item.updatedAtMs)}</span>{:else if item.publishedAtMs}<span>{formatDate(item.publishedAtMs)}</span>{/if}
+              </div>
+              {#if item.download && item.fileName}<span class="catalog-card__availability">Download</span>{/if}
             </div>
           </div>
-        </article>
+        </button>
       {/each}
     </div>
     {#if page.nextCursor}
