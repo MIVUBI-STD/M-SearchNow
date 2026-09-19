@@ -203,6 +203,22 @@ impl DownloadExecutionRuntime {
         })
     }
 
+    pub fn remove_completed(&self) -> BackendResult<DownloadManagerSnapshot> {
+        self.mutate_persist(|manager| {
+            manager.remove_completed();
+            Ok(manager.snapshot())
+        })
+        .map(|mut snapshot| {
+            snapshot.scheduler_error = self
+                .inner
+                .scheduler_error
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .clone();
+            snapshot
+        })
+    }
+
     pub fn pump(&self) -> BackendResult<usize> {
         let claimed = {
             let mut manager = self.lock_manager()?;
