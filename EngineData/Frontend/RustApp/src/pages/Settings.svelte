@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, RefreshCw, Save } from "@lucide/svelte";
+  import { Check, FolderOpen, RefreshCw, Save, X } from "@lucide/svelte";
   import { runtimeProductFacade } from "../app/bridge/runtimeProductFacade";
   import { minecraftChannelLabel, minecraftStorageKindLabel } from "../app/shared/format";
   import type { AppSettings, MinecraftDiscoverySnapshot, ProductRuntimeSnapshot } from "../app/shared/types";
@@ -14,6 +14,7 @@
   let includeLegacyUwp = $state(true);
   let includeDevelopmentContent = $state(false);
   let bandwidthLimitMib = $state("");
+  let defaultDownloadDirectory = $state("");
   let discovery = $state<MinecraftDiscoverySnapshot | null>(null);
   let baselineSettings = $state<AppSettings | null>(null);
   let loading = $state(false);
@@ -29,7 +30,8 @@
         includePreview !== baselineSettings.minecraft.includePreview ||
         includeLegacyUwp !== baselineSettings.minecraft.includeLegacyUwp ||
         includeDevelopmentContent !== baselineSettings.minecraft.includeDevelopmentContent ||
-        bandwidthLimitMib !== formatBandwidthLimit(baselineSettings.download.bandwidthLimitBytesPerSecond)),
+        bandwidthLimitMib !== formatBandwidthLimit(baselineSettings.download.bandwidthLimitBytesPerSecond) ||
+        defaultDownloadDirectory !== (baselineSettings.download.defaultDirectory ?? "")),
   );
   let bandwidthLimitInvalid = $derived.by(() => {
     const value = bandwidthLimitMib.trim();
@@ -62,6 +64,7 @@
     includeLegacyUwp = settings.minecraft.includeLegacyUwp;
     includeDevelopmentContent = settings.minecraft.includeDevelopmentContent;
     bandwidthLimitMib = formatBandwidthLimit(settings.download.bandwidthLimitBytesPerSecond);
+    defaultDownloadDirectory = settings.download.defaultDirectory ?? "";
     baselineSettings = settings;
   }
 
@@ -98,6 +101,7 @@
       },
       download: {
         bandwidthLimitBytesPerSecond: parsedBandwidthLimit(),
+        defaultDirectory: defaultDownloadDirectory || null,
       },
     });
     if (result.ok) {
@@ -107,6 +111,19 @@
       error = result.error.message;
     }
     saving = false;
+  }
+
+  async function chooseDefaultDownloadDirectory(): Promise<void> {
+    if (!active || !snapshot?.ready || saving || scanning) return;
+    const result = await runtimeProductFacade.chooseDownloadDirectory();
+    if (!result.ok) {
+      error = result.error.message;
+      return;
+    }
+    if (result.data) {
+      defaultDownloadDirectory = result.data;
+      error = "";
+    }
   }
 
   async function rescan(): Promise<void> {
@@ -214,8 +231,33 @@
 
       <article class="settings-section">
         <div class="settings-section__heading">
-          <div><span class="eyebrow">Downloads</span><h2>Bandwidth</h2></div>
+          <div><span class="eyebrow">Downloads</span><h2>Download preferences</h2></div>
         </div>
+
+        <label class="field">
+          <span>Default download folder</span>
+          <input
+            value={defaultDownloadDirectory}
+            type="text"
+            placeholder="Ask every time"
+            readonly
+            disabled={!active || !snapshot?.ready || loading || saving || scanning}
+          />
+          <small>When set, Discover sends downloads here directly instead of opening the folder picker every time.</small>
+        </label>
+        <div class="catalog-modal__footer">
+          <button class="button button--secondary" type="button" onclick={chooseDefaultDownloadDirectory} disabled={!active || !snapshot?.ready || loading || saving || scanning}>
+            <FolderOpen size={15} aria-hidden="true" />
+            Choose folder
+          </button>
+          {#if defaultDownloadDirectory}
+            <button class="button button--ghost" type="button" onclick={() => (defaultDownloadDirectory = "")} disabled={!active || !snapshot?.ready || loading || saving || scanning}>
+              <X size={15} aria-hidden="true" />
+              Ask every time
+            </button>
+          {/if}
+        </div>
+
         <label class="field">
           <span>Download limit (MiB/s)</span>
           <input
