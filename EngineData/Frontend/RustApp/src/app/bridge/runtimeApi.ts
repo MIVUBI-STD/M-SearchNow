@@ -122,6 +122,9 @@ export const runtimeApi = {
   removeDownload(jobId: string): Promise<DownloadManagerSnapshot> {
     return invoke<DownloadManagerSnapshot>("remove_download", { jobId });
   },
+  clearCompletedDownloads(): Promise<DownloadManagerSnapshot> {
+    return invoke<DownloadManagerSnapshot>("clear_completed_downloads");
+  },
 
   queryCatalog(request: CatalogRequest): Promise<CatalogPage> {
     return invoke<CatalogPage>("query_catalog", { request });
