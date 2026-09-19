@@ -313,6 +313,36 @@ fn invalid_terminal_and_active_transitions_fail_closed() {
 }
 
 #[test]
+fn remove_completed_preserves_other_job_states() {
+    let mut manager = DownloadManager::new(DownloadPolicy::default()).expect("manager");
+    let completed = manager.enqueue(request("completed")).expect("completed queue");
+    manager.claim_ready_jobs();
+    manager
+        .mark_transferring(&completed.id)
+        .expect("completed transfer");
+    manager
+        .report_progress(&completed.id, 10, Some(10))
+        .expect("completed progress");
+    manager
+        .begin_finalizing(&completed.id)
+        .expect("completed finalize");
+    manager
+        .mark_completed(&completed.id)
+        .expect("completed terminal");
+
+    let cancelled = manager.enqueue(request("cancelled")).expect("cancelled queue");
+    manager
+        .request_cancel(&cancelled.id)
+        .expect("cancelled terminal");
+
+    assert_eq!(manager.remove_completed(), 1);
+    let snapshot = manager.snapshot();
+    assert_eq!(snapshot.jobs.len(), 1);
+    assert_eq!(snapshot.jobs[0].id, cancelled.id);
+    assert_eq!(snapshot.jobs[0].state, DownloadJobState::Cancelled);
+}
+
+#[test]
 fn recovery_rejects_inconsistent_terminal_jobs() {
     let mut manager = DownloadManager::new(DownloadPolicy::default()).expect("manager");
     manager.enqueue(request("pack")).expect("queue");
