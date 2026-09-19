@@ -125,3 +125,107 @@ jobs:
           if (Test-Path $installedExe) {
             throw "SearchNow executable remained after silent uninstall."
           }
+      - name: Prove NSIS version upgrade preserves SearchNow state
+        shell: pwsh
+        working-directory: EngineData/Frontend/RustApp
+        run: |
+          $bundleDir = Resolve-Path "src-tauri/target/release/bundle/nsis"
+          $currentInstaller = Get-ChildItem "$bundleDir/*-setup.exe" | Select-Object -First 1
+          $currentCopy = Join-Path $env:RUNNER_TEMP "SearchNow-current-setup.exe"
+          Copy-Item $currentInstaller.FullName $currentCopy -Force
+
+          npx tauri build --bundles nsis --ci --config '{"version":"0.0.9"}'
+          $baselineInstaller = Get-ChildItem "$bundleDir/*-setup.exe" |
+            Where-Object { $_.Name -match "0\.0\.9" } |
+            Select-Object -First 1
+          if ($null -eq $baselineInstaller) {
+            throw "Baseline NSIS installer version 0.0.9 was not produced."
+          }
+
+          $installRoot = Join-Path $env:RUNNER_TEMP "SearchNowUpgradeSmoke"
+          if (Test-Path $installRoot) {
+            Remove-Item $installRoot -Recurse -Force
+          }
+
+          $baselineInstall = Start-Process -FilePath $baselineInstaller.FullName -ArgumentList @("/S", "/D=$installRoot") -PassThru -Wait
+          if ($baselineInstall.ExitCode -ne 0) {
+            throw "Baseline NSIS install failed with code $($baselineInstall.ExitCode)."
+          }
+
+          $appStateRoot = Join-Path $env:APPDATA "com.halokaryamedia.searchnow"
+          New-Item -ItemType Directory -Force -Path $appStateRoot | Out-Null
+          $settingsPath = Join-Path $appStateRoot "settings.json"
+          $downloadsPath = Join-Path $appStateRoot "downloads.json"
+
+          @'
+          {
+            "schemaVersion": 1,
+            "minecraft": {
+              "rootOverride": null,
+              "includePreview": true,
+              "includeLegacyUwp": true,
+              "includeDevelopmentContent": false
+            }
+          }
+          '@ | Set-Content -Path $settingsPath -Encoding utf8
+
+          @'
+          {
+            "schemaVersion": 1,
+            "nextSequence": 2,
+            "jobs": [{
+              "id": "download-000001",
+              "source": {"transport":"fixture","resourceId":"resource-upgrade"},
+              "displayName": "Upgrade Fixture",
+              "destinationFileName": "upgrade.mcpack",
+              "state": "queued",
+              "progress": {"downloadedBytes":0,"totalBytes":10},
+              "attempt": 0,
+              "lastError": null,
+              "createdAtMs": 1,
+              "updatedAtMs": 1
+            }]
+          }
+          '@ | Set-Content -Path $downloadsPath -Encoding utf8
+
+          $settingsBefore = Get-FileHash $settingsPath -Algorithm SHA256
+          $downloadsBefore = Get-FileHash $downloadsPath -Algorithm SHA256
+
+          $upgrade = Start-Process -FilePath $currentCopy -ArgumentList @("/S", "/D=$installRoot") -PassThru -Wait
+          if ($upgrade.ExitCode -ne 0) {
+            throw "Current NSIS upgrade failed with code $($upgrade.ExitCode)."
+          }
+
+          $installedExe = Join-Path $installRoot "SearchNow.exe"
+          if (!(Test-Path $installedExe)) {
+            throw "SearchNow executable missing after version upgrade."
+          }
+
+          $process = Start-Process -FilePath $installedExe -PassThru
+          Start-Sleep -Seconds 5
+          if ($process.HasExited) {
+            throw "Upgraded SearchNow exited during upgrade smoke with code $($process.ExitCode)."
+          }
+          Stop-Process -Id $process.Id -Force
+
+          if (!(Test-Path $settingsPath) -or !(Test-Path $downloadsPath)) {
+            throw "SearchNow persisted state disappeared during installer upgrade."
+          }
+
+          $settingsAfter = Get-FileHash $settingsPath -Algorithm SHA256
+          $downloadsAfter = Get-FileHash $downloadsPath -Algorithm SHA256
+          if ($settingsBefore.Hash -ne $settingsAfter.Hash) {
+            throw "Settings state changed unexpectedly during installer upgrade."
+          }
+          if ($downloadsBefore.Hash -ne $downloadsAfter.Hash) {
+            throw "Download state changed unexpectedly during installer upgrade."
+          }
+
+          $uninstaller = Join-Path $installRoot "uninstall.exe"
+          if (Test-Path $uninstaller) {
+            $uninstall = Start-Process -FilePath $uninstaller -ArgumentList @("/S", "_?=$installRoot") -PassThru -Wait
+            if ($uninstall.ExitCode -ne 0) {
+              throw "Upgrade smoke cleanup uninstall failed with code $($uninstall.ExitCode)."
+            }
+          }
+          Remove-Item $appStateRoot -Recurse -Force -ErrorAction SilentlyContinue
