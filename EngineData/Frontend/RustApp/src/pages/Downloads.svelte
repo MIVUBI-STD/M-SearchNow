@@ -307,7 +307,7 @@
       <h1>Downloads</h1>
       <p>See current downloads and recently saved files.</p>
     </div>
-    <div class="catalog-modal__footer">
+    <div class="action-row action-row--heading">
       {#if completedJobs > 0}
         <button class="button button--ghost" type="button" onclick={clearCompleted} disabled={!runtimeReady || clearingCompleted || actionJobId !== null}>
           <Trash2 size={15} aria-hidden="true" />

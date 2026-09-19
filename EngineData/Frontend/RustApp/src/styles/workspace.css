@@ -1059,3 +1059,18 @@
     overflow-x: auto;
   }
 }
+
+
+/* Shared page-level action grouping. */
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.action-row--heading {
+  justify-content: flex-end;
+  margin-top: 0;
+}

@@ -252,7 +252,7 @@
           />
           <small>When set, Discover sends downloads here directly instead of opening the folder picker every time.</small>
         </label>
-        <div class="catalog-modal__footer">
+        <div class="action-row">
           <button class="button button--secondary" type="button" onclick={chooseDefaultDownloadDirectory} disabled={!active || !snapshot?.ready || loading || saving || scanning}>
             <FolderOpen size={15} aria-hidden="true" />
             Choose folder
