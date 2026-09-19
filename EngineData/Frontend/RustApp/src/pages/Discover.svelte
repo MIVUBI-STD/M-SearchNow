@@ -106,22 +106,30 @@
 
     downloadBusy = true;
     downloadMessage = "";
-    const picker = await runtimeProductFacade.chooseDownloadDirectory();
-    if (!picker.ok) {
-      downloadMessage = picker.error.message;
-      downloadBusy = false;
-      return;
-    }
-    if (!picker.data) {
-      downloadBusy = false;
-      return;
+
+    let destinationDirectory: string | null = null;
+    const settings = await runtimeProductFacade.loadSettings();
+    if (settings.ok) destinationDirectory = settings.data.download.defaultDirectory;
+
+    if (!destinationDirectory) {
+      const picker = await runtimeProductFacade.chooseDownloadDirectory();
+      if (!picker.ok) {
+        downloadMessage = picker.error.message;
+        downloadBusy = false;
+        return;
+      }
+      if (!picker.data) {
+        downloadBusy = false;
+        return;
+      }
+      destinationDirectory = picker.data;
     }
 
     const result = await runtimeProductFacade.queueCatalogDownload({
       download: item.download,
       displayName: item.title,
       destinationFileName: item.fileName,
-      destinationDirectory: picker.data,
+      destinationDirectory,
       expectedBytes: item.expectedBytes,
       expectedSha256: item.expectedSha256,
     });
