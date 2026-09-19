@@ -680,6 +680,121 @@ mod tests {
         assert!(downloadable_file(&early_access).is_none());
     }
 
+    #[test]
+    fn integrated_catalog_and_resolver_use_real_curseforge_contract_shape() {
+        use crate::{
+            catalog::{CatalogPageRequest, CatalogRequest},
+            provider_adapter::ProviderAdapterRuntime,
+        };
+        use std::{
+            io::{Read, Write},
+            net::{TcpListener, TcpStream},
+            thread,
+        };
+
+        const API_KEY: &str = "fixture-curseforge-key";
+        let listener = TcpListener::bind("127.0.0.1:0").expect("listener");
+        let address = listener.local_addr().expect("address");
+        let server = thread::spawn(move || {
+            for expected_path in [
+                "/v1/games?index=0&pageSize=50",
+                "/v1/mods/search?gameId=777&index=0&pageSize=50&searchFilter=demo",
+                "/v1/mods/123/files/456/download-url",
+            ] {
+                let (mut stream, _) = listener.accept().expect("accept");
+                let request = read_request(&mut stream);
+                assert!(request.starts_with(&format!("GET {expected_path} HTTP/1.1")));
+                assert!(request
+                    .to_ascii_lowercase()
+                    .contains("x-api-key: fixture-curseforge-key"));
+
+                let body = if expected_path.starts_with("/v1/games") {
+                    r#"{"data":[{"id":777,"slug":"minecraft-bedrock"}],"pagination":{"index":0,"pageSize":50,"resultCount":1,"totalCount":1}}"#
+                } else if expected_path.starts_with("/v1/mods/search") {
+                    r#"{"data":[{"id":123,"name":"Demo Add-On","summary":"Bedrock fixture","authors":[{"name":"Creator"}],"logo":{"thumbnailUrl":"https://cdn.example.com/icon.png"},"categories":[{"name":"Addons","slug":"addons","isClass":true},{"name":"Utility","slug":"utility","isClass":false}],"mainFileId":456,"latestFiles":[{"id":456,"isAvailable":true,"fileName":"demo.mcaddon","fileLength":9876,"isEarlyAccessContent":false}],"allowModDistribution":true,"isAvailable":true}],"pagination":{"index":0,"pageSize":50,"resultCount":1,"totalCount":1}}"#
+                } else {
+                    r#"{"data":"https://cdn.example.com/demo.mcaddon"}"#
+                };
+                write_json_response(&mut stream, body);
+            }
+        });
+
+        let provider = Arc::new(
+            CurseForgeProvider::new_with_base_url(API_KEY, format!("http://{address}"))
+                .expect("provider"),
+        );
+        let runtime = ProviderAdapterRuntime::compose(vec![provider.clone()]).expect("runtime");
+        let page = runtime
+            .catalog()
+            .query(&CatalogRequest {
+                provider: PROVIDER_KEY.into(),
+                query: CatalogQuery {
+                    text: Some("demo".into()),
+                    filters: Default::default(),
+                    sort: CatalogSort::Relevance,
+                    page: CatalogPageRequest {
+                        limit: 30,
+                        cursor: None,
+                    },
+                },
+            })
+            .expect("catalog");
+
+        assert_eq!(page.items.len(), 1);
+        assert_eq!(page.items[0].content_type, CatalogContentType::Addon);
+        assert_eq!(page.items[0].file_name.as_deref(), Some("demo.mcaddon"));
+        assert_eq!(page.items[0].expected_bytes, Some(9876));
+        assert_eq!(
+            page.items[0].tags,
+            vec!["utility".to_string()]
+        );
+        match page.items[0].download.as_ref().expect("download ref") {
+            CatalogDownloadRef::ProviderResolved {
+                provider,
+                resource_id,
+            } => {
+                assert_eq!(provider, PROVIDER_KEY);
+                assert_eq!(resource_id, "123-456");
+                assert!(!resource_id.contains(API_KEY));
+            }
+            other => panic!("unexpected download ref: {other:?}"),
+        }
+
+        let resolver = provider
+            .resource_resolver(runtime.sessions())
+            .expect("resolver build")
+            .expect("resolver");
+        resolver.resolve("123-456").expect("resolved download");
+        server.join().expect("server");
+    }
+
+    fn read_request(stream: &mut std::net::TcpStream) -> String {
+        let mut bytes = Vec::new();
+        let mut buffer = [0_u8; 1024];
+        loop {
+            let read = stream.read(&mut buffer).expect("read");
+            if read == 0 {
+                break;
+            }
+            bytes.extend_from_slice(&buffer[..read]);
+            if bytes.windows(4).any(|window| window == b"\r\n\r\n") {
+                break;
+            }
+        }
+        String::from_utf8(bytes).expect("utf8")
+    }
+
+    fn write_json_response(stream: &mut std::net::TcpStream, body: &str) {
+        write!(
+            stream,
+            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+            body.len(),
+            body
+        )
+        .expect("write response");
+        stream.flush().expect("flush");
+    }
+
     fn allowed_for_test() -> ApiProject {
         ApiProject {
             id: 1,
