@@ -33,7 +33,7 @@
 
 .nav-item--active {
   border-color: #345172;
-  background: linear-gradient(90deg, var(--sn-accent-surface), var(--sn-surface-raised));
+  background: var(--sn-accent-surface);
   color: var(--sn-text);
 }
 
