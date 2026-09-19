@@ -1,7 +1,8 @@
 use crate::{
     catalog::{
         CatalogContentType, CatalogDownloadMetadata, CatalogDownloadRef, CatalogProvider,
-        CatalogProviderFailure, CatalogProviderItem, CatalogProviderPage, CatalogQuery, CatalogSort,
+        CatalogProviderFailure, CatalogProviderItem, CatalogProviderPage, CatalogQuery,
+        CatalogSort,
     },
     download::{ProviderResolveFailure, ResolvedResource, ResourceResolver},
     error::{BackendError, BackendResult},
@@ -176,7 +177,9 @@ impl CurseForgeClient {
         let path = format!(
             "{}{}",
             url.path(),
-            url.query().map(|query| format!("?{query}")).unwrap_or_default()
+            url.query()
+                .map(|query| format!("?{query}"))
+                .unwrap_or_default()
         );
         self.get_json(&path, session)
     }
@@ -318,10 +321,12 @@ impl CatalogProvider for CurseForgeCatalog {
             }
 
             let package = downloadable_file(&project);
-            let download = package.as_ref().map(|file| CatalogDownloadRef::ProviderResolved {
-                provider: PROVIDER_KEY.to_string(),
-                resource_id: encode_resource_id(project.id, file.id),
-            });
+            let download = package
+                .as_ref()
+                .map(|file| CatalogDownloadRef::ProviderResolved {
+                    provider: PROVIDER_KEY.to_string(),
+                    resource_id: encode_resource_id(project.id, file.id),
+                });
             if let Some(file) = package {
                 metadata.insert(
                     project.id.to_string(),
@@ -346,15 +351,11 @@ impl CatalogProvider for CurseForgeCatalog {
             }
         }
 
-        let next_cursor = response
-            .pagination
-            .and_then(|page| {
-                let next = page.index.saturating_add(page.result_count);
-                (page.result_count > 0
-                    && next < page.total_count
-                    && next < MAX_API_INDEX)
-                    .then(|| next.to_string())
-            });
+        let next_cursor = response.pagination.and_then(|page| {
+            let next = page.index.saturating_add(page.result_count);
+            (page.result_count > 0 && next < page.total_count && next < MAX_API_INDEX)
+                .then(|| next.to_string())
+        });
 
         Ok(CatalogProviderPage { items, next_cursor })
     }
@@ -392,7 +393,9 @@ impl ResourceResolver for CurseForgeResolver {
 fn acquire_session(
     sessions: &ProviderSessionManager,
 ) -> Result<Arc<CurseForgeSession>, crate::provider_session::ProviderSessionError> {
-    sessions.acquire(PROVIDER_KEY)?.downcast::<CurseForgeSession>()
+    sessions
+        .acquire(PROVIDER_KEY)?
+        .downcast::<CurseForgeSession>()
 }
 
 fn project_content_type(project: &ApiProject) -> CatalogContentType {
