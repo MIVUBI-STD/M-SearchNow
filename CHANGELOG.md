@@ -38,6 +38,7 @@ All notable SearchNow repository/product changes will be recorded here.
 - User-facing Minecraft channel/storage-kind labels in Settings.
 - Dedicated final visual-polish layer for card rhythm, density, metric readability, hover/focus feedback, form affordance, mobile spacing, and loading-state presentation.
 - Windows NSIS installer build plus hosted lifecycle proof for silent install, installed launch, uninstall, uninstall user-state preservation, and version upgrade with persisted settings/download state preserved.
+- End-to-end package file/folder inspection and safe import UX for `.mcpack`, `.mcaddon`, and `.mcworld`, including single-pack update and transactional `.mcaddon` bundle update wiring through Tauri, product facade, and Library UI.
 
 ### Changed
 
