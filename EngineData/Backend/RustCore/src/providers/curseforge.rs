@@ -744,10 +744,7 @@ mod tests {
         assert_eq!(page.items[0].content_type, CatalogContentType::Addon);
         assert_eq!(page.items[0].file_name.as_deref(), Some("demo.mcaddon"));
         assert_eq!(page.items[0].expected_bytes, Some(9876));
-        assert_eq!(
-            page.items[0].tags,
-            vec!["utility".to_string()]
-        );
+        assert_eq!(page.items[0].tags, vec!["utility".to_string()]);
         match page.items[0].download.as_ref().expect("download ref") {
             CatalogDownloadRef::ProviderResolved {
                 provider,
