@@ -11,7 +11,8 @@
     "validate:architecture": "node scripts/validate_architecture_contract.mjs",
     "validate:quick": "npm run validate:architecture && npm run validate:error-contract && npm run check:source-size && npm run typecheck && npm run build:frontend",
     "check:source-size": "node scripts/validate_source_size_budget.mjs",
-    "validate:error-contract": "node scripts/validate_error_contract.mjs"
+    "validate:error-contract": "node scripts/validate_error_contract.mjs",
+    "build:installer": "tauri build --bundles nsis"
   },
   "dependencies": {
     "@lucide/svelte": "^1.26.0",

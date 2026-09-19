@@ -63,7 +63,6 @@ jobs:
       - name: Smoke launch Windows desktop executable
         shell: pwsh
         run: |
-          Remove-Item Env:SEARCHNOW_CURSEFORGE_API_KEY -ErrorAction SilentlyContinue
           $exe = Resolve-Path "EngineData/Frontend/RustApp/src-tauri/target/release/searchnow.exe"
           $process = Start-Process -FilePath $exe -PassThru
           Start-Sleep -Seconds 5
@@ -71,3 +70,18 @@ jobs:
             throw "SearchNow exited during the Windows runtime smoke launch with code $($process.ExitCode)."
           }
           Stop-Process -Id $process.Id -Force
+      - name: Build Windows NSIS installer
+        working-directory: EngineData/Frontend/RustApp
+        run: npm run build:installer
+      - name: Verify Windows NSIS installer artifact
+        shell: pwsh
+        run: |
+          $installers = Get-ChildItem "EngineData/Frontend/RustApp/src-tauri/target/release/bundle/nsis/*-setup.exe"
+          if ($installers.Count -ne 1) {
+            throw "Expected exactly one NSIS installer, found $($installers.Count)."
+          }
+          if ($installers[0].Length -le 0) {
+            throw "NSIS installer artifact is empty."
+          }
+          Write-Host "Installer:" $installers[0].FullName
+          Write-Host "Bytes:" $installers[0].Length

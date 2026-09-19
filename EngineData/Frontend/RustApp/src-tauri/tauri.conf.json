@@ -27,7 +27,12 @@
     }
   },
   "bundle": {
-    "active": false,
-    "icon": ["icons/icon.png"]
+    "active": true,
+    "icon": [
+      "icons/icon.png"
+    ],
+    "targets": [
+      "nsis"
+    ]
   }
 }
