@@ -315,7 +315,9 @@ fn invalid_terminal_and_active_transitions_fail_closed() {
 #[test]
 fn remove_completed_preserves_other_job_states() {
     let mut manager = DownloadManager::new(DownloadPolicy::default()).expect("manager");
-    let completed = manager\n        .enqueue(request("completed"))\n        .expect("completed queue");
+    let completed = manager
+        .enqueue(request("completed"))
+        .expect("completed queue");
     manager.claim_ready_jobs();
     manager
         .mark_transferring(&completed.id)
@@ -330,7 +332,9 @@ fn remove_completed_preserves_other_job_states() {
         .mark_completed(&completed.id)
         .expect("completed terminal");
 
-    let cancelled = manager\n        .enqueue(request("cancelled"))\n        .expect("cancelled queue");
+    let cancelled = manager
+        .enqueue(request("cancelled"))
+        .expect("cancelled queue");
     manager
         .request_cancel(&cancelled.id)
         .expect("cancelled terminal");
