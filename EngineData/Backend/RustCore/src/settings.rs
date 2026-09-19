@@ -215,6 +215,30 @@ mod tests {
     }
 
     #[test]
+    fn legacy_v1_settings_without_download_block_remain_compatible() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let path = directory.path().join("settings.json");
+        fs::write(
+            &path,
+            br#"{
+                "schemaVersion":1,
+                "minecraft":{
+                    "rootOverride":null,
+                    "includePreview":true,
+                    "includeLegacyUwp":true,
+                    "includeDevelopmentContent":false
+                }
+            }"#,
+        )
+        .expect("legacy settings");
+        let store = SettingsStore::new(path);
+
+        let settings = store.load().expect("legacy settings load");
+        assert!(settings.minecraft.include_preview);
+        assert!(settings.download.bandwidth_limit_bytes_per_second.is_none());
+    }
+
+    #[test]
     fn store_rejects_invalid_json() {
         let directory = tempfile::tempdir().expect("tempdir");
         let path = directory.path().join("settings.json");

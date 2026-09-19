@@ -221,6 +221,42 @@ fn finalization_keeps_existing_file_and_uses_next_available_name() {
 }
 
 #[test]
+fn legacy_v1_download_state_without_new_optional_fields_remains_compatible() {
+    let directory = tempfile::tempdir().expect("tempdir");
+    let path = directory.path().join("downloads.json");
+    fs::write(
+        &path,
+        br#"{
+            "schemaVersion":1,
+            "nextSequence":2,
+            "jobs":[{
+                "id":"download-000001",
+                "source":{"transport":"fixture","resourceId":"resource-pack"},
+                "displayName":"pack",
+                "destinationFileName":"pack.mcpack",
+                "state":"queued",
+                "progress":{"downloadedBytes":0,"totalBytes":10},
+                "attempt":0,
+                "lastError":null,
+                "createdAtMs":1,
+                "updatedAtMs":1
+            }]
+        }"#,
+    )
+    .expect("legacy state");
+    let store = DownloadStore::new(path);
+
+    let persisted = store.load().expect("legacy download state load");
+    assert_eq!(persisted.jobs.len(), 1);
+    assert!(persisted.jobs[0].destination_directory.is_none());
+    assert!(persisted.jobs[0].expected_sha256.is_none());
+
+    let recovered =
+        DownloadManager::recover(DownloadPolicy::default(), persisted).expect("recover legacy");
+    assert_eq!(recovered.snapshot().queued_jobs, 1);
+}
+
+#[test]
 fn store_rejects_invalid_json() {
     let directory = tempfile::tempdir().expect("tempdir");
     let path = directory.path().join("downloads.json");

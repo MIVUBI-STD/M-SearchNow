@@ -83,6 +83,25 @@ if session_runtime.exists():
 # Keep this verifier focused on repository layout, safety boundaries,
 # deterministic CI, and promotion/release hygiene.
 
+tauri_config = ROOT / "EngineData/Frontend/RustApp/src-tauri/tauri.conf.json"
+if tauri_config.exists():
+    import json
+    try:
+        config = json.loads(tauri_config.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        errors.append(f"{tauri_config.relative_to(ROOT)}: invalid JSON: {error}")
+    else:
+        if config.get("identifier") != "com.halokaryamedia.searchnow":
+            errors.append(
+                f"{tauri_config.relative_to(ROOT)}: application identifier changed; "
+                "upgrade/install continuity requires 'com.halokaryamedia.searchnow'"
+            )
+        bundle = config.get("bundle", {})
+        if bundle.get("active") is not True:
+            errors.append(f"{tauri_config.relative_to(ROOT)}: Windows release bundle must remain active")
+        if bundle.get("targets") != ["nsis"]:
+            errors.append(f"{tauri_config.relative_to(ROOT)}: Windows release bundle target must remain ['nsis']")
+
 build_rs = ROOT / "EngineData/Frontend/RustApp/src-tauri/build.rs"
 if build_rs.exists():
     text = build_rs.read_text(encoding="utf-8", errors="replace")
