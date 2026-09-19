@@ -26,6 +26,8 @@ pub struct AppSettings {
 pub struct DownloadSettings {
     #[serde(default)]
     pub bandwidth_limit_bytes_per_second: Option<u64>,
+    #[serde(default)]
+    pub default_directory: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -84,6 +86,17 @@ impl AppSettings {
             return Err(BackendError::new(
                 "settings_download_bandwidth_invalid",
                 "Download bandwidth limit must be between 64 KiB/s and 1 GiB/s.",
+            ));
+        }
+        if self
+            .download
+            .default_directory
+            .as_ref()
+            .is_some_and(|path| path.as_os_str().is_empty())
+        {
+            return Err(BackendError::new(
+                "settings_download_directory_invalid",
+                "Default download directory cannot be empty.",
             ));
         }
         if self
@@ -164,6 +177,7 @@ mod tests {
         assert!(!settings.minecraft.include_development_content);
         assert!(settings.minecraft.root_override.is_none());
         assert!(settings.download.bandwidth_limit_bytes_per_second.is_none());
+        assert!(settings.download.default_directory.is_none());
     }
 
     #[test]
@@ -236,6 +250,7 @@ mod tests {
         let settings = store.load().expect("legacy settings load");
         assert!(settings.minecraft.include_preview);
         assert!(settings.download.bandwidth_limit_bytes_per_second.is_none());
+        assert!(settings.download.default_directory.is_none());
     }
 
     #[test]
@@ -287,6 +302,14 @@ mod tests {
 #[cfg(test)]
 mod download_setting_tests {
     use super::*;
+
+    #[test]
+    fn default_download_directory_rejects_empty_path() {
+        let mut settings = AppSettings::default();
+        settings.download.default_directory = Some(PathBuf::new());
+        let error = settings.validate().expect_err("empty download directory must fail");
+        assert_eq!(error.code(), "settings_download_directory_invalid");
+    }
 
     #[test]
     fn bandwidth_limit_bounds_fail_closed() {
