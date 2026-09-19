@@ -186,6 +186,7 @@ mod tests {
         let store = SettingsStore::new(directory.path().join("settings.json"));
         let mut settings = AppSettings::default();
         settings.minecraft.include_preview = true;
+        settings.download.default_directory = Some(directory.path().join("downloads"));
         store.save(&settings).expect("save");
         assert_eq!(store.load().expect("load"), settings);
     }
