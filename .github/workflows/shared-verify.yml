@@ -111,6 +111,13 @@ jobs:
           }
           Stop-Process -Id $process.Id -Force
 
+          # Uninstall policy: remove application binaries, preserve user-owned runtime state.
+          $appStateRoot = Join-Path $env:APPDATA "com.halokaryamedia.searchnow"
+          New-Item -ItemType Directory -Force -Path $appStateRoot | Out-Null
+          $uninstallSentinel = Join-Path $appStateRoot "uninstall-preserve-smoke.txt"
+          "preserve-user-state" | Set-Content -Path $uninstallSentinel -Encoding utf8
+          $sentinelHashBefore = (Get-FileHash $uninstallSentinel -Algorithm SHA256).Hash
+
           $uninstaller = Join-Path $installRoot "uninstall.exe"
           if (!(Test-Path $uninstaller)) {
             throw "NSIS uninstaller was not created."
@@ -125,6 +132,14 @@ jobs:
           if (Test-Path $installedExe) {
             throw "SearchNow executable remained after silent uninstall."
           }
+          if (!(Test-Path $uninstallSentinel)) {
+            throw "SearchNow uninstall removed persisted user state."
+          }
+          $sentinelHashAfter = (Get-FileHash $uninstallSentinel -Algorithm SHA256).Hash
+          if ($sentinelHashBefore -ne $sentinelHashAfter) {
+            throw "SearchNow uninstall mutated persisted user state."
+          }
+          Remove-Item $appStateRoot -Recurse -Force -ErrorAction SilentlyContinue
       - name: Prove NSIS version upgrade preserves SearchNow state
         shell: pwsh
         working-directory: EngineData/Frontend/RustApp
