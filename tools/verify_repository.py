@@ -126,7 +126,6 @@ if shared_workflow.exists():
         "cargo test --locked --manifest-path EngineData/Backend/RustCore/Cargo.toml",
         "cargo clippy --locked --manifest-path EngineData/Backend/RustCore/Cargo.toml",
         "cargo check --locked --manifest-path EngineData/Frontend/RustApp/src-tauri/Cargo.toml",
-        "crate::commands::package::replace_package_bundle",
     ]:
         if needle not in text:
             errors.append(f"{shared_workflow_rel}: missing deterministic verification contract {needle!r}")
@@ -169,6 +168,7 @@ for legacy_old in [
 
 # Package bundle updates already exist in RustCore; keep the product path wired end-to-end.
 for rel, needle in [
+    ("EngineData/Frontend/RustApp/src-tauri/src/commands/registry.rs", "crate::commands::package::replace_package_bundle"),
     ("EngineData/Frontend/RustApp/src/app/bridge/runtimeApi.ts", '"replace_package_bundle"'),
     ("EngineData/Frontend/RustApp/src/app/bridge/runtimeProductFacade.ts", "replacePackageBundle"),
     ("EngineData/Frontend/RustApp/src/pages/Library.svelte", "replacePackageBundle"),
