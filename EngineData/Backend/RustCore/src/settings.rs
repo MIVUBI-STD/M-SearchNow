@@ -308,7 +308,9 @@ mod download_setting_tests {
     fn default_download_directory_rejects_empty_path() {
         let mut settings = AppSettings::default();
         settings.download.default_directory = Some(PathBuf::new());
-        let error = settings.validate().expect_err("empty download directory must fail");
+        let error = settings
+            .validate()
+            .expect_err("empty download directory must fail");
         assert_eq!(error.code(), "settings_download_directory_invalid");
     }
 
