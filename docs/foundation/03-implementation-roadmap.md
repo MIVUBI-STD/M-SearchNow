@@ -58,11 +58,9 @@ Phase numbers describe capability/verification boundaries. Hosted Windows CI now
 
 **Backend complete; provider-independent frontend wiring complete remotely.** RustCore discovers current Bedrock GDK/account roots, optional Preview, and legacy UWP fallback, then performs bounded local indexing. Library now renders the actual runtime snapshot with summary/search/filter/warning states. Target-machine behavior remains unproven until Phase 8.
 
-### Phase 3 — Package Inspection
+### Phase 3 — Package Inspection / Local Package Operations
 
-**Backend complete for read-only inspection.** Folder / `.mcpack` / `.mcaddon` metadata inspection, manifest classification, BP/RP relationship detection, and archive safety checks are implemented without extraction/mutation.
-
-Package file-picker/import UX remains deferred until a concrete target-runtime interaction path is approved and tested.
+**Remote implementation complete.** Folder / `.mcpack` / `.mcaddon` / `.mcworld` inspection, manifest classification, BP/RP relationship detection, archive safety checks, native file/folder pickers, safe import, single-pack update, transactional `.mcaddon` bundle update, export, and removal are wired through the existing Tauri/runtime boundary. Owner target-Windows interaction remains part of Phase 8 acceptance.
 
 ### Phase 4 — Download Runtime
 
