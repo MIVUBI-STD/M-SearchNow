@@ -10,7 +10,6 @@
     progressPercent,
   } from "../app/shared/format";
   import type { DownloadJob, DownloadManagerSnapshot } from "../app/shared/types";
-  import MetricCard from "../components/ui/MetricCard.svelte";
   import Notice from "../components/ui/Notice.svelte";
   import PageState from "../components/ui/PageState.svelte";
   import ResultsBar from "../components/ui/ResultsBar.svelte";
@@ -322,24 +321,23 @@
     </div>
   </div>
 
-  <div class="metric-grid">
-    <MetricCard label="Active" value={snapshot?.activeJobs ?? "—"} detail="Downloading now" />
-    <MetricCard label="Queued" value={snapshot?.queuedJobs ?? "—"} detail="Waiting to start" />
-    <MetricCard label="Downloaded" value={snapshot ? completedJobs : "—"} detail="Saved successfully" />
-  </div>
-
   {#if snapshot && jobs.length > 0}
-    <div class="toolbar">
-      <label class="search-field">
+    <div class="downloads-controls">
+      <label class="search-field search-field--downloads">
         <Search size={15} aria-hidden="true" />
         <input bind:value={query} type="search" placeholder="Search downloads" aria-label="Search downloads" />
       </label>
-      <select class="select-field" bind:value={filter} aria-label="Filter downloads">
-        <option value="all">All downloads</option>
-        <option value="active">Active</option>
-        <option value="completed">Downloaded</option>
-        <option value="issues">Needs attention</option>
-      </select>
+      <div class="downloads-tabs" role="group" aria-label="Download status">
+        <button class:downloads-tab--active={filter === "all"} class="downloads-tab" type="button" onclick={() => (filter = "all")}>All</button>
+        <button class:downloads-tab--active={filter === "active"} class="downloads-tab" type="button" onclick={() => (filter = "active")}>Active</button>
+        <button class:downloads-tab--active={filter === "completed"} class="downloads-tab" type="button" onclick={() => (filter = "completed")}>Downloaded</button>
+        <button class:downloads-tab--active={filter === "issues"} class="downloads-tab" type="button" onclick={() => (filter = "issues")}>Needs attention</button>
+      </div>
+      <div class="downloads-summary">
+        <span>{snapshot.activeJobs} active</span>
+        <span>{snapshot.queuedJobs} queued</span>
+        <span>{completedJobs} complete</span>
+      </div>
     </div>
     <ResultsBar
       label={`${visibleJobs.length} of ${jobs.length} download${jobs.length === 1 ? "" : "s"}`}
@@ -380,24 +378,24 @@
       onAction={controlsChanged ? resetControls : null}
     />
   {:else if snapshot}
-    <div class="download-list" aria-live="polite">
+    <div class="download-queue" aria-live="polite">
       {#each visibleJobs as job (job.id)}
         {@const percent = progressPercent(job.progress.downloadedBytes, job.progress.totalBytes)}
         {@const rate = transferRate(job)}
         {@const eta = etaSeconds(job)}
-        <article class="download-card" aria-busy={actionJobId === job.id}>
-          <div class="download-card__main">
-            <div class="download-card__heading">
-              <div>
-                <StatePill state={job.state} label={downloadStateLabel(job.state)} />
+        <article class="download-row" aria-busy={actionJobId === job.id}>
+          <div class="download-row__main">
+            <div class="download-row__topline">
+              <div class="download-row__identity">
                 <h2>{job.displayName}</h2>
+                <StatePill state={job.state} label={downloadStateLabel(job.state)} />
               </div>
-              <span class="download-card__time">{formatDateTime(job.updatedAtMs)}</span>
+              <span class="download-row__time">{formatDateTime(job.updatedAtMs)}</span>
             </div>
 
             <div
               class:progress-track--indeterminate={percent === null && ["preparing", "transferring", "pauseRequested", "finalizing"].includes(job.state)}
-              class="progress-track"
+              class="progress-track download-row__progress"
               role="progressbar"
               aria-label={`${job.displayName} progress`}
               aria-valuemin={0}
@@ -408,7 +406,7 @@
               {#if percent !== null}<span style={`width:${percent}%`}></span>{:else}<span></span>{/if}
             </div>
 
-            <div class="download-card__meta">
+            <div class="download-row__meta">
               <span>{formatBytes(job.progress.downloadedBytes)}{job.progress.totalBytes !== null ? ` / ${formatBytes(job.progress.totalBytes)}` : ""}</span>
               <span>
                 {#if job.state === "transferring"}
@@ -417,17 +415,13 @@
                   {percent}%
                 {/if}
               </span>
+              {#if job.destinationDirectory}
+                <span class="download-row__destination" title={job.destinationDirectory}>{job.destinationDirectory}</span>
+              {/if}
             </div>
 
-            {#if job.destinationDirectory}
-              <div class="download-card__destination">
-                <span>{job.state === "completed" ? "Saved to" : "Save to"}</span>
-                <strong>{job.destinationDirectory}</strong>
-              </div>
-            {/if}
-
             {#if job.lastError}
-              <Notice tone="warning" title="Download failed" message={job.lastError.message} />
+              <div class="download-row__error">{job.lastError.message}</div>
             {/if}
 
             <TechnicalDetails
@@ -440,11 +434,10 @@
             />
           </div>
 
-          <div class="download-card__actions">
+          <div class="download-row__actions">
             {#if job.state === "completed" && job.destinationDirectory}
-              <button class="button button--secondary button--compact" type="button" onclick={() => openFolder(job)} disabled={actionJobId === job.id}>
-                <FolderOpen size={15} aria-hidden="true" />
-                Open folder
+              <button class="icon-button" type="button" title="Open folder" aria-label={`Open folder for ${job.displayName}`} onclick={() => openFolder(job)} disabled={actionJobId === job.id}>
+                <FolderOpen size={16} aria-hidden="true" />
               </button>
             {/if}
             {#if job.state === "queued"}
@@ -483,6 +476,5 @@
           </div>
         </article>
       {/each}
-    </div>
-  {/if}
+    </div>  {/if}
 </section>
