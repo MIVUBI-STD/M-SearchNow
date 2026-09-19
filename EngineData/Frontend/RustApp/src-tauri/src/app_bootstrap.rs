@@ -28,7 +28,6 @@ pub fn configure_application<R: tauri::Runtime>(
     Ok(())
 }
 
-
 fn curseforge_provider_from_environment(
 ) -> Result<Vec<Arc<dyn IntegratedProvider>>, Box<dyn std::error::Error>> {
     let Some(api_key) = std::env::var("SEARCHNOW_CURSEFORGE_API_KEY")
