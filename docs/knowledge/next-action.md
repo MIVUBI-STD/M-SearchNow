@@ -1,6 +1,6 @@
 # Next Action
 
-Status: `REMOTE_FOUNDATION_HARDENING`
+Status: `REMOTE_FOUNDATION_HARDENING_COMPLETE`
 
 ## Current checkpoint
 
@@ -14,7 +14,7 @@ Current implemented scope includes:
 - fail-closed inbound settings/catalog/download IPC contracts;
 - crate-private storage, identity, download execution, persistence, transport and workspace plumbing where no external boundary requires them;
 - Library, Discover, Downloads and Settings frontend surfaces behind one `runtimeProductFacade` and one raw `runtimeApi` bridge;
-- Linux repository/backend/frontend verification and a hosted Windows RustCore/Tauri compile gate.
+- Linux repository/backend/frontend verification plus hosted Windows release executable launch, NSIS build, install/launch/uninstall lifecycle, uninstall user-state preservation, and version-upgrade state preservation.
 
 ## Verification authority
 
@@ -26,12 +26,7 @@ This file owns continuation intent only. GitHub Actions owns exact executable ve
 
 ## Current engineering priority
 
-Finish remote-foundation hygiene before new functional architecture:
-
-1. current `develop` HEAD must pass `Repository Verify`;
-2. repository memory must remain truthful and avoid hard-coded stale verification identifiers;
-3. repository governance should enforce the documented branch model where repository administration permits it;
-4. after remote hygiene is clean, stop architecture-only refinement.
+Remote-foundation hardening is now at its intended ceiling. Keep the current `develop` HEAD behind `Repository Verify`, keep repository memory truthful, and do not add architecture-only layers. Further work should produce new product/runtime evidence rather than more speculative abstractions.
 
 ## Remaining product evidence
 
@@ -43,13 +38,13 @@ The following remain unproven until exercised directly:
 - a real provider login/session/catalog/resolver integration;
 - production TLS/CDN/provider behavior;
 - representative performance and scale;
-- installer, branding, clean-machine and release acceptance.
+- owner target-machine installer interaction, branding/signing, clean-machine and release acceptance.
 
 ## Next functional paths
 
 ```text
-REMOTE_FOUNDATION_HARDENING
-├── TARGET_WINDOWS_RUNTIME_SMOKE
+REMOTE_FOUNDATION_HARDENING_COMPLETE
+├── TARGET_WINDOWS_ACCEPTANCE
 └── REAL_PROVIDER_INTEGRATION
 ```
 
