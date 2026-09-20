@@ -12,6 +12,7 @@
   let error = $state("");
   let exportBusy = $state(false);
   let exportMessage = $state("");
+  let recentEvents = $derived((diagnostics?.events ?? []).slice(-8).reverse());
 
   async function refresh(): Promise<void> {
     if (!runtimeReady || !active || loading) return;
