@@ -38,6 +38,26 @@
     if (event.target === event.currentTarget && !downloadBusy) onClose();
   }
 
+  function availabilityTitle(): string {
+    if (canDownload) return "Ready to download";
+    if (!item?.fileName) return "Download file unavailable";
+    if (!item?.download) return "Download source unavailable";
+    return "Download unavailable";
+  }
+
+  function availabilityMessage(): string {
+    if (canDownload) {
+      return "SearchNow has enough provider metadata to start this download safely.";
+    }
+    if (!item?.fileName) {
+      return "This source did not provide a safe output filename for this item.";
+    }
+    if (!item?.download) {
+      return "This source did not provide a permitted download reference for this item.";
+    }
+    return "This item can be previewed, but SearchNow cannot start a download from the available metadata.";
+  }
+
   function handleKeydown(event: KeyboardEvent): void {
     if (!open) return;
     if (event.key === "Escape" && !downloadBusy) {
@@ -75,6 +95,11 @@
           </div>
         </div>
 
+        <div class:catalog-modal__availability--ready={canDownload} class="catalog-modal__availability">
+          <strong>{availabilityTitle()}</strong>
+          <span>{availabilityMessage()}</span>
+        </div>
+
         <div class="catalog-modal__facts">
           {#if item.publishedAtMs}
             <div><span>Released</span><strong>{formatDate(item.publishedAtMs)}</strong></div>
@@ -85,6 +110,8 @@
           {#if item.expectedBytes}
             <div><span>Size</span><strong>{formatBytes(item.expectedBytes)}</strong></div>
           {/if}
+          <div><span>Source</span><strong>{item.provider}</strong></div>
+          <div><span>Type</span><strong>{catalogContentTypeLabel(item.contentType)}</strong></div>
         </div>
 
         {#if item.description}
@@ -105,7 +132,7 @@
           </div>
         {:else if !item.download || !item.fileName}
           <div class="catalog-modal__footer">
-            <span class="catalog-modal__unavailable">Download unavailable</span>
+            <span class="catalog-modal__unavailable">{availabilityTitle()}</span>
           </div>
         {/if}
       </div>
