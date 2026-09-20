@@ -23,7 +23,11 @@ fn pick_directory<R: Runtime>(app: &AppHandle<R>) -> Result<Option<String>, Comm
 #[tauri::command]
 pub fn get_startup_route_override() -> Option<String> {
     std::env::var(VERIFY_ROUTE_ENV).ok().and_then(|value| {
-        matches!(value.as_str(), "library" | "discover" | "downloads" | "settings").then_some(value)
+        matches!(
+            value.as_str(),
+            "library" | "discover" | "downloads" | "settings"
+        )
+        .then_some(value)
     })
 }
 
