@@ -54,6 +54,14 @@ impl SearchNowBackendPaths {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct DiagnosticsSupportReport {
+    pub schema_version: u32,
+    pub runtime: RuntimeStatus,
+    pub diagnostics: BackendDiagnosticsSnapshot,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BackendRuntimeSnapshot {
     pub runtime: RuntimeStatus,
     pub minecraft: MinecraftDiscoverySnapshot,
@@ -284,6 +292,20 @@ impl SearchNowBackendRuntime {
 
     pub fn diagnostics_snapshot(&self) -> BackendDiagnosticsSnapshot {
         self.diagnostics.snapshot()
+    }
+
+    pub fn diagnostics_support_report_json(&self) -> BackendResult<Vec<u8>> {
+        let report = DiagnosticsSupportReport {
+            schema_version: 1,
+            runtime: self.runtime_status(),
+            diagnostics: self.diagnostics_snapshot(),
+        };
+        serde_json::to_vec_pretty(&report).map_err(|error| {
+            BackendError::new(
+                "diagnostics_report_serialize_failed",
+                format!("SearchNow could not serialize diagnostics report: {error}"),
+            )
+        })
     }
 
     pub fn snapshot(&self) -> BackendResult<BackendRuntimeSnapshot> {

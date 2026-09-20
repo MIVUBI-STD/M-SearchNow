@@ -10,6 +10,7 @@ const library = await read("src/pages/Library.svelte");
 const settings = await read("src/pages/Settings.svelte");
 const downloads = await read("src/pages/Downloads.svelte");
 const discover = await read("src/pages/Discover.svelte");
+const diagnosticsPanel = await read("src/components/settings/DiagnosticsPanel.svelte");
 const workspace = await read("src/styles/workspace.css");
 const catalogModal = await read("src/components/ui/CatalogDetailModal.svelte");
 const packageModal = await read("src/components/ui/PackageInspectionModal.svelte");
@@ -125,6 +126,19 @@ for (const needle of ["DiscoverFeedback", "Download folder could not be chosen",
 }
 if (discover.includes("downloadMessage")) {
   errors.push("Discover must use structured download feedback instead of downloadMessage");
+}
+
+for (const needle of ["Export report", "exportDiagnosticsReport", "Diagnostics exported"]) {
+  if (!diagnosticsPanel.includes(needle)) errors.push(`Diagnostics support workflow is missing: ${needle}`);
+}
+if (!runtimeApi.includes("export_diagnostics_report")) {
+  errors.push("runtimeApi is missing export_diagnostics_report");
+}
+if (!registry.includes("export_diagnostics_report")) {
+  errors.push("Tauri registry is missing export_diagnostics_report");
+}
+if (!facade.includes("exportDiagnosticsReport")) {
+  errors.push("runtimeProductFacade is missing diagnostics report export");
 }
 
 if (errors.length) {

@@ -3,6 +3,7 @@ pub fn register<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         crate::commands::runtime::get_runtime_status,
         crate::commands::runtime::get_backend_snapshot,
         crate::commands::runtime::get_backend_diagnostics,
+        crate::commands::runtime::export_diagnostics_report,
         crate::commands::settings::load_app_settings,
         crate::commands::settings::save_app_settings,
         crate::commands::minecraft::discover_minecraft_storage_command,

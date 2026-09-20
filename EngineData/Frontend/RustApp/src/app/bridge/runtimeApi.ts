@@ -33,6 +33,10 @@ export const runtimeApi = {
     return invoke<BackendDiagnosticsSnapshot>("get_backend_diagnostics");
   },
 
+  exportDiagnosticsReport(): Promise<string | null> {
+    return invoke<string | null>("export_diagnostics_report");
+  },
+
   loadAppSettings(): Promise<AppSettings> {
     return invoke<AppSettings>("load_app_settings");
   },

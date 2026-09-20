@@ -95,6 +95,33 @@ fn runtime_snapshot_is_safe_and_consistent_without_providers() {
 }
 
 #[test]
+fn diagnostics_support_report_is_local_safe_and_serializable() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let paths =
+        SearchNowBackendPaths::from_roots(temp.path().join("config"), temp.path().join("data"));
+    let runtime = SearchNowBackendRuntime::compose(
+        paths,
+        PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
+        Vec::new(),
+        HttpTransport::new_test_http(test_http_policy()).expect("test HTTP"),
+    )
+    .expect("runtime");
+
+    let bytes = runtime
+        .diagnostics_support_report_json()
+        .expect("diagnostics report");
+    let text = String::from_utf8(bytes).expect("utf8");
+
+    assert!(text.contains("\"schemaVersion\": 1"));
+    assert!(text.contains("\"runtime\""));
+    assert!(text.contains("\"diagnostics\""));
+    assert!(!text.contains("Authorization"));
+    assert!(!text.contains("Bearer "));
+    assert!(!text.contains("token="));
+    assert!(!text.contains(temp.path().to_string_lossy().as_ref()));
+}
+
+#[test]
 fn composed_provider_resolver_is_used_by_application_download_runtime() {
     let payload = b"searchnow-backend-runtime".repeat(1024);
     let base_url = spawn_server(payload.clone());

@@ -293,6 +293,13 @@ export const runtimeProductFacade = {
     );
   },
 
+  exportDiagnosticsReport(): Promise<ProductResult<string | null>> {
+    return productCall(
+      () => runtimeApi.exportDiagnosticsReport(),
+      "SearchNow could not export the diagnostics report.",
+    );
+  },
+
   queryCatalog(request: CatalogRequest): Promise<ProductResult<CatalogPage>> {
     return productCall(
       () => runtimeApi.queryCatalog(request),

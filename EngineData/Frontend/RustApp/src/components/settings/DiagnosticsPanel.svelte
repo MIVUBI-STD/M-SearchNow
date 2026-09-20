@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Activity, RefreshCw } from "@lucide/svelte";
+  import { Activity, FileDown, RefreshCw } from "@lucide/svelte";
   import { runtimeProductFacade } from "../../app/bridge/runtimeProductFacade";
   import { formatDateTime } from "../../app/shared/format";
   import type { BackendDiagnosticsSnapshot } from "../../app/shared/types";
@@ -10,6 +10,8 @@
   let loading = $state(false);
   let loaded = $state(false);
   let error = $state("");
+  let exportBusy = $state(false);
+  let exportMessage = $state("");
 
   let recentEvents = $derived((diagnostics?.events ?? []).slice(-8).reverse());
 
@@ -24,10 +26,26 @@
     loading = false;
   }
 
+  async function exportReport(): Promise<void> {
+    if (!runtimeReady || !active || exportBusy) return;
+    exportBusy = true;
+    exportMessage = "";
+    error = "";
+    const result = await runtimeProductFacade.exportDiagnosticsReport();
+    if (result.ok) {
+      if (result.data) exportMessage = `${result.data} exported successfully.`;
+    } else {
+      error = result.error.message;
+    }
+    exportBusy = false;
+  }
+
   $effect(() => {
     if (runtimeReady) return;
     loaded = false;
     error = "";
+    exportMessage = "";
+    exportBusy = false;
   });
 
   $effect(() => {
@@ -39,15 +57,22 @@
 <div class="diagnostics-panel">
   <div class="diagnostics-panel__heading">
     <div><strong>Runtime diagnostics</strong><span>Recent runtime events and health counters.</span></div>
-    <button class="button button--secondary button--compact" type="button" onclick={refresh} disabled={!active || !runtimeReady || loading}>
-      <RefreshCw size={14} class={loading ? "spin" : ""} />Refresh
-    </button>
+    <div class="diagnostics-panel__actions">
+      <button class="button button--secondary button--compact" type="button" onclick={exportReport} disabled={!active || !runtimeReady || exportBusy}>
+        <FileDown size={14} aria-hidden="true" />{exportBusy ? "Exporting" : "Export report"}
+      </button>
+      <button class="button button--secondary button--compact" type="button" onclick={refresh} disabled={!active || !runtimeReady || loading}>
+        <RefreshCw size={14} class={loading ? "spin" : ""} aria-hidden="true" />Refresh
+      </button>
+    </div>
   </div>
 
   <p class="diagnostics-panel__copy">Credentials, provider payloads, and sensitive paths are excluded.</p>
 
   {#if error}
     <Notice tone="error" title="Diagnostics unavailable." message={error} />
+  {:else if exportMessage}
+    <Notice tone="success" title="Diagnostics exported" message={exportMessage} />
   {:else if !runtimeReady}
     <div class="diagnostic-empty"><Activity size={15} /><span>Diagnostics require the desktop runtime.</span></div>
   {:else if !diagnostics}
