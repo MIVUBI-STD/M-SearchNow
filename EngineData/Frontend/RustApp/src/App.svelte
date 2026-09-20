@@ -5,6 +5,7 @@
   import { isAppRoute } from "./app/shared/navigation";
   import type { AppRoute, ProductRuntimeSnapshot } from "./app/shared/types";
   import Sidebar from "./components/layout/Sidebar.svelte";
+  import ActivityDialog from "./components/ui/ActivityDialog.svelte";
   import PageState from "./components/ui/PageState.svelte";
   import StatusBadge from "./components/ui/StatusBadge.svelte";
   import Discover from "./pages/Discover.svelte";
@@ -18,6 +19,7 @@
   let booting = $state(true);
   let refreshing = $state(false);
   let snapshot = $state<ProductRuntimeSnapshot | null>(null);
+  let activityOpen = $state(false);
 
   let health = $derived(snapshot?.backend?.diagnostics.health.state ?? "unknown");
   let runtimeLabel = $derived(
@@ -84,7 +86,7 @@
 <svelte:window onkeydown={handleAppShortcut} />
 
 <div class="app-shell" aria-busy={booting || refreshing}>
-  <Sidebar {route} onNavigate={navigate} />
+  <Sidebar {route} onNavigate={navigate} onOpenActivity={() => (activityOpen = true)} />
 
   <main class="app-main">
     {#if !booting && (refreshing || runtimeTone === "warning")}
@@ -113,3 +115,9 @@
     </div>
   </main>
 </div>
+
+<ActivityDialog
+  open={activityOpen}
+  runtimeReady={snapshot?.ready ?? false}
+  onClose={() => (activityOpen = false)}
+/>
