@@ -697,7 +697,11 @@
     </div>
     <div class="page-heading__actions">
       <button class="button button--primary" type="button" onclick={inspectPackage} aria-busy={inspectionBusy} disabled={!runtimeReady || inspectionBusy}>
-        <FileSearch size={15} aria-hidden="true" />
+        {#if inspectionBusy}
+          <RefreshCw size={15} class="spin" aria-hidden="true" />
+        {:else}
+          <FileSearch size={15} aria-hidden="true" />
+        {/if}
         {inspectionBusy ? "Inspecting…" : "Import file"}
       </button>
       <button class="button button--secondary" type="button" onclick={inspectPackageFolder} aria-busy={inspectionBusy} disabled={!runtimeReady || inspectionBusy}>
