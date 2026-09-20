@@ -1,13 +1,6 @@
 /* Current desktop workspace owner.
    Keep page-specific layout here; shared component polish stays in presentation.css. */
 
-:root {
-  --sn-sidebar-width: 188px;
-  --sn-content-width: 1360px;
-  --sn-page-padding-x: clamp(28px, 3vw, 48px);
-  --sn-page-padding-y: 28px;
-}
-
 .app-main {
   background: var(--sn-bg);
 }
@@ -30,14 +23,14 @@
 }
 
 .page-heading h1 {
-  font-size: 28px;
+  font-size: var(--sn-font-page);
   line-height: 1.05;
   letter-spacing: -0.035em;
 }
 
 .page-heading p {
   margin-top: 6px;
-  font-size: 13px;
+  font-size: var(--sn-font-body-lg);
 }
 
 .page-heading__actions {
@@ -96,7 +89,7 @@
 }
 
 .brand strong {
-  font-size: 13px;
+  font-size: var(--sn-font-body-lg);
   font-weight: 700;
   letter-spacing: -0.01em;
 }
@@ -121,7 +114,7 @@
   min-height: 38px;
   border-radius: 8px;
   padding: 8px 9px;
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
   font-weight: 600;
 }
 
@@ -166,7 +159,7 @@
 
 .library-drop-overlay__panel strong {
   color: var(--sn-text);
-  font-size: 14px;
+  font-size: var(--sn-font-section);
 }
 
 .library-drop-overlay__panel span {
@@ -193,7 +186,7 @@
   align-items: center;
   margin-top: 7px;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-variant-numeric: tabular-nums;
 }
 
@@ -342,7 +335,7 @@
   overflow: hidden;
   margin: 0;
   color: var(--sn-text);
-  font-size: 12px;
+  font-size: var(--sn-font-body);
   font-weight: 650;
   line-height: 1.35;
   text-overflow: ellipsis;
@@ -356,7 +349,7 @@
   gap: 5px 11px;
   margin-top: 5px;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   line-height: 1.4;
 }
 
@@ -380,13 +373,13 @@
   min-width: 78px;
   justify-items: end;
   gap: 4px;
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-variant-numeric: tabular-nums;
 }
 
 .library-row__version {
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
 }
 
 .library-detail {
@@ -425,7 +418,7 @@
 .library-detail__heading h2 {
   overflow-wrap: anywhere;
   margin: 4px 0 0;
-  font-size: 16px;
+  font-size: var(--sn-font-title);
   line-height: 1.3;
 }
 
@@ -434,7 +427,7 @@
   gap: 8px;
   margin-top: 6px;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
 }
 
 .library-detail__actions {
@@ -452,7 +445,7 @@
 .library-detail__description {
   margin: 16px 0 0;
   color: var(--sn-text-muted);
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
   line-height: 1.55;
 }
 
@@ -465,7 +458,7 @@
   background: #211a10;
   padding: 10px 11px;
   color: var(--sn-warning);
-  font-size: 10px;
+  font-size: var(--sn-font-body);
   line-height: 1.45;
 }
 
@@ -612,7 +605,7 @@
 }
 
 .library-detail__empty strong {
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
 }
 
 .library-detail__empty span {
@@ -638,7 +631,7 @@
 
 .search-field--discover input {
   min-height: 46px;
-  font-size: 13px;
+  font-size: var(--sn-font-body-lg);
 }
 
 .discover-controls__row {
@@ -727,7 +720,7 @@
   display: flex;
   gap: 10px;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -786,7 +779,7 @@
   overflow: hidden;
   margin: 0;
   color: var(--sn-text);
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -795,7 +788,7 @@
 .download-row__time {
   flex: 0 0 auto;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-body);
   font-variant-numeric: tabular-nums;
 }
 
@@ -810,14 +803,14 @@
 .download-row__stage strong {
   flex: 0 0 auto;
   color: var(--sn-text-muted);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-weight: 700;
 }
 
 .download-row__stage span {
   overflow: hidden;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -833,7 +826,7 @@
   gap: 10px;
   margin-top: 7px;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-variant-numeric: tabular-nums;
 }
 
@@ -926,7 +919,7 @@
   border-radius: 8px;
   padding: 0 9px;
   color: var(--sn-text-soft);
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
   font-weight: 650;
   text-decoration: none;
 }
@@ -964,14 +957,14 @@
 }
 
 .settings-section__heading h2 {
-  font-size: 14px;
+  font-size: var(--sn-font-section);
   line-height: 1.3;
 }
 
 .settings-section__heading p {
   margin: 0;
   color: var(--sn-text-soft);
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
   line-height: 1.5;
 }
 
@@ -980,7 +973,7 @@
 }
 
 .settings-section .field > span {
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
 }
 
 .settings-section .field input {
@@ -990,7 +983,7 @@
 }
 
 .settings-section .field small {
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
 }
 
 .toggle-list {
@@ -1003,11 +996,11 @@
 }
 
 .toggle-row strong {
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
 }
 
 .toggle-row span {
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
 }
 
 .root-list {
@@ -1047,7 +1040,7 @@
 }
 
 .settings-health strong {
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
   text-transform: capitalize;
 }
 
@@ -1071,7 +1064,7 @@
 }
 
 .settings-subsection > div:first-child strong {
-  font-size: 12px;
+  font-size: var(--sn-font-body);
 }
 
 .settings-subsection > div:first-child span {
@@ -1098,13 +1091,13 @@
 }
 
 .settings-privacy-list strong {
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
 }
 
 .settings-privacy-list span {
   max-width: 620px;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   line-height: 1.5;
 }
 
