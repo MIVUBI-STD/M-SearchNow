@@ -119,7 +119,7 @@
 }
 
 .diagnostic-row--warning { border-color: #584622; }
-.diagnostic-row--error { border-color: #60353a; }
+.diagnostic-row--error { border-color: var(--sn-danger-border); }
 
 .diagnostic-empty {
   display: flex;
@@ -134,8 +134,8 @@
 }
 
 .diagnostic-empty--error {
-  border-color: #60353a;
-  color: #f0a0aa;
+  border-color: var(--sn-danger-border);
+  color: var(--sn-danger);
 }
 
 @media (max-width: 900px) {
