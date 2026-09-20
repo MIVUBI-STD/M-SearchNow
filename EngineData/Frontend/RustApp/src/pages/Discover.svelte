@@ -298,7 +298,7 @@
     <div class="discover-controls">
       <label class="search-field search-field--discover">
         <Search size={17} aria-hidden="true" />
-        <input bind:value={query} type="search" placeholder="Search worlds, add-ons, packs, skins…" aria-label="Search content" />
+        <input data-page-search aria-keyshortcuts="Control+F" bind:value={query} type="search" placeholder="Search worlds, add-ons, packs, skins…" aria-label="Search content" />
       </label>
 
       <div class="discover-controls__row">
