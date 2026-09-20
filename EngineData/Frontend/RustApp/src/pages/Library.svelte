@@ -714,7 +714,7 @@
           disabled={!runtimeReady || batchBusy}
         >
           <CheckSquare size={15} aria-hidden="true" />
-          {selectionMode ? "Selecting…" : "Select"}
+          {selectionMode ? "Selecting…" : "Select multiple"}
         </button>
       {/if}
     </div>
