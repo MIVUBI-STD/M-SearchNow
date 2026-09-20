@@ -14,7 +14,7 @@
   } = $props();
 </script>
 
-<div class="results-bar" aria-live="polite">
+<div class="results-bar" role="status" aria-live="polite" aria-atomic="true">
   <div class="results-bar__copy">
     <strong>{label}</strong>
     {#if detail}<span>{detail}</span>{/if}
