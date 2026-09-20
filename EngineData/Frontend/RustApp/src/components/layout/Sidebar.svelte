@@ -41,6 +41,7 @@
         class="nav-item"
         type="button"
         aria-current={route === item.id ? "page" : undefined}
+        aria-keyshortcuts={`Alt+${primaryRoutes.findIndex((routeItem) => routeItem.id === item.id) + 1}`}
         title={`${item.label} · Alt+${primaryRoutes.findIndex((routeItem) => routeItem.id === item.id) + 1}`}
         onclick={() => onNavigate(item.id)}
       >
@@ -55,7 +56,7 @@
   {#if settingsRoute}
     {@const SettingsIcon = icons[settingsRoute.id]}
     <nav class="sidebar__utility" aria-label="Application">
-      <button class="nav-item" type="button" title="Recent activity" onclick={onOpenActivity}>
+      <button class="nav-item" type="button" aria-haspopup="dialog" title="Recent activity" onclick={onOpenActivity}>
         <Activity size={18} strokeWidth={1.8} aria-hidden="true" />
         <span>Activity</span>
       </button>
@@ -64,6 +65,7 @@
         class="nav-item"
         type="button"
         aria-current={route === settingsRoute.id ? "page" : undefined}
+        aria-keyshortcuts="Alt+4"
         title={`${settingsRoute.label} · Alt+4`}
         onclick={() => onNavigate(settingsRoute.id)}
       >
