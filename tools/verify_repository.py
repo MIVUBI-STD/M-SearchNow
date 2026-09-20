@@ -107,6 +107,44 @@ if package_json.exists():
             if missing:
                 errors.append(f"{package_json_rel}: expected direct {section} missing: {missing}")
 
+# Direct-dependency usage markers catch stale dependencies without adding another
+# package manager, scanner, or supply-chain dependency to CI.
+dependency_usage_contract = {
+    "EngineData/Backend/RustCore/src": {
+        "serde": "serde::",
+        "serde_json": "serde_json",
+        "ring": "ring::",
+        "ureq": "ureq::",
+        "url": "url::",
+        "zip": "zip::",
+    },
+    "EngineData/Frontend/RustApp/src-tauri/src": {
+        "searchnow-core": "searchnow_core::",
+        "serde": "serde::",
+        "tauri": "tauri::",
+        "tauri-plugin-dialog": "tauri_plugin_dialog::",
+    },
+    "EngineData/Frontend/RustApp/src": {
+        "@lucide/svelte": "@lucide/svelte",
+        "@tauri-apps/api": "@tauri-apps/api",
+        "svelte": 'from "svelte"',
+    },
+}
+for rel, dependencies in dependency_usage_contract.items():
+    root = ROOT / rel
+    if not root.exists():
+        continue
+    source = "\n".join(
+        path.read_text(encoding="utf-8", errors="replace")
+        for path in root.rglob("*")
+        if path.is_file() and path.suffix in {".rs", ".ts", ".svelte"}
+    )
+    for dependency, marker in dependencies.items():
+        if marker not in source:
+            errors.append(
+                f"{rel}: direct dependency {dependency!r} has no active-source usage marker {marker!r}"
+            )
+
 active_backend = ROOT / "EngineData" / "Backend" / "RustCore" / "src"
 for path in active_backend.rglob("*.rs") if active_backend.exists() else []:
     text = path.read_text(encoding="utf-8", errors="replace")
