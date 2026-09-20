@@ -13,6 +13,7 @@ const downloads = await read("src/pages/Downloads.svelte");
 const discover = await read("src/pages/Discover.svelte");
 const diagnosticsPanel = await read("src/components/settings/DiagnosticsPanel.svelte");
 const activityDialog = await read("src/components/ui/ActivityDialog.svelte");
+const pageState = await read("src/components/ui/PageState.svelte");
 const sidebar = await read("src/components/layout/Sidebar.svelte");
 const libraryDetail = await read("src/components/library/LibraryDetailPanel.svelte");
 const downloadView = await read("src/app/shared/downloadView.ts");
@@ -130,6 +131,23 @@ if (!responsiveWidths.some((width) => width >= minWidth)) {
 
 if (!workspace.includes(".library-setup-state .empty-panel")) {
   errors.push("Library Minecraft recovery must use the focused setup-state layout");
+}
+if (!pageState.includes('type PageStateIcon') || !pageState.includes('icon?: PageStateIcon | null')) {
+  errors.push("PageState must support semantic empty-state icons");
+}
+for (const [label, text, marker] of [
+  ["Library", library, 'marker="01"'],
+  ["Discover", discover, 'marker="02"'],
+  ["Downloads", downloads, 'marker="03"'],
+]) {
+  if (text.includes(marker)) errors.push(`${label} must not use numeric empty-state markers`);
+}
+const headingActionBlock = workspace.slice(
+  workspace.indexOf(".page-heading__actions .button"),
+  workspace.indexOf(".runtime-strip"),
+);
+if (/background\s*:/.test(headingActionBlock)) {
+  errors.push("Heading action container must not override semantic button backgrounds");
 }
 
 if (!workspace.includes(".toolbar--library-multi-root")) {
