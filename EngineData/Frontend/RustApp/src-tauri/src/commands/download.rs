@@ -77,5 +77,7 @@ pub fn remove_download(
 pub fn clear_completed_downloads(
     state: State<'_, SearchNowBackendRuntime>,
 ) -> Result<DownloadManagerSnapshot, CommandError> {
-    state.clear_completed_downloads().map_err(CommandError::from)
+    state
+        .clear_completed_downloads()
+        .map_err(CommandError::from)
 }
