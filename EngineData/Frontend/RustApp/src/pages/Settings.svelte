@@ -301,7 +301,11 @@
         aria-busy={saving}
         disabled={!active || !snapshot?.ready || loading || saving || scanning || exportDirectoryBusy || !dirty || bandwidthLimitInvalid}
       >
-        <Save size={15} aria-hidden="true" />
+        {#if saving}
+          <RefreshCw size={15} class="spin" aria-hidden="true" />
+        {:else}
+          <Save size={15} aria-hidden="true" />
+        {/if}
         {saving ? "Saving" : "Save changes"}
       </button>
     {/if}
