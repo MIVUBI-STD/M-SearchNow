@@ -231,6 +231,12 @@ if (settings.includes('title="Could not update settings."')) {
 if (discover.includes("Source unavailable") || discover.includes('class="search-shell" aria-disabled="true"')) {
   errors.push("Discover must not render a fake search control when no content source exists");
 }
+for (const needle of ["No content source available", "does not have a catalog provider enabled yet"]) {
+  if (!discover.includes(needle)) errors.push(`Discover unavailable-state copy contract is missing: ${needle}`);
+}
+if (!library.includes('"Import content"') || !library.includes("inspectPackage")) {
+  errors.push("Empty Library must offer a real import recovery action");
+}
 for (const needle of [
   "DiscoverFeedback",
   "Download folder could not be chosen",
