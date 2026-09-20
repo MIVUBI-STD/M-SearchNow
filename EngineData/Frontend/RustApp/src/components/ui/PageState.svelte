@@ -26,7 +26,9 @@
   class:empty-panel--error={kind === "error"}
   class:empty-panel--loading={kind === "loading"}
   class="empty-panel"
+  role={kind === "error" ? "alert" : kind === "loading" ? "status" : undefined}
   aria-live={kind === "loading" ? "polite" : undefined}
+  aria-atomic={kind === "loading" ? "true" : undefined}
   aria-busy={kind === "loading"}
 >
   <div class="empty-panel__icon" aria-hidden="true">
