@@ -80,7 +80,14 @@
   onMount(() => {
     const storedRoute = sessionStorage.getItem(ROUTE_STORAGE_KEY);
     if (isAppRoute(storedRoute)) route = storedRoute;
-    void refreshRuntime();
+
+    void (async () => {
+      const startupRoute = await runtimeProductFacade.getStartupRouteOverride();
+      if (startupRoute.ok && isAppRoute(startupRoute.data)) {
+        route = startupRoute.data;
+      }
+      await refreshRuntime();
+    })();
   });
 </script>
 
