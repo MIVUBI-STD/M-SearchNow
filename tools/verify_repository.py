@@ -50,6 +50,63 @@ REQUIRED = [
 
 errors = [f"missing required path: {rel}" for rel in REQUIRED if not (ROOT / rel).exists()]
 
+# Zero-waste dependency contract: direct dependencies are intentionally small.
+# Any addition must be explicit here so dependency growth cannot happen accidentally.
+import json
+import tomllib
+
+allowed_direct_dependencies = {
+    "EngineData/Backend/RustCore/Cargo.toml": {
+        "dependencies": {"serde", "serde_json", "ring", "ureq", "url", "zip"},
+        "dev-dependencies": {"tempfile"},
+    },
+    "EngineData/Frontend/RustApp/src-tauri/Cargo.toml": {
+        "build-dependencies": {"tauri-build"},
+        "dependencies": {"searchnow-core", "serde", "tauri", "tauri-plugin-dialog"},
+    },
+}
+for rel, expected_sections in allowed_direct_dependencies.items():
+    path = ROOT / rel
+    if not path.exists():
+        continue
+    try:
+        parsed = tomllib.loads(path.read_text(encoding="utf-8"))
+    except Exception as error:
+        errors.append(f"{rel}: could not parse Cargo manifest for dependency contract: {error}")
+        continue
+    for section, allowed in expected_sections.items():
+        actual = set(parsed.get(section, {}).keys())
+        unexpected = sorted(actual - allowed)
+        missing = sorted(allowed - actual)
+        if unexpected:
+            errors.append(f"{rel}: unexpected direct {section}: {unexpected}")
+        if missing:
+            errors.append(f"{rel}: expected direct {section} missing: {missing}")
+
+package_json_rel = "EngineData/Frontend/RustApp/package.json"
+package_json = ROOT / package_json_rel
+if package_json.exists():
+    try:
+        package = json.loads(package_json.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        errors.append(f"{package_json_rel}: invalid JSON: {error}")
+    else:
+        expected_npm = {
+            "dependencies": {"@lucide/svelte", "@tauri-apps/api"},
+            "devDependencies": {
+                "@sveltejs/vite-plugin-svelte", "@tailwindcss/vite", "@tauri-apps/cli",
+                "svelte", "svelte-check", "tailwindcss", "typescript", "vite",
+            },
+        }
+        for section, allowed in expected_npm.items():
+            actual = set(package.get(section, {}).keys())
+            unexpected = sorted(actual - allowed)
+            missing = sorted(allowed - actual)
+            if unexpected:
+                errors.append(f"{package_json_rel}: unexpected direct {section}: {unexpected}")
+            if missing:
+                errors.append(f"{package_json_rel}: expected direct {section} missing: {missing}")
+
 active_backend = ROOT / "EngineData" / "Backend" / "RustCore" / "src"
 for path in active_backend.rglob("*.rs") if active_backend.exists() else []:
     text = path.read_text(encoding="utf-8", errors="replace")
