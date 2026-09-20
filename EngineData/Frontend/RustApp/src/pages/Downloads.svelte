@@ -301,7 +301,11 @@
     <div class="action-row action-row--heading">
       {#if completedJobs > 0}
         <button class="button button--ghost" type="button" onclick={clearCompleted} aria-busy={clearingCompleted} disabled={!runtimeReady || clearingCompleted || actionJobId !== null}>
-          <Trash2 size={15} aria-hidden="true" />
+          {#if clearingCompleted}
+            <RefreshCw size={15} class="spin" aria-hidden="true" />
+          {:else}
+            <Trash2 size={15} aria-hidden="true" />
+          {/if}
           {clearingCompleted ? "Clearing" : "Clear completed"}
         </button>
       {/if}
