@@ -17,6 +17,13 @@
   import TechnicalDetails from "../components/ui/TechnicalDetails.svelte";
 
   type DownloadFilter = "all" | "active" | "completed" | "issues";
+  type DownloadFeedback = {
+    tone: "error";
+    title: string;
+    message: string;
+    actionLabel?: string;
+    action?: () => void;
+  };
   type TransferSample = {
     bytes: number;
     sampledAtMs: number;
@@ -29,7 +36,7 @@
   let { runtimeReady, active }: { runtimeReady: boolean; active: boolean } = $props();
   let snapshot = $state<DownloadManagerSnapshot | null>(null);
   let loading = $state(false);
-  let error = $state("");
+  let feedback = $state<DownloadFeedback | null>(null);
   let actionJobId = $state<string | null>(null);
   let clearingCompleted = $state(false);
   let query = $state("");
@@ -157,70 +164,132 @@
     return Number.isFinite(eta) && eta <= MAX_REASONABLE_ETA_SECONDS ? eta : null;
   }
 
-  async function refresh(showBusy = true): Promise<void> {
-    if (!runtimeReady || (showBusy && loading)) return;
+  async function refresh(showBusy = true, reportFailure = true): Promise<boolean> {
+    if (!runtimeReady || (showBusy && loading)) return false;
     const sequence = ++refreshSequence;
     if (showBusy) loading = true;
+    if (reportFailure) feedback = null;
+
     const result = await runtimeProductFacade.loadDownloads();
-    if (sequence !== refreshSequence) return;
+    if (sequence !== refreshSequence) return false;
+
     if (result.ok) {
       updateTransferSamples(result.data);
       snapshot = result.data;
-      error = "";
-    } else {
-      error = result.error.message;
+      if (reportFailure) feedback = null;
+    } else if (reportFailure) {
+      feedback = {
+        tone: "error",
+        title: "Downloads could not be refreshed",
+        message: result.error.message,
+        actionLabel: "Refresh",
+        action: () => void refresh(),
+      };
     }
+
     loading = false;
+    return result.ok;
   }
 
   async function moveInQueue(job: DownloadJob, direction: "earlier" | "later"): Promise<void> {
     actionJobId = job.id;
+    feedback = null;
     const result = await runtimeProductFacade.moveDownloadInQueue(job.id, direction);
-    if (!result.ok) error = result.error.message;
-    await refresh(false);
+    if (!result.ok) {
+      feedback = {
+        tone: "error",
+        title: "Queue order could not be changed",
+        message: result.error.message,
+        actionLabel: "Try again",
+        action: () => void moveInQueue(job, direction),
+      };
+    }
+    await refresh(false, false);
     actionJobId = null;
   }
 
   async function pause(job: DownloadJob): Promise<void> {
     actionJobId = job.id;
+    feedback = null;
     const result = await runtimeProductFacade.pauseDownload(job.id);
-    if (!result.ok) error = result.error.message;
-    await refresh(false);
+    if (!result.ok) {
+      feedback = {
+        tone: "error",
+        title: "Download could not be paused",
+        message: result.error.message,
+        actionLabel: "Try again",
+        action: () => void pause(job),
+      };
+    }
+    await refresh(false, false);
     actionJobId = null;
   }
 
   async function resume(job: DownloadJob): Promise<void> {
     actionJobId = job.id;
+    feedback = null;
     const result = await runtimeProductFacade.resumeDownload(job.id);
-    if (!result.ok) error = result.error.message;
-    await refresh(false);
+    if (!result.ok) {
+      feedback = {
+        tone: "error",
+        title: "Download could not be resumed",
+        message: result.error.message,
+        actionLabel: "Try again",
+        action: () => void resume(job),
+      };
+    }
+    await refresh(false, false);
     actionJobId = null;
   }
 
   async function cancel(job: DownloadJob): Promise<void> {
     actionJobId = job.id;
+    feedback = null;
     const result = await runtimeProductFacade.cancelDownload(job.id);
-    if (!result.ok) error = result.error.message;
-    await refresh(false);
+    if (!result.ok) {
+      feedback = {
+        tone: "error",
+        title: "Download could not be cancelled",
+        message: result.error.message,
+        actionLabel: "Try again",
+        action: () => void cancel(job),
+      };
+    }
+    await refresh(false, false);
     actionJobId = null;
   }
 
   async function retry(job: DownloadJob): Promise<void> {
     actionJobId = job.id;
+    feedback = null;
     const result = await runtimeProductFacade.retryDownload(job.id);
-    if (!result.ok) error = result.error.message;
-    await refresh(false);
+    if (!result.ok) {
+      feedback = {
+        tone: "error",
+        title: "Download could not be retried",
+        message: result.error.message,
+        actionLabel: "Try again",
+        action: () => void retry(job),
+      };
+    }
+    await refresh(false, false);
     actionJobId = null;
   }
 
   async function remove(job: DownloadJob): Promise<void> {
     actionJobId = job.id;
+    feedback = null;
     const result = await runtimeProductFacade.removeDownload(job.id);
     if (result.ok) {
       snapshot = result.data;
-      error = "";
     } else {
-      error = result.error.message;
+      feedback = {
+        tone: "error",
+        title: "Download could not be removed",
+        message: result.error.message,
+        actionLabel: "Try again",
+        action: () => void remove(job),
+      };
     }
     actionJobId = null;
   }
@@ -228,12 +297,18 @@
   async function clearCompleted(): Promise<void> {
     if (clearingCompleted || completedJobs === 0) return;
     clearingCompleted = true;
+    feedback = null;
     const result = await runtimeProductFacade.clearCompletedDownloads();
     if (result.ok) {
       snapshot = result.data;
-      error = "";
     } else {
-      error = result.error.message;
+      feedback = {
+        tone: "error",
+        title: "Completed downloads could not be cleared",
+        message: result.error.message,
+        actionLabel: "Try again",
+        action: () => void clearCompleted(),
+      };
     }
     clearingCompleted = false;
   }
@@ -241,8 +316,17 @@
   async function openFolder(job: DownloadJob): Promise<void> {
     if (job.state !== "completed" || !job.destinationDirectory) return;
     actionJobId = job.id;
+    feedback = null;
     const result = await runtimeProductFacade.openDownloadDirectory(job.id);
-    error = result.ok ? "" : result.error.message;
+    if (!result.ok) {
+      feedback = {
+        tone: "error",
+        title: "Download folder could not be opened",
+        message: result.error.message,
+        actionLabel: "Try again",
+        action: () => void openFolder(job),
+      };
+    }
     actionJobId = null;
   }
 
@@ -266,20 +350,20 @@
       eventRefreshRunning = true;
       while (eventRefreshQueued && !disposed) {
         eventRefreshQueued = false;
-        await refresh(false);
+        await refresh(false, false);
       }
       eventRefreshRunning = false;
     };
 
     const startFallbackPolling = (): void => {
       const poll = async (): Promise<void> => {
-        await refresh(false);
+        await refresh(false, false);
         if (!disposed && active) fallbackTimer = setTimeout(poll, 2000);
       };
       fallbackTimer = setTimeout(poll, 2000);
     };
 
-    void refresh(false);
+    void refresh(false, false);
     void runtimeProductFacade
       .subscribeDownloadChanges(() => {
         void refreshFromEvent();
@@ -349,23 +433,30 @@
   {/if}
 
   {#if snapshot?.schedulerError}
-    <Notice tone="warning" title="Downloads paused" message="SearchNow could not continue the download queue automatically. Refresh to try again." />
-  {/if}
-
-  {#if error}
     <Notice
-      tone="error"
-      title="Something went wrong"
-      message={error}
+      tone="warning"
+      title="Downloads paused"
+      message="SearchNow could not continue the download queue automatically."
       actionLabel="Refresh"
       actionDisabled={loading}
       onAction={() => void refresh()}
     />
   {/if}
 
+  {#if feedback}
+    <Notice
+      tone={feedback.tone}
+      title={feedback.title}
+      message={feedback.message}
+      actionLabel={feedback.actionLabel ?? null}
+      actionDisabled={loading || actionJobId !== null || clearingCompleted}
+      onAction={feedback.action ?? null}
+    />
+  {/if}
+
   {#if !runtimeReady}
     <PageState marker="03" title="Downloads unavailable" message="SearchNow cannot manage downloads right now." />
-  {:else if !snapshot && !error}
+  {:else if !snapshot && !feedback}
     <PageState kind="loading" title="Loading downloads" message="Reading your current downloads." />
   {:else if snapshot && jobs.length === 0}
     <PageState marker="03" title="No downloads yet" message="Downloads started from Discover will appear here." />

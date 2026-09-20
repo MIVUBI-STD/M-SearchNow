@@ -8,6 +8,7 @@ const errors = [];
 
 const library = await read("src/pages/Library.svelte");
 const settings = await read("src/pages/Settings.svelte");
+const downloads = await read("src/pages/Downloads.svelte");
 const workspace = await read("src/styles/workspace.css");
 const catalogModal = await read("src/components/ui/CatalogDetailModal.svelte");
 const packageModal = await read("src/components/ui/PackageInspectionModal.svelte");
@@ -63,6 +64,20 @@ if (!responsiveWidths.some((width) => width >= minWidth)) {
 
 if (!workspace.includes(".toolbar--library-multi-root")) {
   errors.push("Library multi-root toolbar requires an explicit five-control grid owner");
+}
+
+for (const needle of ["DownloadFeedback", "Queue order could not be changed", "Download folder could not be opened"]) {
+  if (!downloads.includes(needle)) errors.push(`Downloads feedback contract is missing: ${needle}`);
+}
+if (downloads.includes('title="Something went wrong"')) {
+  errors.push("Downloads must not fall back to the generic Something went wrong notice");
+}
+
+for (const needle of ["SettingsFeedback", "minecraftDirty", "Settings could not be saved", "Your download preferences are now active."]) {
+  if (!settings.includes(needle)) errors.push(`Settings feedback contract is missing: ${needle}`);
+}
+if (settings.includes('title="Could not update settings."')) {
+  errors.push("Settings must not use the generic Could not update settings notice");
 }
 
 if (errors.length) {

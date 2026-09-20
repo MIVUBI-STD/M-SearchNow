@@ -7,6 +7,14 @@
   import Notice from "../components/ui/Notice.svelte";
   import StatePill from "../components/ui/StatePill.svelte";
 
+  type SettingsFeedback = {
+    tone: "success" | "error";
+    title: string;
+    message: string;
+    actionLabel?: string;
+    action?: () => void;
+  };
+
   let { snapshot, active }: { snapshot: ProductRuntimeSnapshot | null; active: boolean } = $props();
   let schemaVersion = $state(1);
   let rootOverride = $state("");
@@ -22,7 +30,7 @@
   let loaded = $state(false);
   let saving = $state(false);
   let scanning = $state(false);
-  let error = $state("");
+  let feedback = $state<SettingsFeedback | null>(null);
   let saved = $state(false);
 
   let dirty = $derived(
@@ -33,6 +41,13 @@
         includeDevelopmentContent !== baselineSettings.minecraft.includeDevelopmentContent ||
         bandwidthLimitMib !== formatBandwidthLimit(baselineSettings.download.bandwidthLimitBytesPerSecond) ||
         defaultDownloadDirectory !== (baselineSettings.download.defaultDirectory ?? "")),
+  );
+  let minecraftDirty = $derived(
+    baselineSettings !== null &&
+      (rootOverride.trim() !== (baselineSettings.minecraft.rootOverride ?? "") ||
+        includePreview !== baselineSettings.minecraft.includePreview ||
+        includeLegacyUwp !== baselineSettings.minecraft.includeLegacyUwp ||
+        includeDevelopmentContent !== baselineSettings.minecraft.includeDevelopmentContent),
   );
   let bandwidthLimitInvalid = $derived.by(() => {
     const value = bandwidthLimitMib.trim();
@@ -72,26 +87,36 @@
   function revertChanges(): void {
     if (!baselineSettings || saving || scanning) return;
     applySettings(baselineSettings);
-    error = "";
+    feedback = null;
     saved = false;
   }
 
   async function load(): Promise<void> {
     if (!active || !snapshot?.ready || loading) return;
     loading = true;
-    error = "";
+    feedback = null;
     const result = await runtimeProductFacade.loadSettings();
-    if (result.ok) applySettings(result.data);
-    else error = result.error.message;
+    if (result.ok) {
+      applySettings(result.data);
+    } else {
+      feedback = {
+        tone: "error",
+        title: "Settings could not be loaded",
+        message: result.error.message,
+        actionLabel: "Try again",
+        action: () => void load(),
+      };
+    }
     loaded = true;
     loading = false;
   }
 
   async function save(): Promise<void> {
     if (!active || !snapshot?.ready || saving || scanning || !dirty || bandwidthLimitInvalid) return;
+    const requiresMinecraftRescan = minecraftDirty;
     saving = true;
     saved = false;
-    error = "";
+    feedback = null;
     const result = await runtimeProductFacade.saveSettings({
       schemaVersion,
       minecraft: {
@@ -108,8 +133,21 @@
     if (result.ok) {
       applySettings(result.data);
       saved = true;
+      feedback = {
+        tone: "success",
+        title: "Settings saved",
+        message: requiresMinecraftRescan
+          ? "Minecraft settings changed. Scan again to refresh detected locations."
+          : "Your download preferences are now active.",
+      };
     } else {
-      error = result.error.message;
+      feedback = {
+        tone: "error",
+        title: "Settings could not be saved",
+        message: result.error.message,
+        actionLabel: "Try saving again",
+        action: () => void save(),
+      };
     }
     saving = false;
   }
@@ -119,13 +157,19 @@
     minecraftDirectoryBusy = true;
     const result = await runtimeProductFacade.chooseMinecraftDirectory();
     if (!result.ok) {
-      error = result.error.message;
+      feedback = {
+        tone: "error",
+        title: "Minecraft folder could not be chosen",
+        message: result.error.message,
+        actionLabel: "Try again",
+        action: () => void chooseMinecraftDirectory(),
+      };
       minecraftDirectoryBusy = false;
       return;
     }
     if (result.data) {
       rootOverride = result.data;
-      error = "";
+      feedback = null;
       saved = false;
     }
     minecraftDirectoryBusy = false;
@@ -135,28 +179,43 @@
     if (!active || !snapshot?.ready || saving || scanning) return;
     const result = await runtimeProductFacade.chooseDownloadDirectory();
     if (!result.ok) {
-      error = result.error.message;
+      feedback = {
+        tone: "error",
+        title: "Download folder could not be chosen",
+        message: result.error.message,
+        actionLabel: "Try again",
+        action: () => void chooseDefaultDownloadDirectory(),
+      };
       return;
     }
     if (result.data) {
       defaultDownloadDirectory = result.data;
-      error = "";
+      feedback = null;
     }
   }
 
   async function rescan(): Promise<void> {
     if (!active || !snapshot?.ready || scanning || saving || dirty) return;
     scanning = true;
-    error = "";
+    feedback = null;
     const result = await runtimeProductFacade.discoverMinecraft();
-    if (result.ok) discovery = result.data;
-    else error = result.error.message;
+    if (result.ok) {
+      discovery = result.data;
+    } else {
+      feedback = {
+        tone: "error",
+        title: "Minecraft scan failed",
+        message: result.error.message,
+        actionLabel: "Scan again",
+        action: () => void rescan(),
+      };
+    }
     scanning = false;
   }
 
   $effect(() => {
     if (snapshot?.ready) return;
-    error = "";
+    feedback = null;
     saved = false;
     if (!dirty) {
       loaded = false;
@@ -175,7 +234,9 @@
   });
 
   $effect(() => {
-    if (dirty) saved = false;
+    if (!dirty) return;
+    saved = false;
+    if (feedback?.tone === "success") feedback = null;
   });
 </script>
 
@@ -192,8 +253,15 @@
     </button>
   </div>
 
-  {#if error}
-    <Notice tone="error" title="Could not update settings." message={error} />
+  {#if feedback?.tone === "error"}
+    <Notice
+      tone="error"
+      title={feedback.title}
+      message={feedback.message}
+      actionLabel={feedback.actionLabel ?? null}
+      actionDisabled={loading || saving || scanning || minecraftDirectoryBusy}
+      onAction={feedback.action ?? null}
+    />
   {:else if bandwidthLimitInvalid}
     <Notice tone="warning" title="Invalid bandwidth limit" message="Enter a value from 0.0625 to 1024 MiB/s, or leave it empty for unlimited speed." />
   {:else if dirty}
@@ -205,8 +273,8 @@
       actionDisabled={saving || scanning}
       onAction={revertChanges}
     />
-  {:else if saved}
-    <Notice tone="success" title="Changes saved." message="Scan again to refresh detected Minecraft locations." />
+  {:else if feedback?.tone === "success"}
+    <Notice tone="success" title={feedback.title} message={feedback.message} />
   {/if}
 
   <div class="settings-workspace">
