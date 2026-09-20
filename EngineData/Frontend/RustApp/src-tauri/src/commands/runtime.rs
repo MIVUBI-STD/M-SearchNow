@@ -36,7 +36,6 @@ pub fn get_backend_diagnostics(
     state.diagnostics_snapshot()
 }
 
-
 #[tauri::command]
 pub async fn export_diagnostics_report<R: Runtime>(
     app: AppHandle<R>,
