@@ -179,10 +179,7 @@ jobs:
 
               # Route evidence must not depend on window focus or synthetic keystrokes.
               # Start a clean process per route with an explicit verification-only startup override.
-              if ($process -and !$process.HasExited) {
-            Stop-Process -Id $process.Id -Force
-          }
-          Remove-Item Env:SEARCHNOW_VERIFY_ROUTE -ErrorAction SilentlyContinue
+              Stop-Process -Id $process.Id -Force
               $process = $null
               foreach ($route in @(
                 @{ Name = "discover-compact"; Route = "discover" },
@@ -209,7 +206,10 @@ jobs:
             Write-Warning "Runtime screenshot capture was unavailable: $($_.Exception.Message)"
           }
 
-          Stop-Process -Id $process.Id -Force
+          if ($process -and !$process.HasExited) {
+            Stop-Process -Id $process.Id -Force
+          }
+          Remove-Item Env:SEARCHNOW_VERIFY_ROUTE -ErrorAction SilentlyContinue
 
       - name: Verify Windows UI evidence
         shell: pwsh
