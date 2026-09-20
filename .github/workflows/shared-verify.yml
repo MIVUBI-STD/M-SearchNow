@@ -64,11 +64,27 @@ jobs:
         shell: pwsh
         run: |
           $exe = Resolve-Path "EngineData/Frontend/RustApp/src-tauri/target/release/searchnow.exe"
-          $process = Start-Process -FilePath $exe -PassThru
-          Start-Sleep -Seconds 5
-          if ($process.HasExited) {
-            throw "SearchNow exited during the Windows runtime smoke launch with code $($process.ExitCode)."
+          function Wait-SearchNowWindow {
+            param(
+              [System.Diagnostics.Process]$Process,
+              [int]$TimeoutMilliseconds = 10000
+            )
+            $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMilliseconds)
+            do {
+              if ($Process.HasExited) {
+                throw "SearchNow exited before its main window became ready with code $($Process.ExitCode)."
+              }
+              $Process.Refresh()
+              if ($Process.MainWindowHandle -ne 0) {
+                return
+              }
+              Start-Sleep -Milliseconds 100
+            } while ([DateTime]::UtcNow -lt $deadline)
+            throw "SearchNow did not expose a main window within $TimeoutMilliseconds ms."
           }
+
+          $process = Start-Process -FilePath $exe -PassThru
+          Wait-SearchNowWindow -Process $process
 
           try {
             $process.Refresh()
@@ -188,14 +204,8 @@ jobs:
               )) {
                 $env:SEARCHNOW_VERIFY_ROUTE = $route.Route
                 $process = Start-Process -FilePath $exe -PassThru
-                Start-Sleep -Seconds 5
-                if ($process.HasExited) {
-                  throw "SearchNow exited while capturing route $($route.Route) with code $($process.ExitCode)."
-                }
+                Wait-SearchNowWindow -Process $process
                 $process.Refresh()
-                if ($process.MainWindowHandle -eq 0) {
-                  throw "SearchNow route $($route.Route) did not expose a capturable window."
-                }
                 Save-SearchNowWindow -Name $route.Name -Width 960 -Height 640
                 Stop-Process -Id $process.Id -Force
                 $process = $null
@@ -299,9 +309,17 @@ jobs:
           }
 
           $process = Start-Process -FilePath $installedExe -PassThru
-          Start-Sleep -Seconds 5
-          if ($process.HasExited) {
-            throw "Installed SearchNow exited during lifecycle smoke with code $($process.ExitCode)."
+          $deadline = [DateTime]::UtcNow.AddSeconds(10)
+          do {
+            if ($process.HasExited) {
+              throw "Installed SearchNow exited during lifecycle smoke with code $($process.ExitCode)."
+            }
+            $process.Refresh()
+            if ($process.MainWindowHandle -ne 0) { break }
+            Start-Sleep -Milliseconds 100
+          } while ([DateTime]::UtcNow -lt $deadline)
+          if ($process.MainWindowHandle -eq 0) {
+            throw "Installed SearchNow did not expose a main window within 10 seconds."
           }
           Stop-Process -Id $process.Id -Force
 
@@ -411,9 +429,17 @@ jobs:
           }
 
           $process = Start-Process -FilePath $installedExe -PassThru
-          Start-Sleep -Seconds 5
-          if ($process.HasExited) {
-            throw "Upgraded SearchNow exited during upgrade smoke with code $($process.ExitCode)."
+          $deadline = [DateTime]::UtcNow.AddSeconds(10)
+          do {
+            if ($process.HasExited) {
+              throw "Upgraded SearchNow exited during upgrade smoke with code $($process.ExitCode)."
+            }
+            $process.Refresh()
+            if ($process.MainWindowHandle -ne 0) { break }
+            Start-Sleep -Milliseconds 100
+          } while ([DateTime]::UtcNow -lt $deadline)
+          if ($process.MainWindowHandle -eq 0) {
+            throw "Upgraded SearchNow did not expose a main window within 10 seconds."
           }
           Stop-Process -Id $process.Id -Force
 
