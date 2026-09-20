@@ -338,11 +338,6 @@
         onReset={resetControls}
       />
     {/if}
-  {:else}
-    <div class="search-shell" aria-disabled="true">
-      <span><Search size={14} aria-hidden="true" /> Search content</span>
-      <kbd>Source unavailable</kbd>
-    </div>
   {/if}
 
   {#if downloadFeedback}
