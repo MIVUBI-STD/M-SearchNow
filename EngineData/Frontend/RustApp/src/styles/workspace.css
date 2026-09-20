@@ -775,9 +775,32 @@
   font-variant-numeric: tabular-nums;
 }
 
+.download-row__stage {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.download-row__stage strong {
+  flex: 0 0 auto;
+  color: var(--sn-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.download-row__stage span {
+  overflow: hidden;
+  color: var(--sn-text-soft);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .download-row__progress {
   height: 4px;
-  margin-top: 10px;
+  margin-top: 7px;
 }
 
 .download-row__meta {
@@ -798,8 +821,38 @@
 }
 
 .download-row__error {
-  margin-top: 8px;
+  display: grid;
+  gap: 3px;
+  margin-top: 9px;
+  border: 1px solid rgb(224 103 120 / 0.28);
+  border-radius: 8px;
+  background: rgb(84 28 38 / 0.18);
+  padding: 8px 9px;
   color: #f0a0aa;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.download-row__error strong {
+  font-size: 10px;
+}
+
+.download-row__error span,
+.download-row__error small {
+  color: var(--sn-text-muted);
+}
+
+.download-row__error small {
+  font-size: 10px;
+}
+
+.download-row__recovery {
+  margin-top: 8px;
+  border: 1px solid #3b4d63;
+  border-radius: 8px;
+  background: #111923;
+  padding: 7px 9px;
+  color: var(--sn-text-muted);
   font-size: 10px;
   line-height: 1.45;
 }
