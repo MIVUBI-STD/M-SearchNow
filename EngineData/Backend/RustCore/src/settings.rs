@@ -192,12 +192,13 @@ impl SettingsStore {
                     export: ExportSettings::default(),
                 }
             }
-            version if version == CURRENT_SCHEMA_VERSION as u64 => serde_json::from_value(value).map_err(|error| {
-                BackendError::new(
-                    "settings_invalid_json",
-                    format!("SearchNow settings are invalid: {error}"),
-                )
-            })?,
+            version if version == CURRENT_SCHEMA_VERSION as u64 => serde_json::from_value(value)
+                .map_err(|error| {
+                    BackendError::new(
+                        "settings_invalid_json",
+                        format!("SearchNow settings are invalid: {error}"),
+                    )
+                })?,
             unsupported => {
                 return Err(BackendError::new(
                     "settings_schema_unsupported",
@@ -263,7 +264,10 @@ mod tests {
         assert!(settings.download.bandwidth_limit_bytes_per_second.is_none());
         assert!(settings.download.default_directory.is_none());
         assert!(settings.export.default_directory.is_none());
-        assert_eq!(settings.export.duplicate_policy, ExportDuplicatePolicy::KeepBoth);
+        assert_eq!(
+            settings.export.duplicate_policy,
+            ExportDuplicatePolicy::KeepBoth
+        );
     }
 
     #[test]
@@ -340,7 +344,10 @@ mod tests {
         assert!(settings.download.default_directory.is_none());
         assert_eq!(settings.schema_version, CURRENT_SCHEMA_VERSION);
         assert!(settings.export.default_directory.is_none());
-        assert_eq!(settings.export.duplicate_policy, ExportDuplicatePolicy::KeepBoth);
+        assert_eq!(
+            settings.export.duplicate_policy,
+            ExportDuplicatePolicy::KeepBoth
+        );
     }
 
     #[test]
@@ -416,7 +423,6 @@ mod download_setting_tests {
         assert_eq!(error.code(), "settings_download_bandwidth_invalid");
     }
 }
-
 
 #[cfg(test)]
 mod export_setting_tests {
