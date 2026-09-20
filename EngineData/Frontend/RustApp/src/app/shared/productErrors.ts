@@ -48,6 +48,7 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
   library_export_write_failed: "SearchNow could not write the backup archive.",
   library_export_finalize_failed: "SearchNow could not finalize the backup archive.",
   library_export_commit_failed: "SearchNow could not save the completed backup archive.",
+  library_export_verification_failed: "SearchNow could not verify the completed backup safely. The incomplete output was removed.",
   library_batch_export_empty: "Select at least one Library item to export.",
   library_batch_export_too_large: "SearchNow exports up to 100 Library items at a time.",
   library_batch_export_destination_exhausted: "SearchNow could not allocate a unique backup filename.",

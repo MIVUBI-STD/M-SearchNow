@@ -55,6 +55,7 @@ for (const code of [
   "directory_unavailable",
   "directory_open_failed",
   "library_item_not_found",
+  "library_export_verification_failed",
   "download_directory_not_ready",
   "download_directory_unavailable",
   "settings_load_failed",

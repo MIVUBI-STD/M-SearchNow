@@ -454,7 +454,30 @@ impl SearchNowBackendRuntime {
                 format!("This content must be exported as .{expected_extension}."),
             ));
         }
-        export_directory(&item.path, destination)
+        export_directory(&item.path, destination)?;
+
+        let verification = inspect_package(destination);
+        let valid = verification
+            .as_ref()
+            .is_ok_and(|inspection| {
+                inspection.safety == crate::package::PackageSafety::Safe
+                    && match item.content_type {
+                        LocalContentType::World => inspection.world.is_some(),
+                        LocalContentType::BehaviorPack
+                        | LocalContentType::ResourcePack
+                        | LocalContentType::SkinPack => !inspection.packs.is_empty(),
+                    }
+            });
+
+        if !valid {
+            let _ = std::fs::remove_file(destination);
+            return Err(BackendError::new(
+                "library_export_verification_failed",
+                "SearchNow created the backup but could not verify it safely, so the incomplete output was removed.",
+            ));
+        }
+
+        Ok(())
     }
 
     pub fn export_local_content_to_directory(
