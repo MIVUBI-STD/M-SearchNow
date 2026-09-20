@@ -90,33 +90,63 @@ jobs:
 
             [DllImport("user32.dll")]
             public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+
+            [DllImport("user32.dll", SetLastError = true)]
+            public static extern bool SetWindowPos(
+              IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags
+            );
           }
           "@
 
-              $rect = New-Object SearchNowWindowCapture+RECT
-              if ([SearchNowWindowCapture]::GetWindowRect($process.MainWindowHandle, [ref]$rect)) {
+              $artifactDir = Join-Path $PWD "artifacts/runtime"
+              New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
+
+              $viewports = @(
+                @{ Name = "compact"; Width = 960; Height = 640 },
+                @{ Name = "standard"; Width = 1280; Height = 720 },
+                @{ Name = "default"; Width = 1440; Height = 900 }
+              )
+
+              foreach ($viewport in $viewports) {
+                $resized = [SearchNowWindowCapture]::SetWindowPos(
+                  $process.MainWindowHandle,
+                  [IntPtr]::Zero,
+                  40,
+                  40,
+                  $viewport.Width,
+                  $viewport.Height,
+                  0x0040
+                )
+                if (!$resized) {
+                  Write-Warning "Could not resize SearchNow to $($viewport.Width)x$($viewport.Height)."
+                  continue
+                }
+
+                Start-Sleep -Milliseconds 500
+                $rect = New-Object SearchNowWindowCapture+RECT
+                if (![SearchNowWindowCapture]::GetWindowRect($process.MainWindowHandle, [ref]$rect)) {
+                  Write-Warning "Could not read SearchNow bounds for $($viewport.Name) screenshot."
+                  continue
+                }
+
                 $width = $rect.Right - $rect.Left
                 $height = $rect.Bottom - $rect.Top
-                if ($width -gt 0 -and $height -gt 0) {
-                  $artifactDir = Join-Path $PWD "artifacts/runtime"
-                  New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
-                  $target = Join-Path $artifactDir "searchnow-windows-runtime.png"
-
-                  $bitmap = New-Object System.Drawing.Bitmap $width, $height
-                  $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-                  try {
-                    $graphics.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bitmap.Size)
-                    $bitmap.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
-                    Write-Host "Runtime screenshot:" $target
-                  } finally {
-                    $graphics.Dispose()
-                    $bitmap.Dispose()
-                  }
-                } else {
-                  Write-Warning "SearchNow main window reported invalid screenshot dimensions."
+                if ($width -le 0 -or $height -le 0) {
+                  Write-Warning "SearchNow reported invalid dimensions for $($viewport.Name)."
+                  continue
                 }
-              } else {
-                Write-Warning "SearchNow main window bounds could not be read."
+
+                $target = Join-Path $artifactDir "searchnow-windows-$($viewport.Name)-$($width)x$($height).png"
+                $bitmap = New-Object System.Drawing.Bitmap $width, $height
+                $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+                try {
+                  $graphics.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bitmap.Size)
+                  $bitmap.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
+                  Write-Host "Runtime screenshot:" $target
+                } finally {
+                  $graphics.Dispose()
+                  $bitmap.Dispose()
+                }
               }
             }
           } catch {
@@ -130,7 +160,7 @@ jobs:
         uses: actions/upload-artifact@v4.6.2
         with:
           name: searchnow-windows-runtime-screenshot
-          path: artifacts/runtime/searchnow-windows-runtime.png
+          path: artifacts/runtime/searchnow-windows-*.png
           if-no-files-found: warn
           retention-days: 7
 
