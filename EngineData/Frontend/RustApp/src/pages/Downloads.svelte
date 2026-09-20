@@ -391,10 +391,11 @@
               <span class="download-row__time">{formatDateTime(job.updatedAtMs)}</span>
             </div>
 
-            <div class="download-row__stage">
-              <strong>{downloadStateLabel(job.state)}</strong>
-              <span>{downloadStageDetail(job)}</span>
-            </div>
+            {#if ["preparing", "finalizing", "pauseRequested", "cancelRequested", "interrupted", "failed"].includes(job.state)}
+              <div class="download-row__stage">
+                <span>{downloadStageDetail(job)}</span>
+              </div>
+            {/if}
 
             <div
               class:progress-track--indeterminate={percent === null && ["preparing", "transferring", "pauseRequested", "finalizing"].includes(job.state)}
