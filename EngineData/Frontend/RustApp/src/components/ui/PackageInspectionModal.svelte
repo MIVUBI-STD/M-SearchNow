@@ -169,8 +169,84 @@
     return hasChange;
   }
 
+  type PackageDecision =
+    | "install"
+    | "update"
+    | "same"
+    | "downgrade"
+    | "conflict"
+    | "review"
+    | "rejected";
+
   function canAutoUpdate(): boolean {
     return canAutoUpdateSingle() || canAutoUpdateBundle();
+  }
+
+  function bundleVersionStates(): Array<{ name: string; state: "new" | "newer" | "same" | "older" | "unknown"; installed: LocalContentItem | null; incoming: string | null }> {
+    if (!inspection || inspection.inputKind !== "mcAddon" || !selectedRootId) return [];
+    const installedByUuid = new Map(
+      installedItems
+        .filter((item) => item.rootId === selectedRootId && item.manifestUuid !== null)
+        .map((item) => [item.manifestUuid!.toLowerCase(), item] as const),
+    );
+    return inspection.packs.map((pack) => {
+      const installed = pack.uuid ? (installedByUuid.get(pack.uuid.toLowerCase()) ?? null) : null;
+      if (!installed) return { name: pack.name, state: "new" as const, installed: null, incoming: pack.version };
+      const comparison = compareVersions(pack.version, installed.version);
+      const state = comparison === null ? "unknown" : comparison > 0 ? "newer" : comparison < 0 ? "older" : "same";
+      return { name: pack.name, state, installed, incoming: pack.version };
+    });
+  }
+
+  function packageDecision(): PackageDecision {
+    if (!inspection) return "review";
+    if (inspection.status === "rejected") return "rejected";
+    if (inspection.status === "issues") return "review";
+    if (canAutoUpdate()) return "update";
+    if (inspection.inputKind === "mcPack") {
+      const state = conflictVersionState();
+      if (state === "same") return "same";
+      if (state === "older") return "downgrade";
+      if (conflictingItems().length > 0) return "conflict";
+    }
+    if (inspection.inputKind === "mcAddon") {
+      const states = bundleVersionStates();
+      if (states.some((item) => item.state === "older")) return "downgrade";
+      if (states.length > 0 && states.every((item) => item.state === "same")) return "same";
+      if (conflictingItems().length > 0) return "conflict";
+    }
+    return canAutoImport() ? "install" : "review";
+  }
+
+  function decisionTitle(): string {
+    switch (packageDecision()) {
+      case "install": return "Ready to install";
+      case "update": return inspection?.inputKind === "mcAddon" ? "Add-on update available" : "Update available";
+      case "same": return "Same version already installed";
+      case "downgrade": return "Older package detected";
+      case "conflict": return "Installation conflict";
+      case "rejected": return "Package rejected";
+      default: return "Needs review";
+    }
+  }
+
+  function decisionMessage(): string {
+    switch (packageDecision()) {
+      case "install":
+        return "This content is not installed in the selected Minecraft storage and can be added safely.";
+      case "update":
+        return "SearchNow found a newer version and can replace the installed content using the safe update flow.";
+      case "same":
+        return "The selected package matches the installed version. No update is needed.";
+      case "downgrade":
+        return "A newer version is already installed. Automatic downgrade is disabled to avoid replacing newer content.";
+      case "conflict":
+        return "SearchNow found matching content but cannot determine one safe automatic action. Review the installed copies first.";
+      case "rejected":
+        return "This package failed safety or structure checks and cannot be installed.";
+      default:
+        return "SearchNow found something that needs attention before this package can be installed safely.";
+    }
   }
 
   function canAutoImport(): boolean {
@@ -182,14 +258,7 @@
   }
 
   function statusLabel(): string {
-    if (!inspection) return "";
-    if (inspection.status === "rejected") return "Rejected";
-    if (inspection.status === "issues") return "Needs review";
-    if (canAutoUpdateBundle()) return "Bundle update available";
-    if (canAutoUpdateSingle()) return "Update available";
-    if (conflictVersionState() === "older") return "Older package";
-    if (conflictingItems().length > 0) return "Already installed";
-    return canAutoImport() ? "Ready to import" : "Inspection passed";
+    return decisionTitle();
   }
 </script>
 
@@ -213,6 +282,11 @@
             <h2 id="package-inspection-title">Package inspection</h2>
             <p>{statusLabel()}</p>
           </div>
+        </div>
+
+        <div class="catalog-modal__decision" data-state={packageDecision()}>
+          <strong>{decisionTitle()}</strong>
+          <span>{decisionMessage()}</span>
         </div>
 
         <div class="catalog-modal__facts">
@@ -249,16 +323,42 @@
           </div>
         {/if}
 
-        {#if conflictingItems().length}
+        {#if inspection.inputKind === "mcPack" && conflictingItems().length}
           <div class="catalog-modal__issue">
-            <strong>{canAutoUpdate() ? "Update available" : conflictVersionState() === "older" ? "Older package" : "Already installed"}</strong>
+            <strong>Installed version</strong>
             {#if canAutoUpdate() && updateTarget()}
               <span>{updateTarget()!.title}: v{updateTarget()!.version.join(".")} → v{inspection.packs[0].version}</span>
+            {:else if conflictVersionState() === "same"}
+              <span>{conflictingItems()[0].title} is already installed at v{conflictingItems()[0].version.join(".")}.</span>
             {:else if conflictVersionState() === "older"}
-              <span>The installed version is newer than v{inspection.packs[0].version}; automatic downgrade is disabled.</span>
+              <span>Installed v{conflictingItems()[0].version.join(".")} is newer than incoming v{inspection.packs[0].version}.</span>
             {:else}
               <span>{conflictingItems().map((item) => item.title).join(", ")} uses the same manifest UUID in this Minecraft storage.</span>
             {/if}
+          </div>
+        {/if}
+
+        {#if inspection.inputKind === "mcAddon" && bundleVersionStates().length}
+          <div class="catalog-modal__changes">
+            <strong>Bundle changes</strong>
+            <div>
+              {#each bundleVersionStates() as change}
+                <div class="catalog-modal__change-row" data-state={change.state}>
+                  <span>{change.name}</span>
+                  <small>
+                    {change.state === "new"
+                      ? "New install"
+                      : change.state === "newer"
+                        ? `v${change.installed?.version.join(".")} → v${change.incoming}`
+                        : change.state === "same"
+                          ? `Already v${change.incoming}`
+                          : change.state === "older"
+                            ? `Installed v${change.installed?.version.join(".")} is newer`
+                            : "Version could not be compared"}
+                  </small>
+                </div>
+              {/each}
+            </div>
           </div>
         {/if}
 
@@ -309,7 +409,7 @@
               disabled={!canAutoImport() || modalBusy}
               onclick={() => onImport(selectedRootId)}
             >
-              {importBusy ? "Importing…" : "Import package"}
+              {importBusy ? "Installing…" : "Install package"}
             </button>
           {/if}
         </div>
