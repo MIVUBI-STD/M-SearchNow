@@ -1,6 +1,8 @@
 use super::error::CommandError;
 use searchnow_core::app_runtime::SearchNowBackendRuntime;
 use std::process::Command;
+
+const VERIFY_ROUTE_ENV: &str = "SEARCHNOW_VERIFY_ROUTE";
 use tauri::{AppHandle, Runtime, State};
 use tauri_plugin_dialog::DialogExt;
 
@@ -16,6 +18,13 @@ fn pick_directory<R: Runtime>(app: &AppHandle<R>) -> Result<Option<String>, Comm
         )
     })?;
     Ok(Some(path.to_string_lossy().into_owned()))
+}
+
+#[tauri::command]
+pub fn get_startup_route_override() -> Option<String> {
+    std::env::var(VERIFY_ROUTE_ENV).ok().and_then(|value| {
+        matches!(value.as_str(), "library" | "discover" | "downloads" | "settings").then_some(value)
+    })
 }
 
 #[tauri::command]
