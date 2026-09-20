@@ -893,8 +893,13 @@
       message={snapshot.library.items.length
         ? "Change the search or filters to see other content."
         : snapshot.minecraft.message}
-      actionLabel={snapshot.library.items.length && controlsChanged ? "Reset" : null}
-      onAction={snapshot.library.items.length && controlsChanged ? resetControls : null}
+      actionLabel={snapshot.library.items.length
+        ? (controlsChanged ? "Reset" : null)
+        : "Import content"}
+      actionDisabled={!snapshot.library.items.length && inspectionBusy}
+      onAction={snapshot.library.items.length
+        ? (controlsChanged ? resetControls : null)
+        : inspectPackage}
     />
   {/if}
 </section>
