@@ -1,6 +1,8 @@
 use crate::minecraft::MinecraftStorageRoot;
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::BinaryHeap,
+    ffi::OsString,
     fs,
     path::{Path, PathBuf},
 };
@@ -88,12 +90,7 @@ pub fn scan_library(
             scan_container(root, spec, &mut items, &mut warnings);
         }
     }
-    items.sort_by(|left, right| {
-        left.title
-            .to_lowercase()
-            .cmp(&right.title.to_lowercase())
-            .then_with(|| left.path.cmp(&right.path))
-    });
+    items.sort_by_cached_key(|item| (item.title.to_lowercase(), item.path.clone()));
     let summary = summarize(&items);
     LibrarySnapshot {
         items,
@@ -165,8 +162,8 @@ fn scan_container(
     if !container.is_dir() {
         return;
     }
-    let entries = match fs::read_dir(&container) {
-        Ok(entries) => entries,
+    let (entries, truncated) = match bounded_container_entries(&container, MAX_ITEMS_PER_CONTAINER) {
+        Ok(result) => result,
         Err(error) => {
             warnings.push(LibraryWarning {
                 code: "library_container_read_failed".into(),
@@ -176,9 +173,7 @@ fn scan_container(
             return;
         }
     };
-    let mut entries: Vec<_> = entries.filter_map(Result::ok).collect();
-    entries.sort_by_key(|entry| entry.file_name());
-    if entries.len() > MAX_ITEMS_PER_CONTAINER {
+    if truncated {
         warnings.push(LibraryWarning {
             code: "library_container_limit".into(),
             message: format!(
@@ -187,17 +182,53 @@ fn scan_container(
             ),
             path: Some(container.clone()),
         });
-        entries.truncate(MAX_ITEMS_PER_CONTAINER);
     }
-    for entry in entries {
-        let Ok(file_type) = entry.file_type() else {
+    for path in entries {
+        let Ok(metadata) = fs::symlink_metadata(&path) else {
             continue;
         };
-        if !file_type.is_dir() || file_type.is_symlink() {
+        if !metadata.is_dir() || metadata.file_type().is_symlink() {
             continue;
         }
-        items.push(index_item(root, &entry.path(), spec));
+        items.push(index_item(root, &path, spec));
     }
+}
+
+fn bounded_container_entries(
+    container: &Path,
+    limit: usize,
+) -> std::io::Result<(Vec<PathBuf>, bool)> {
+    let entries = fs::read_dir(container)?;
+    if limit == 0 {
+        return Ok((Vec::new(), entries.filter_map(Result::ok).next().is_some()));
+    }
+
+    let mut selected = BinaryHeap::<(OsString, PathBuf)>::with_capacity(limit);
+    let mut truncated = false;
+
+    for entry in entries.filter_map(Result::ok) {
+        let candidate = (entry.file_name(), entry.path());
+        if selected.len() < limit {
+            selected.push(candidate);
+            continue;
+        }
+
+        truncated = true;
+        let should_replace = selected
+            .peek()
+            .is_some_and(|largest| candidate.cmp(largest).is_lt());
+        if should_replace {
+            selected.pop();
+            selected.push(candidate);
+        }
+    }
+
+    let mut selected = selected.into_vec();
+    selected.sort_by(|left, right| left.cmp(right));
+    Ok((
+        selected.into_iter().map(|(_, path)| path).collect(),
+        truncated,
+    ))
 }
 
 fn index_item(root: &MinecraftStorageRoot, path: &Path, spec: ContainerSpec) -> LocalContentItem {
@@ -364,6 +395,25 @@ mod tests {
             root: path.to_path_buf(),
             account_hint: None,
         }
+    }
+
+    #[test]
+    fn bounded_container_entries_keep_lexicographically_first_paths() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        for name in ["charlie", "alpha", "bravo"] {
+            fs::create_dir_all(directory.path().join(name)).expect("entry");
+        }
+
+        let (entries, truncated) =
+            bounded_container_entries(directory.path(), 2).expect("bounded entries");
+        let names = entries
+            .iter()
+            .filter_map(|path| path.file_name())
+            .map(|name| name.to_string_lossy().into_owned())
+            .collect::<Vec<_>>();
+
+        assert!(truncated);
+        assert_eq!(names, vec!["alpha", "bravo"]);
     }
 
     #[test]
