@@ -135,6 +135,23 @@
     selectedIds = [];
   }
 
+  function handleLibraryShortcut(event: KeyboardEvent): void {
+    if (!active || !selectionMode || batchBusy) return;
+    const target = event.target;
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return;
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      exitSelectionMode();
+      return;
+    }
+
+    if (event.ctrlKey && !event.altKey && !event.metaKey && event.key.toLowerCase() === "a") {
+      event.preventDefault();
+      selectedIds = filteredItems.map((item) => item.id);
+    }
+  }
+
   async function recoverExportDirectory(): Promise<"recovered" | "cancelled" | "unavailable"> {
     feedback = null;
     const settings = await runtimeProductFacade.loadSettings();
@@ -616,6 +633,8 @@
   });
 </script>
 
+<svelte:window onkeydown={handleLibraryShortcut} />
+
 <section class="page" hidden={!active}>
   {#if dropActive}
     <div class="library-drop-overlay" role="status" aria-live="polite">
@@ -685,7 +704,7 @@
     >
       <label class="search-field">
         <Search size={15} aria-hidden="true" />
-        <input bind:value={queryInput} type="search" placeholder="Search your library" aria-label="Search your library" />
+        <input data-page-search aria-keyshortcuts="Control+F" bind:value={queryInput} type="search" placeholder="Search your library" aria-label="Search your library" />
       </label>
       <select class="select-field" bind:value={filter} aria-label="Filter content type">
         <option value="all">All content</option>
