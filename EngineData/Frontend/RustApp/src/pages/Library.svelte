@@ -696,11 +696,11 @@
       </div>
     </div>
     <div class="page-heading__actions">
-      <button class="button button--primary" type="button" onclick={inspectPackage} disabled={!runtimeReady || inspectionBusy}>
+      <button class="button button--primary" type="button" onclick={inspectPackage} aria-busy={inspectionBusy} disabled={!runtimeReady || inspectionBusy}>
         <FileSearch size={15} aria-hidden="true" />
         {inspectionBusy ? "Inspecting…" : "Import file"}
       </button>
-      <button class="button button--secondary" type="button" onclick={inspectPackageFolder} disabled={!runtimeReady || inspectionBusy}>
+      <button class="button button--secondary" type="button" onclick={inspectPackageFolder} aria-busy={inspectionBusy} disabled={!runtimeReady || inspectionBusy}>
         <FolderOpen size={15} aria-hidden="true" />
         Import folder
       </button>
