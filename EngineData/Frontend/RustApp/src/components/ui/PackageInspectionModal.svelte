@@ -26,15 +26,16 @@
 
   let selectedRootId = $state("");
   let dialogElement: HTMLElement | null = $state(null);
-  let previousFocus: HTMLElement | null = null;
 
   $effect(() => {
     if (!open || !inspection) return;
-    previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusToRestore = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
     queueMicrotask(() => focusFirstInDialog(dialogElement));
 
     return () => {
-      queueMicrotask(() => previousFocus?.focus());
+      queueMicrotask(() => focusToRestore?.focus());
     };
   });
 
@@ -191,7 +192,7 @@
 
 {#if open && inspection}
   <div class="catalog-modal__backdrop" role="presentation" onclick={handleBackdrop}>
-    <div bind:this={dialogElement} class="catalog-modal" role="dialog" aria-modal="true" aria-labelledby="package-inspection-title" tabindex="-1">
+    <div bind:this={dialogElement} class="catalog-modal" role="dialog" aria-modal="true" aria-labelledby="package-inspection-title" aria-busy={importBusy} tabindex="-1">
       <button class="catalog-modal__close" type="button" aria-label="Close package inspection" onclick={onClose} disabled={importBusy}>
         <X size={18} aria-hidden="true" />
       </button>

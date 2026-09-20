@@ -34,7 +34,7 @@ export function trapDialogFocus(event: KeyboardEvent, container: HTMLElement | n
     return true;
   }
 
-  if (!event.shiftKey && active === last) {
+  if (!event.shiftKey && (active === last || !container.contains(active))) {
     event.preventDefault();
     first.focus();
     return true;

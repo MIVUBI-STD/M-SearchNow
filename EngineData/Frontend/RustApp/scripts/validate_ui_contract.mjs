@@ -9,9 +9,11 @@ const errors = [];
 const library = await read("src/pages/Library.svelte");
 const settings = await read("src/pages/Settings.svelte");
 const downloads = await read("src/pages/Downloads.svelte");
+const discover = await read("src/pages/Discover.svelte");
 const workspace = await read("src/styles/workspace.css");
 const catalogModal = await read("src/components/ui/CatalogDetailModal.svelte");
 const packageModal = await read("src/components/ui/PackageInspectionModal.svelte");
+const dialogFocus = await read("src/app/shared/dialogFocus.ts");
 const runtimeApi = await read("src/app/bridge/runtimeApi.ts");
 const facade = await read("src/app/bridge/runtimeProductFacade.ts");
 const registry = await read("src-tauri/src/commands/registry.rs");
@@ -24,6 +26,15 @@ for (const [label, text] of [
   for (const needle of ["trapDialogFocus", "bind:this={dialogElement}", 'tabindex="-1"']) {
     if (!text.includes(needle)) errors.push(`${label} is missing dialog focus contract: ${needle}`);
   }
+}
+if (!dialogFocus.includes("active === last || !container.contains(active)")) {
+  errors.push("Dialog focus trap must recover forward Tab when focus escapes the dialog");
+}
+for (const needle of ['aria-busy={downloadBusy}', 'disabled={downloadBusy}']) {
+  if (!catalogModal.includes(needle)) errors.push(`Catalog modal busy-state contract is missing: ${needle}`);
+}
+if (!packageModal.includes('aria-busy={importBusy}')) {
+  errors.push("Package inspection modal must expose import busy state");
 }
 
 for (const needle of [
@@ -91,6 +102,13 @@ for (const needle of ["SettingsFeedback", "minecraftDirty", "Settings could not 
 }
 if (settings.includes('title="Could not update settings."')) {
   errors.push("Settings must not use the generic Could not update settings notice");
+}
+
+for (const needle of ["DiscoverFeedback", "Download folder could not be chosen", "Download could not start"]) {
+  if (!discover.includes(needle)) errors.push(`Discover feedback contract is missing: ${needle}`);
+}
+if (discover.includes("downloadMessage")) {
+  errors.push("Discover must use structured download feedback instead of downloadMessage");
 }
 
 if (errors.length) {

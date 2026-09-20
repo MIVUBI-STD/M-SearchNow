@@ -21,25 +21,26 @@
 
   let canDownload = $derived(Boolean(item?.download && item?.fileName && onDownload));
   let dialogElement: HTMLElement | null = $state(null);
-  let previousFocus: HTMLElement | null = null;
 
   $effect(() => {
     if (!open || !item) return;
-    previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusToRestore = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
     queueMicrotask(() => focusFirstInDialog(dialogElement));
 
     return () => {
-      queueMicrotask(() => previousFocus?.focus());
+      queueMicrotask(() => focusToRestore?.focus());
     };
   });
 
   function handleBackdrop(event: MouseEvent): void {
-    if (event.target === event.currentTarget) onClose();
+    if (event.target === event.currentTarget && !downloadBusy) onClose();
   }
 
   function handleKeydown(event: KeyboardEvent): void {
     if (!open) return;
-    if (event.key === "Escape") {
+    if (event.key === "Escape" && !downloadBusy) {
       event.preventDefault();
       onClose();
       return;
@@ -52,8 +53,8 @@
 
 {#if open && item}
   <div class="catalog-modal__backdrop" role="presentation" onclick={handleBackdrop}>
-    <div bind:this={dialogElement} class="catalog-modal" role="dialog" aria-modal="true" aria-labelledby="catalog-modal-title" tabindex="-1">
-      <button class="catalog-modal__close" type="button" aria-label="Close details" onclick={onClose}>
+    <div bind:this={dialogElement} class="catalog-modal" role="dialog" aria-modal="true" aria-labelledby="catalog-modal-title" aria-busy={downloadBusy} tabindex="-1">
+      <button class="catalog-modal__close" type="button" aria-label="Close details" onclick={onClose} disabled={downloadBusy}>
         <X size={18} aria-hidden="true" />
       </button>
 

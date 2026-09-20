@@ -17,6 +17,11 @@
   import ResultsBar from "../components/ui/ResultsBar.svelte";
 
   type ContentFilter = "all" | CatalogContentType;
+  type DiscoverFeedback = {
+    tone: "success" | "warning" | "error";
+    title: string;
+    message: string;
+  };
 
   let {
     runtimeReady,
@@ -38,7 +43,7 @@
   let loadingMore = $state(false);
   let downloadBusy = $state(false);
   let error = $state("");
-  let downloadMessage = $state("");
+  let downloadFeedback = $state<DiscoverFeedback | null>(null);
   let requestSequence = 0;
 
   let catalogProviders = $derived(providers.filter((provider) => provider.capabilities.catalog));
@@ -93,7 +98,7 @@
 
   function openDetails(item: CatalogItem): void {
     selectedItem = item;
-    downloadMessage = "";
+    downloadFeedback = null;
   }
 
   function closeDetails(): void {
@@ -105,7 +110,7 @@
     if (!item?.download || !item.fileName || downloadBusy) return;
 
     downloadBusy = true;
-    downloadMessage = "";
+    downloadFeedback = null;
 
     let destinationDirectory: string | null = null;
     const settings = await runtimeProductFacade.loadSettings();
@@ -114,7 +119,11 @@
     if (!destinationDirectory) {
       const picker = await runtimeProductFacade.chooseDownloadDirectory();
       if (!picker.ok) {
-        downloadMessage = picker.error.message;
+        downloadFeedback = {
+          tone: "error",
+          title: "Download folder could not be chosen",
+          message: picker.error.message,
+        };
         downloadBusy = false;
         return;
       }
@@ -145,7 +154,11 @@
     if (staleDefaultDirectory) {
       const picker = await runtimeProductFacade.chooseDownloadDirectory();
       if (!picker.ok) {
-        downloadMessage = picker.error.message;
+        downloadFeedback = {
+          tone: "error",
+          title: "Replacement download folder could not be chosen",
+          message: picker.error.message,
+        };
         downloadBusy = false;
         return;
       }
@@ -160,21 +173,39 @@
       });
     }
 
+    let defaultDirectorySaveWarning: string | null = null;
     if (result.ok && recoveredDefaultDirectory && settings.ok) {
-      void runtimeProductFacade.saveSettings({
+      const saveResult = await runtimeProductFacade.saveSettings({
         ...settings.data,
         download: {
           ...settings.data.download,
           defaultDirectory: recoveredDefaultDirectory,
         },
       });
+      if (!saveResult.ok) {
+        defaultDirectorySaveWarning = saveResult.error.message;
+      }
     }
 
     if (result.ok) {
       selectedItem = null;
-      downloadMessage = `${item.title} was added to Downloads.`;
+      downloadFeedback = defaultDirectorySaveWarning
+        ? {
+            tone: "warning",
+            title: "Download started",
+            message: `${item.title} was added to Downloads, but SearchNow could not update the default download folder: ${defaultDirectorySaveWarning}`,
+          }
+        : {
+            tone: "success",
+            title: "Download started",
+            message: `${item.title} was added to Downloads.`,
+          };
     } else {
-      downloadMessage = result.error.message;
+      downloadFeedback = {
+        tone: "error",
+        title: "Download could not start",
+        message: result.error.message,
+      };
     }
     downloadBusy = false;
   }
@@ -314,8 +345,12 @@
     </div>
   {/if}
 
-  {#if downloadMessage}
-    <Notice tone={selectedItem ? "warning" : "success"} title={selectedItem ? "Download could not start" : "Download started"} message={downloadMessage} />
+  {#if downloadFeedback}
+    <Notice
+      tone={downloadFeedback.tone}
+      title={downloadFeedback.title}
+      message={downloadFeedback.message}
+    />
   {/if}
 
   {#if error}
