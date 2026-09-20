@@ -153,27 +153,6 @@
 }
 
 
-.activity-panel {
-  display: grid;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.activity-panel__heading > div {
-  display: grid;
-  gap: 4px;
-}
-
-.activity-panel__heading strong {
-  font-size: var(--sn-font-caption);
-}
-
-.activity-panel__heading span {
-  color: var(--sn-text-soft);
-  font-size: var(--sn-font-caption);
-  line-height: 1.5;
-}
-
 .activity-list {
   display: grid;
   gap: 6px;
@@ -220,4 +199,55 @@
 
 .activity-row--failed {
   border-color: #584622;
+}
+
+
+.activity-dialog {
+  width: min(620px, calc(100vw - 48px));
+  padding: 24px;
+}
+
+.activity-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-right: 42px;
+}
+
+.activity-dialog__header > div {
+  min-width: 0;
+}
+
+.activity-dialog__header > div > span {
+  color: var(--sn-text-soft);
+  font-size: var(--sn-font-caption);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.activity-dialog__header h2 {
+  margin: 4px 0 0;
+  font-size: 22px;
+  letter-spacing: -.025em;
+}
+
+.activity-dialog__header p {
+  max-width: 460px;
+  margin: 7px 0 0;
+  color: var(--sn-text-muted);
+  font-size: var(--sn-font-body);
+  line-height: 1.55;
+}
+
+.activity-dialog .activity-list {
+  margin-top: 18px;
+}
+
+.activity-dialog__footnote {
+  margin: 14px 0 0;
+  color: var(--sn-text-soft);
+  font-size: var(--sn-font-caption);
+  line-height: 1.45;
 }
