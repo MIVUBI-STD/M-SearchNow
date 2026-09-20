@@ -87,6 +87,26 @@
   function needsReview(): boolean {
     return item?.status === "invalidMetadata" || hasDuplicate || hasMissingDependency || hasOutdatedDependency;
   }
+
+  function removeImpactTitle(dependents: LocalContentItem[]): string {
+    if (dependents.length > 0) {
+      return `Remove content used by ${dependents.length} other item${dependents.length === 1 ? "" : "s"}?`;
+    }
+    if (hasDuplicate) return "Remove this duplicate installation?";
+    return "Remove this content?";
+  }
+
+  function removeImpactMessage(dependents: LocalContentItem[]): string {
+    if (dependents.length > 0) {
+      const names = dependents.slice(0, 3).map((dependent) => dependent.title).join(", ");
+      const remaining = dependents.length - Math.min(dependents.length, 3);
+      return `This content is required by ${names}${remaining > 0 ? ` and ${remaining} more` : ""}. Removing it may leave those items incomplete.`;
+    }
+    if (hasDuplicate) {
+      return "Another installed item uses the same manifest UUID. Verify which copy you want to keep before removing this one.";
+    }
+    return "This permanently removes the selected Minecraft content folder from this device.";
+  }
 </script>
 
 <aside class="library-detail" aria-label="Selected content details">
@@ -251,14 +271,29 @@
 
     <div class="library-detail__danger">
       {#if confirmRemove}
-        <div>
-          <strong>Remove this content?</strong>
-          <span>This permanently removes the selected Minecraft content folder from this device.</span>
+        <div class:library-detail__danger-impact={dependents.length > 0 || hasDuplicate}>
+          <strong>{removeImpactTitle(dependents)}</strong>
+          <span>{removeImpactMessage(dependents)}</span>
+          {#if dependents.length > 0}
+            <small>Recommended: export a backup first, or review the dependent items above before continuing.</small>
+          {:else if hasDuplicate}
+            <small>Recommended: compare both copies first so you do not remove the version you intend to keep.</small>
+          {/if}
         </div>
-        <button class="button button--ghost library-detail__remove-confirm" type="button" onclick={onRemove} disabled={actionBusy}>
-          <Trash2 size={14} aria-hidden="true" />
-          {actionBusy ? "Removing…" : "Remove permanently"}
-        </button>
+        <div class="library-detail__danger-actions">
+          <button
+            class="button button--ghost"
+            type="button"
+            onclick={() => (confirmRemove = false)}
+            disabled={actionBusy}
+          >
+            Cancel
+          </button>
+          <button class="button button--ghost library-detail__remove-confirm" type="button" onclick={onRemove} disabled={actionBusy}>
+            <Trash2 size={14} aria-hidden="true" />
+            {actionBusy ? "Removing…" : dependents.length > 0 || hasDuplicate ? "Remove anyway" : "Remove permanently"}
+          </button>
+        </div>
       {:else}
         <button class="button button--ghost" type="button" onclick={() => (confirmRemove = true)} disabled={actionBusy}>
           <Trash2 size={14} aria-hidden="true" />
