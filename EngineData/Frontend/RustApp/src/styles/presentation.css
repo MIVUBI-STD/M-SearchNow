@@ -112,9 +112,25 @@
   color: var(--sn-accent-strong);
 }
 
+.button:not(:disabled),
+.icon-button:not(:disabled),
+.nav-item:not(:disabled),
+.catalog-card:not(:disabled),
+.library-row:not(:disabled) {
+  transition-duration: var(--sn-motion-fast);
+  transition-timing-function: var(--sn-ease-out);
+}
+
 .button:not(:disabled):active,
 .icon-button:not(:disabled):active {
   background-color: var(--sn-surface-hover);
+  transform: scale(.98);
+}
+
+.nav-item:not(:disabled):active,
+.catalog-card:not(:disabled):active,
+.library-row:not(:disabled):active {
+  transform: scale(.995);
 }
 
 [hidden] {
