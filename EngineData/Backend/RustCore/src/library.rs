@@ -225,7 +225,7 @@ fn bounded_container_entries(
     }
 
     let mut selected = selected.into_vec();
-    selected.sort_by(|left, right| left.cmp(right));
+    selected.sort();
     Ok((
         selected.into_iter().map(|(_, path)| path).collect(),
         truncated,
