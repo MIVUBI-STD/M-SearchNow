@@ -56,6 +56,8 @@ for (const code of [
   "directory_open_failed",
   "library_item_not_found",
   "library_export_verification_failed",
+  "library_export_verification_cleanup_failed",
+  "library_batch_export_rollback_failed",
   "download_directory_not_ready",
   "download_directory_unavailable",
   "settings_load_failed",

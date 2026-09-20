@@ -468,10 +468,20 @@ impl SearchNowBackendRuntime {
         });
 
         if !valid {
-            let _ = std::fs::remove_file(destination);
+            match std::fs::remove_file(destination) {
+                Ok(()) => {}
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => {
+                    return Err(BackendError::from_io(
+                        "library_export_verification_cleanup_failed",
+                        "SearchNow could not verify the backup and could not remove the unverified output. Review the export folder before continuing.",
+                        error,
+                    ))
+                }
+            }
             return Err(BackendError::new(
                 "library_export_verification_failed",
-                "SearchNow created the backup but could not verify it safely, so the incomplete output was removed.",
+                "SearchNow could not verify the completed backup safely. The unverified output was removed.",
             ));
         }
 
@@ -689,10 +699,25 @@ impl SearchNowBackendRuntime {
                 .collect())
         })();
 
-        if result.is_err() {
+        if let Err(error) = result {
+            let mut cleanup_failure = None;
             for path in created.iter().rev() {
-                let _ = std::fs::remove_file(path);
+                if let Err(remove_error) = std::fs::remove_file(path) {
+                    if remove_error.kind() != std::io::ErrorKind::NotFound
+                        && cleanup_failure.is_none()
+                    {
+                        cleanup_failure = Some(remove_error);
+                    }
+                }
             }
+            if let Some(cleanup_error) = cleanup_failure {
+                return Err(BackendError::from_io(
+                    "library_batch_export_rollback_failed",
+                    "Batch export failed and SearchNow could not remove every newly created backup. Review the export folder before continuing.",
+                    cleanup_error,
+                ));
+            }
+            return Err(error);
         }
         result
     }
