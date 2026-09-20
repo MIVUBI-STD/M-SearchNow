@@ -285,3 +285,28 @@
 .catalog-modal__change-row[data-state="older"] small {
   color: var(--sn-warning);
 }
+
+
+.catalog-modal__availability {
+  display: grid;
+  gap: 5px;
+  border: 1px solid #3b4d63;
+  border-radius: var(--sn-radius-md);
+  background: #111923;
+  padding: 12px 14px;
+}
+
+.catalog-modal__availability--ready {
+  border-color: #28563f;
+  background: var(--sn-success-surface);
+}
+
+.catalog-modal__availability strong {
+  font-size: 13px;
+}
+
+.catalog-modal__availability span {
+  color: var(--sn-text-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
