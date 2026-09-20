@@ -51,12 +51,27 @@
   let duplicateIds = $derived(findDuplicateIds(snapshot?.library.items ?? []));
   let missingDependencyIds = $derived(findMissingDependencyIds(snapshot?.library.items ?? []));
   let outdatedDependencyIds = $derived(findOutdatedDependencyIds(snapshot?.library.items ?? []));
+  let attentionIds = $derived.by(() => {
+    const ids = new Set<string>();
+    for (const item of snapshot?.library.items ?? []) {
+      if (
+        item.status === "invalidMetadata" ||
+        duplicateIds.has(item.id) ||
+        missingDependencyIds.has(item.id) ||
+        outdatedDependencyIds.has(item.id)
+      ) {
+        ids.add(item.id);
+      }
+    }
+    return ids;
+  });
   let filteredItems = $derived(
     (snapshot?.library.items ?? [])
+      .filter((item) => filter !== "issues" || attentionIds.has(item.id))
       .filter((item) =>
         matchesLibraryFilter(item, {
           rootFilter,
-          filter,
+          filter: filter === "issues" ? "all" : filter,
           duplicateIds,
           missingDependencyIds,
           outdatedDependencyIds,
@@ -64,7 +79,13 @@
         }),
       )
       .slice()
-      .sort((left, right) => compareLibraryItems(left, right, sort)),
+      .sort((left, right) => {
+        if (sort === "status") {
+          const attentionOrder = Number(attentionIds.has(right.id)) - Number(attentionIds.has(left.id));
+          if (attentionOrder !== 0) return attentionOrder;
+        }
+        return compareLibraryItems(left, right, sort);
+      }),
   );
   let detailItem = $derived(
     selectedItem && filteredItems.some((item) => item.id === selectedItem?.id)
@@ -612,8 +633,9 @@
           <span>{snapshot.library.summary.total} items</span>
           <span>{snapshot.library.summary.worlds} worlds</span>
           <span>{snapshot.library.summary.behaviorPacks + snapshot.library.summary.resourcePacks + snapshot.library.summary.skinPacks} packs</span>
-          {#if snapshot.library.summary.invalidItems > 0}
-            <span class="library-summary__warning">{snapshot.library.summary.invalidItems} need review</span>
+          <span>{Math.max(0, snapshot.library.summary.total - attentionIds.size)} healthy</span>
+          {#if attentionIds.size > 0}
+            <span class="library-summary__warning">{attentionIds.size} need review</span>
           {/if}
         {:else if snapshot?.minecraft.state === "notFound"}
           <span>Minecraft location required</span>
@@ -774,8 +796,8 @@
           </div>
 
           <div class="library-row__status">
-            <span class:state-text--warning={item.status === "invalidMetadata"} class="state-text">
-              {item.status === "ready" ? "Ready" : "Needs review"}
+            <span class:state-text--warning={attentionIds.has(item.id)} class="state-text">
+              {attentionIds.has(item.id) ? "Needs review" : "Healthy"}
             </span>
             {#if item.version.length}<span class="library-row__version">v{item.version.join(".")}</span>{/if}
           </div>
