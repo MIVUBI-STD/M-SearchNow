@@ -20,13 +20,16 @@ Current implemented scope includes:
 - settings schema v2 with compatible v1 migration, default export-directory preference, and explicit `keepBoth` / `stopOnConflict` backup behavior;
 - export archives re-inspected before success, with truthful verification/rollback cleanup failures;
 - bounded deterministic Library container scanning instead of collecting an unbounded directory before truncation;
-- Linux repository/backend/frontend verification plus hosted Windows release executable launch, required Library/Discover/Downloads/Settings viewport evidence, NSIS build, install/launch/uninstall lifecycle, uninstall user-state preservation, and version-upgrade state preservation.
+- Linux repository/backend/frontend verification plus hosted Windows release executable launch, required Library/Discover/Downloads/Settings viewport evidence, NSIS build, install/launch/uninstall lifecycle, uninstall user-state preservation, and version-upgrade state preservation;
+- deterministic verification-route startup control for hosted Windows UI evidence, removing focus/keyboard-dependent route capture;
+- change-scoped routine CI so documentation-only commits avoid rebuilding the full Windows runtime/installer while source-affecting changes still receive the exhaustive gate;
+- TypeScript unused-local/unused-parameter enforcement, including removal of stale Settings state discovered by the stricter gate.
 
 ## Verification authority
 
 Do **not** treat this document as the authority for the latest commit SHA, workflow run number, or pass/fail result.
 
-For exact current verification state, use the `Repository Verify` run attached to the current `develop` HEAD. A queued, running, cancelled, skipped, or failed run is not a verified baseline.
+For exact current verification state, use the `Repository Verify` run attached to the current `develop` HEAD together with the unchanged source parent when HEAD is documentation-only. Documentation-only HEADs run the lightweight repository contract; source-affecting HEADs run the full gate. A queued, running, cancelled, skipped, or failed required run is not a verified baseline.
 
 This file owns continuation intent only. GitHub Actions owns exact executable verification evidence.
 
