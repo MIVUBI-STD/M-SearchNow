@@ -77,21 +77,21 @@ jobs:
             } else {
               Add-Type -AssemblyName System.Drawing
               Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-public static class SearchNowWindowCapture {
-  [StructLayout(LayoutKind.Sequential)]
-  public struct RECT {
-    public int Left;
-    public int Top;
-    public int Right;
-    public int Bottom;
-  }
+          using System;
+          using System.Runtime.InteropServices;
+          public static class SearchNowWindowCapture {
+            [StructLayout(LayoutKind.Sequential)]
+            public struct RECT {
+              public int Left;
+              public int Top;
+              public int Right;
+              public int Bottom;
+            }
 
-  [DllImport("user32.dll")]
-  public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
-}
-"@
+            [DllImport("user32.dll")]
+            public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+          }
+          "@
 
               $rect = New-Object SearchNowWindowCapture+RECT
               if ([SearchNowWindowCapture]::GetWindowRect($process.MainWindowHandle, [ref]$rect)) {
