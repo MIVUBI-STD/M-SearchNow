@@ -318,6 +318,16 @@ if (!catalogModal.includes("onclick={() => onDownload?.()} aria-busy={downloadBu
   errors.push("Catalog download action must expose its busy state");
 }
 
+
+for (const [label, text, needle] of [
+  ["Settings save", settings, 'saving ?'],
+  ["Settings save", settings, 'class="spin"'],
+  ["Library import", library, 'inspectionBusy ?'],
+  ["Downloads clear", downloads, 'clearingCompleted ?'],
+]) {
+  if (!text.includes(needle)) errors.push(`${label} loading feedback is missing: ${needle}`);
+}
+
 if (errors.length) {
   for (const error of errors) console.error(`ERROR: ${error}`);
   process.exit(1);
