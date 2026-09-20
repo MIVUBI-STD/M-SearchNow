@@ -319,10 +319,10 @@
         <input data-page-search aria-keyshortcuts="Control+F" bind:value={query} type="search" placeholder="Search downloads" aria-label="Search downloads" />
       </label>
       <div class="downloads-tabs" role="group" aria-label="Download status">
-        <button class:downloads-tab--active={filter === "all"} class="downloads-tab" type="button" onclick={() => (filter = "all")}>All</button>
-        <button class:downloads-tab--active={filter === "active"} class="downloads-tab" type="button" onclick={() => (filter = "active")}>Active</button>
-        <button class:downloads-tab--active={filter === "completed"} class="downloads-tab" type="button" onclick={() => (filter = "completed")}>Downloaded</button>
-        <button class:downloads-tab--active={filter === "issues"} class="downloads-tab" type="button" onclick={() => (filter = "issues")}>Needs attention</button>
+        <button class:downloads-tab--active={filter === "all"} class="downloads-tab" type="button" aria-pressed={filter === "all"} onclick={() => (filter = "all")}>All</button>
+        <button class:downloads-tab--active={filter === "active"} class="downloads-tab" type="button" aria-pressed={filter === "active"} onclick={() => (filter = "active")}>Active</button>
+        <button class:downloads-tab--active={filter === "completed"} class="downloads-tab" type="button" aria-pressed={filter === "completed"} onclick={() => (filter = "completed")}>Downloaded</button>
+        <button class:downloads-tab--active={filter === "issues"} class="downloads-tab" type="button" aria-pressed={filter === "issues"} onclick={() => (filter = "issues")}>Needs attention</button>
       </div>
       <div class="downloads-summary">
         <span>{snapshot.activeJobs} active</span>
