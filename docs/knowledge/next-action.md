@@ -14,6 +14,12 @@ Current implemented scope includes:
 - fail-closed inbound settings/catalog/download IPC contracts;
 - crate-private storage, identity, download execution, persistence, transport and workspace plumbing where no external boundary requires them;
 - Library, Discover, Downloads and Settings frontend surfaces behind one `runtimeProductFacade` and one raw `runtimeApi` bridge;
+- contextual per-operation UI feedback, modal focus containment/busy-state semantics, reachable compact-desktop layout behavior, and executable UI-contract validation;
+- Minecraft manual-location recovery from Library/package inspection when automatic discovery is insufficient;
+- explicit file/folder import plus safe Tauri webview drag-and-drop package inspection through the same RustCore validator;
+- settings schema v2 with compatible v1 migration, default export-directory preference, and explicit `keepBoth` / `stopOnConflict` backup behavior;
+- export archives re-inspected before success, with truthful verification/rollback cleanup failures;
+- bounded deterministic Library container scanning instead of collecting an unbounded directory before truncation;
 - Linux repository/backend/frontend verification plus hosted Windows release executable launch, NSIS build, install/launch/uninstall lifecycle, uninstall user-state preservation, and version-upgrade state preservation.
 
 ## Verification authority
@@ -34,7 +40,7 @@ The following remain unproven until exercised directly:
 
 - installed application launch and interaction on the target Windows machine;
 - target-machine AppData/Minecraft discovery and representative real local libraries;
-- settings/download/folder-picker behavior through an installed Tauri window;
+- settings/download/export/folder-picker/drag-drop behavior through an installed Tauri window;
 - a real provider login/session/catalog/resolver integration;
 - production TLS/CDN/provider behavior;
 - representative performance and scale;

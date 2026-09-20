@@ -36,7 +36,7 @@ Downloads
 Settings
 ```
 
-Library, Downloads, Settings, runtime health/diagnostics, and the provider-neutral Discover query surface are wired to the application runtime. Hosted Windows CI now builds and launches the release executable, builds the NSIS installer, exercises silent install/launch/uninstall, verifies uninstall preserves user state, and verifies version upgrade preserves persisted settings/download state. Real provider login/network behavior and owner target-machine interaction remain separate future evidence boundaries.
+Library, Downloads, Settings, runtime health/diagnostics, and the provider-neutral Discover query surface are wired to the application runtime. Library supports explicit file/folder import plus safe OS drag-and-drop inspection, manual Minecraft-location recovery, verified backup export, configurable default export destinations, and non-overwriting conflict policy. Settings schema v2 migrates v1 in memory while retaining fail-closed validation. Hosted Windows CI builds and launches the release executable, builds the NSIS installer, exercises silent install/launch/uninstall, verifies uninstall preserves user state, and verifies version upgrade preserves persisted settings/download state. Real provider login/network behavior and owner target-machine interaction remain separate future evidence boundaries.
 
 ## Current architecture
 
@@ -66,7 +66,7 @@ UserData/
 
 Svelte owns UI/transient state only. Rust owns persistent/runtime truth: Minecraft discovery, library state, catalog sessions, provider resolution, download jobs, package validation, filesystem I/O, settings persistence, and diagnostics.
 
-Settings/download persistence share one crash-recoverable atomic storage primitive. Production downloads expose product intent rather than caller-selected transports. Provider/resource identity validation has one canonical owner. Dependency graphs are committed and verified with npm/Cargo lockfiles.
+Settings/download persistence share one crash-recoverable atomic storage primitive. Library scanning bounds per-container candidate memory before indexing, and exported Minecraft backups are inspected again before SearchNow reports success; cleanup failures are surfaced explicitly instead of being hidden. Production downloads expose product intent rather than caller-selected transports. Provider/resource identity validation has one canonical owner. Dependency graphs are committed and verified with npm/Cargo lockfiles.
 
 The frontend uses one `runtimeProductFacade` over one raw `runtimeApi` Tauri bridge. Pages/components do not create a second API client, persist backend truth, choose internal transports, or handle provider secrets.
 
