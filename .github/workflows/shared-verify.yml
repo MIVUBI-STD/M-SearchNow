@@ -69,7 +69,71 @@ jobs:
           if ($process.HasExited) {
             throw "SearchNow exited during the Windows runtime smoke launch with code $($process.ExitCode)."
           }
+
+          try {
+            $process.Refresh()
+            if ($process.MainWindowHandle -eq 0) {
+              Write-Warning "SearchNow launched, but no capturable main window handle was available."
+            } else {
+              Add-Type -AssemblyName System.Drawing
+              Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public static class SearchNowWindowCapture {
+  [StructLayout(LayoutKind.Sequential)]
+  public struct RECT {
+    public int Left;
+    public int Top;
+    public int Right;
+    public int Bottom;
+  }
+
+  [DllImport("user32.dll")]
+  public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+}
+"@
+
+              $rect = New-Object SearchNowWindowCapture+RECT
+              if ([SearchNowWindowCapture]::GetWindowRect($process.MainWindowHandle, [ref]$rect)) {
+                $width = $rect.Right - $rect.Left
+                $height = $rect.Bottom - $rect.Top
+                if ($width -gt 0 -and $height -gt 0) {
+                  $artifactDir = Join-Path $PWD "artifacts/runtime"
+                  New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
+                  $target = Join-Path $artifactDir "searchnow-windows-runtime.png"
+
+                  $bitmap = New-Object System.Drawing.Bitmap $width, $height
+                  $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+                  try {
+                    $graphics.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bitmap.Size)
+                    $bitmap.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
+                    Write-Host "Runtime screenshot:" $target
+                  } finally {
+                    $graphics.Dispose()
+                    $bitmap.Dispose()
+                  }
+                } else {
+                  Write-Warning "SearchNow main window reported invalid screenshot dimensions."
+                }
+              } else {
+                Write-Warning "SearchNow main window bounds could not be read."
+              }
+            }
+          } catch {
+            Write-Warning "Runtime screenshot capture was unavailable: $($_.Exception.Message)"
+          }
+
           Stop-Process -Id $process.Id -Force
+
+      - name: Upload Windows runtime screenshot
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: searchnow-windows-runtime-screenshot
+          path: artifacts/runtime/searchnow-windows-runtime.png
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Build Windows NSIS installer
         working-directory: EngineData/Frontend/RustApp
         run: npm run build:installer
