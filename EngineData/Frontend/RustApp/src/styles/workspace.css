@@ -151,7 +151,7 @@
   gap: 7px;
   border: 1px dashed #4b6583;
   border-radius: 12px;
-  background: #101720;
+  background: var(--sn-surface-workspace);
   padding: 28px;
   color: var(--sn-text-muted);
   text-align: center;
@@ -220,7 +220,7 @@
   min-height: 40px;
   border-color: var(--sn-border);
   border-radius: 9px;
-  background: #101720;
+  background: var(--sn-surface-workspace);
 }
 
 .toolbar--library .search-field {
@@ -250,7 +250,7 @@
   overflow: hidden;
   border: 1px solid #273446;
   border-radius: 14px;
-  background: #101720;
+  background: var(--sn-surface-workspace);
 }
 
 .library-workspace--selection {
@@ -261,7 +261,7 @@
   overflow: auto;
   border: 0;
   border-radius: 0;
-  background: #101720;
+  background: var(--sn-surface-workspace);
   box-shadow: none;
 }
 
@@ -275,7 +275,7 @@
   align-items: center;
   gap: 11px;
   border: 0;
-  border-bottom: 1px solid #202b39;
+  border-bottom: 1px solid var(--sn-border-subtle);
   background: transparent;
   padding: 10px 13px;
   color: inherit;
@@ -465,8 +465,8 @@
 .library-detail__facts {
   display: grid;
   margin: 16px 0 0;
-  border-top: 1px solid #263241;
-  border-bottom: 1px solid #263241;
+  border-top: 1px solid var(--sn-border);
+  border-bottom: 1px solid var(--sn-border);
 }
 
 .library-detail__facts div {
@@ -510,9 +510,9 @@
   display: grid;
   gap: 2px;
   width: 100%;
-  border: 1px solid #263241;
+  border: 1px solid var(--sn-border);
   border-radius: 8px;
-  background: #111923;
+  background: var(--sn-surface-panel);
   padding: 8px 9px;
   color: var(--sn-text-muted);
   text-align: left;
@@ -546,7 +546,7 @@
 
 .library-detail__danger {
   margin-top: 18px;
-  border-top: 1px solid #263241;
+  border-top: 1px solid var(--sn-border);
   padding-top: 12px;
 }
 
@@ -625,7 +625,7 @@
   min-height: 48px;
   border: 1px solid #2a3748;
   border-radius: 12px;
-  background: #101720;
+  background: var(--sn-surface-workspace);
   padding-inline: 14px;
 }
 
@@ -683,9 +683,9 @@
 
 .discover-controls__secondary .select-field {
   min-height: 34px;
-  border-color: #263241;
+  border-color: var(--sn-border);
   border-radius: 8px;
-  background: #101720;
+  background: var(--sn-surface-workspace);
   font-size: 10px;
 }
 
@@ -711,9 +711,9 @@
 
 .search-field--downloads {
   min-height: 40px;
-  border: 1px solid #263241;
+  border: 1px solid var(--sn-border);
   border-radius: 9px;
-  background: #101720;
+  background: var(--sn-surface-workspace);
 }
 
 .downloads-summary {
@@ -735,7 +735,7 @@
   overflow: hidden;
   border: 1px solid #273446;
   border-radius: 12px;
-  background: #101720;
+  background: var(--sn-surface-workspace);
 }
 
 .download-row {
@@ -744,7 +744,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
-  border-bottom: 1px solid #202b39;
+  border-bottom: 1px solid var(--sn-border-subtle);
   padding: 13px 14px;
 }
 
@@ -867,7 +867,7 @@
   margin-top: 8px;
   border: 1px solid #3b4d63;
   border-radius: 8px;
-  background: #111923;
+  background: var(--sn-surface-panel);
   padding: 7px 9px;
   color: var(--sn-text-muted);
   font-size: 10px;
@@ -889,7 +889,7 @@
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: #111923;
+  background: var(--sn-surface-panel);
 }
 
 .download-row[aria-busy="true"] .download-row__actions {
@@ -931,12 +931,12 @@
 
 .settings-main {
   display: grid;
-  border-top: 1px solid #263241;
+  border-top: 1px solid var(--sn-border);
 }
 
 .settings-section {
   border: 0;
-  border-bottom: 1px solid #263241;
+  border-bottom: 1px solid var(--sn-border);
   border-radius: 0;
   background: transparent;
   padding: 22px 0 24px;
@@ -944,7 +944,7 @@
 }
 
 .settings-section:hover {
-  border-color: #263241;
+  border-color: var(--sn-border);
 }
 
 .settings-section__heading {
@@ -979,7 +979,7 @@
 .settings-section .field input {
   min-height: 38px;
   border-radius: 8px;
-  background: #101720;
+  background: var(--sn-surface-workspace);
 }
 
 .settings-section .field small {
@@ -1011,7 +1011,7 @@
 .root-row {
   grid-template-columns: 150px minmax(0, 1fr);
   border-radius: 8px;
-  background: #101720;
+  background: var(--sn-surface-workspace);
   padding: 9px 10px;
 }
 
@@ -1025,9 +1025,9 @@
 .settings-health > div {
   display: grid;
   gap: 4px;
-  border: 1px solid #263241;
+  border: 1px solid var(--sn-border);
   border-radius: 9px;
-  background: #101720;
+  background: var(--sn-surface-workspace);
   padding: 11px 12px;
 }
 
@@ -1054,7 +1054,7 @@
   display: grid;
   gap: 2px;
   margin-top: 20px;
-  border-top: 1px solid #263241;
+  border-top: 1px solid var(--sn-border);
   padding-top: 18px;
 }
 
@@ -1080,13 +1080,13 @@
 .settings-privacy-list {
   display: grid;
   margin-top: 14px;
-  border-top: 1px solid #263241;
+  border-top: 1px solid var(--sn-border);
 }
 
 .settings-privacy-list > div {
   display: grid;
   gap: 4px;
-  border-bottom: 1px solid #263241;
+  border-bottom: 1px solid var(--sn-border);
   padding: 12px 2px;
 }
 
