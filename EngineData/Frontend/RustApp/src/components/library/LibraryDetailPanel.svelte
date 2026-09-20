@@ -128,7 +128,7 @@
     </div>
 
     <div class="library-detail__actions">
-      <button class="button button--secondary" type="button" onclick={onOpenFolder} disabled={actionBusy}>
+      <button class="button button--secondary library-detail__action-primary" type="button" onclick={onOpenFolder} disabled={actionBusy}>
         <FolderOpen size={15} aria-hidden="true" />
         Open folder
       </button>
