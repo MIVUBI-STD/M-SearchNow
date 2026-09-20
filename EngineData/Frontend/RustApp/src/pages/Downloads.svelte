@@ -362,14 +362,14 @@
   {/if}
 
   {#if !runtimeReady}
-    <PageState marker="03" title="Downloads unavailable" message="SearchNow cannot manage downloads right now." />
+    <PageState icon="download" title="Downloads unavailable" message="SearchNow cannot manage downloads right now." />
   {:else if !snapshot && !feedback}
     <PageState kind="loading" title="Loading downloads" message="Reading your current downloads." />
   {:else if snapshot && jobs.length === 0}
-    <PageState marker="03" title="No downloads yet" message="Downloads started from Discover will appear here." />
+    <PageState icon="download" title="No downloads yet" message="Downloads started from Discover will appear here." />
   {:else if snapshot && visibleJobs.length === 0}
     <PageState
-      marker="03"
+      icon="search"
       title="No matching downloads"
       message="Change the search or filter to see other downloads."
       actionLabel={controlsChanged ? "Reset" : null}
