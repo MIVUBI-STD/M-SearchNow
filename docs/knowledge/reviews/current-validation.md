@@ -25,7 +25,7 @@ A successful current `Repository Verify` run proves:
 - hosted Windows RustCore tests;
 - hosted Windows frontend build;
 - hosted Windows Tauri compilation;
-- release executable build and launch smoke, with best-effort screenshots at 960×640, 1280×720, and 1440×900;
+- release executable build and launch smoke with required Windows UI evidence: Library at 960×640, 1280×720, and 1440×900 plus Discover, Downloads, and Settings at 960×640;
 - NSIS installer production and artifact sanity;
 - silent install → installed launch → uninstall lifecycle;
 - uninstall preservation of user-owned AppData state;
@@ -67,7 +67,7 @@ Remote verification does **not** prove:
 - production provider authentication/session semantics;
 - Marketplace/PlayFab or other real provider endpoint compatibility;
 - production TLS/CDN behavior;
-- pixel-level correctness when hosted screenshot capture is unavailable or visually unreviewed;
+- pixel-level aesthetic correctness beyond the captured hosted surfaces and states;
 - real-world performance, memory usage or long-running stability;
 - code signing, final branding, OS reputation/SmartScreen behavior, and owner clean-machine release acceptance.
 
