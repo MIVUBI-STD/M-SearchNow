@@ -19,13 +19,13 @@
 }
 
 .diagnostics-panel__heading strong {
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
 }
 
 .diagnostics-panel__heading span,
 .diagnostics-panel__copy {
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   line-height: 1.5;
 }
 
@@ -54,13 +54,13 @@
 
 .diagnostic-summary span {
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-weight: 700;
 }
 
 .diagnostic-summary strong {
   margin-top: 4px;
-  font-size: 12px;
+  font-size: var(--sn-font-body);
   text-transform: capitalize;
 }
 
@@ -72,7 +72,7 @@
 
 .diagnostics-details > summary {
   color: var(--sn-text-muted);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-weight: 650;
   cursor: pointer;
   user-select: none;
@@ -102,20 +102,20 @@
 
 .diagnostic-row strong {
   color: var(--sn-text-muted);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-weight: 600;
 }
 
 .diagnostic-row span {
   margin-top: 3px;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
 }
 
 .diagnostic-row time {
   flex: 0 0 auto;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
 }
 
 .diagnostic-row--warning { border-color: #584622; }
@@ -130,7 +130,7 @@
   border-radius: 8px;
   padding: 12px;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
 }
 
 .diagnostic-empty--error {
@@ -165,12 +165,12 @@
 }
 
 .activity-panel__heading strong {
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
 }
 
 .activity-panel__heading span {
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   line-height: 1.5;
 }
 
@@ -201,21 +201,21 @@
 
 .activity-row strong {
   color: var(--sn-text-muted);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-weight: 650;
 }
 
 .activity-row span {
   margin-top: 3px;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   line-height: 1.45;
 }
 
 .activity-row time {
   flex: 0 0 auto;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
 }
 
 .activity-row--failed {
