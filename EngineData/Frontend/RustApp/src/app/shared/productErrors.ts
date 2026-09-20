@@ -40,7 +40,7 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
   library_root_unavailable: "The Minecraft storage for this content is no longer available.",
   library_remove_path_rejected: "SearchNow refused to remove this content because its location is not safe.",
   library_remove_failed: "SearchNow could not remove this Minecraft content. Check permissions and try again.",
-  library_export_destination_exists: "A backup with this file name already exists. Choose a different name.",
+  library_export_destination_exists: "A backup with this file name already exists. Rename or remove it, or change the export conflict behavior in Settings.",
   library_export_destination_invalid: "The selected backup destination is not available.",
   library_export_extension_invalid: "The backup file extension does not match this Minecraft content type.",
   library_export_symlink_rejected: "This content contains a symbolic link and cannot be exported safely.",

@@ -233,13 +233,19 @@
       };
       exitSelectionMode();
     } else if (!result.ok) {
-      feedback = {
-        tone: "error",
-        title: "Export failed",
-        message: result.error.message,
-        actionLabel: "Try export again",
-        action: () => void exportSelectedBatch(),
-      };
+      feedback = result.error.code === "library_export_destination_exists"
+        ? {
+            tone: "error",
+            title: "Export stopped by a name conflict",
+            message: result.error.message,
+          }
+        : {
+            tone: "error",
+            title: "Export failed",
+            message: result.error.message,
+            actionLabel: "Try export again",
+            action: () => void exportSelectedBatch(),
+          };
     }
     batchBusy = false;
   }
@@ -258,13 +264,19 @@
         message: `${result.data} exported successfully.`,
       };
     } else if (!result.ok) {
-      feedback = {
-        tone: "error",
-        title: "Export failed",
-        message: result.error.message,
-        actionLabel: "Try export again",
-        action: () => void exportSelectedContent(),
-      };
+      feedback = result.error.code === "library_export_destination_exists"
+        ? {
+            tone: "error",
+            title: "Export stopped by a name conflict",
+            message: result.error.message,
+          }
+        : {
+            tone: "error",
+            title: "Export failed",
+            message: result.error.message,
+            actionLabel: "Try export again",
+            action: () => void exportSelectedContent(),
+          };
     }
     actionBusy = false;
   }

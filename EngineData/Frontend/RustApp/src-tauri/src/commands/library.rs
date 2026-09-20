@@ -47,11 +47,7 @@ pub async fn export_local_content<R: Runtime>(
         let duplicate_policy = settings.export.duplicate_policy;
         let runtime = state.inner().clone();
         return tauri::async_runtime::spawn_blocking(move || {
-            runtime.export_local_content_to_directory(
-                &item_id,
-                &directory,
-                duplicate_policy,
-            )
+            runtime.export_local_content_to_directory(&item_id, &directory, duplicate_policy)
         })
         .await
         .map_err(|error| {
@@ -116,11 +112,7 @@ pub async fn export_local_content_batch<R: Runtime>(
         let duplicate_policy = settings.export.duplicate_policy;
         let runtime = state.inner().clone();
         return tauri::async_runtime::spawn_blocking(move || {
-            runtime.export_local_content_batch_with_policy(
-                &item_ids,
-                &directory,
-                duplicate_policy,
-            )
+            runtime.export_local_content_batch_with_policy(&item_ids, &directory, duplicate_policy)
         })
         .await
         .map_err(|error| {
