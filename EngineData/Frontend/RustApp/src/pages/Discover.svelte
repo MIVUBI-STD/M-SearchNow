@@ -365,9 +365,9 @@
   {/if}
 
   {#if !runtimeReady}
-    <PageState marker="02" title="Discover unavailable" message="SearchNow cannot access connected content sources right now." />
+    <PageState icon="search" title="Discover unavailable" message="SearchNow cannot access connected content sources right now." />
   {:else if catalogProviders.length === 0}
-    <PageState marker="02" title="No content source connected" message="Connect a supported source to browse downloadable content." />
+    <PageState icon="search" title="No content source connected" message="Connect a supported source to browse downloadable content." />
   {:else if loading && !page}
     <PageState kind="loading" title="Searching" message="Loading content from the selected source." />
   {:else if page && page.items.length > 0}
@@ -406,7 +406,7 @@
     {/if}
   {:else if page}
     <PageState
-      marker="02"
+      icon="search"
       title="No matching content"
       message="Try a different search or reset the current filters."
       actionLabel={controlsChanged ? "Reset" : null}
