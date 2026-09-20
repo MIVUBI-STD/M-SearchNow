@@ -9,11 +9,13 @@
     "build:frontend": "vite build",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json",
     "validate:architecture": "node scripts/validate_architecture_contract.mjs",
-    "validate:quick": "npm run validate:architecture && npm run validate:error-contract && npm run validate:ui-contract && npm run check:source-size && npm run typecheck && npm run build:frontend",
+    "validate:quick": "npm run validate:architecture && npm run validate:error-contract && npm run validate:ui-contract && npm run validate:design-system && npm run validate:motion && npm run check:source-size && npm run typecheck && npm run build:frontend",
     "check:source-size": "node scripts/validate_source_size_budget.mjs",
     "validate:error-contract": "node scripts/validate_error_contract.mjs",
     "build:installer": "tauri build --bundles nsis",
-    "validate:ui-contract": "node scripts/validate_ui_contract.mjs"
+    "validate:ui-contract": "node scripts/validate_ui_contract.mjs",
+    "validate:design-system": "node scripts/validate_design_system.mjs",
+    "validate:motion": "node scripts/validate_motion_contract.mjs"
   },
   "dependencies": {
     "@lucide/svelte": "^1.26.0",
