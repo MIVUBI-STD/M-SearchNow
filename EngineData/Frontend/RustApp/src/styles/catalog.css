@@ -106,3 +106,33 @@
   font-size: 10px;
   font-weight: 650;
 }
+
+
+.catalog-card__facts {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 9px;
+  color: var(--sn-text-soft);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.catalog-card__facts span + span::before {
+  margin-right: 10px;
+  color: #435166;
+  content: "·";
+}
+
+.catalog-card__source {
+  overflow: hidden;
+  color: var(--sn-text-soft);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalog-card__availability--unavailable {
+  color: var(--sn-text-soft);
+}
