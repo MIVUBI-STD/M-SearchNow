@@ -10,7 +10,16 @@ It intentionally does not hard-code a "latest verified commit" or workflow run n
 
 ## Remote verification contract
 
-A successful current `Repository Verify` run proves:
+`Repository Verify` is change-scoped on routine `develop` work:
+
+- documentation-only changes run repository/documentation contract verification only;
+- any source, workflow, dependency, runtime, installer, configuration, or tooling change runs the full verification gate;
+- manual dispatch always runs the full verification gate;
+- Local promotion and release verification remain exhaustive and are not reduced by this optimization.
+
+A documentation-only run inherits its executable evidence from the unchanged, previously full-verified source parent; it does **not** claim to have rebuilt the application.
+
+A successful **full** `Repository Verify` run proves:
 
 - repository contract checks;
 - RustCore formatting;
