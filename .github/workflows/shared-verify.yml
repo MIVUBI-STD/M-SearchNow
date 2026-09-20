@@ -340,7 +340,10 @@ jobs:
             throw "NSIS silent uninstall failed with code $($uninstall.ExitCode)."
           }
 
-          Start-Sleep -Seconds 2
+          $removeDeadline = [DateTime]::UtcNow.AddSeconds(10)
+          while ((Test-Path $installedExe) -and [DateTime]::UtcNow -lt $removeDeadline) {
+            Start-Sleep -Milliseconds 100
+          }
           if (Test-Path $installedExe) {
             throw "SearchNow executable remained after silent uninstall."
           }
