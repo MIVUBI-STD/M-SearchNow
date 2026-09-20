@@ -39,7 +39,6 @@
   let saving = $state(false);
   let scanning = $state(false);
   let feedback = $state<SettingsFeedback | null>(null);
-  let saved = $state(false);
 
   let dirty = $derived(
     baselineSettings !== null &&
@@ -100,7 +99,6 @@
     if (!baselineSettings || saving || scanning) return;
     applySettings(baselineSettings);
     feedback = null;
-    saved = false;
   }
 
   async function load(): Promise<void> {
@@ -127,7 +125,6 @@
     if (!active || !snapshot?.ready || saving || scanning || !dirty || bandwidthLimitInvalid) return;
     const requiresMinecraftRescan = minecraftDirty;
     saving = true;
-    saved = false;
     feedback = null;
     const result = await runtimeProductFacade.saveSettings({
       schemaVersion,
@@ -148,7 +145,6 @@
     });
     if (result.ok) {
       applySettings(result.data);
-      saved = true;
       feedback = {
         tone: "success",
         title: "Settings saved",
@@ -186,8 +182,7 @@
     if (result.data) {
       rootOverride = result.data;
       feedback = null;
-      saved = false;
-    }
+      }
     minecraftDirectoryBusy = false;
   }
 
@@ -209,8 +204,7 @@
     if (result.data) {
       defaultExportDirectory = result.data;
       feedback = null;
-      saved = false;
-    }
+      }
     exportDirectoryBusy = false;
   }
 
@@ -255,7 +249,6 @@
   $effect(() => {
     if (snapshot?.ready) return;
     feedback = null;
-    saved = false;
     minecraftDirectoryBusy = false;
     exportDirectoryBusy = false;
     if (!dirty) {
@@ -276,7 +269,6 @@
 
   $effect(() => {
     if (!dirty) return;
-    saved = false;
     if (feedback?.tone === "success") feedback = null;
   });
 </script>
