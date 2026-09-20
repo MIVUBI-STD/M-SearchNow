@@ -15,6 +15,7 @@ const diagnosticsPanel = await read("src/components/settings/DiagnosticsPanel.sv
 const libraryDetail = await read("src/components/library/LibraryDetailPanel.svelte");
 const downloadView = await read("src/app/shared/downloadView.ts");
 const sharedTypes = await read("src/app/shared/types.ts");
+const tokens = await read("src/styles/tokens.css");
 const workspace = await read("src/styles/workspace.css");
 const presentation = await read("src/styles/presentation.css");
 const appStyles = await read("src/styles/app.css");
@@ -132,6 +133,12 @@ if (!workspace.includes(".library-setup-state .empty-panel")) {
 if (!workspace.includes(".toolbar--library-multi-root")) {
   errors.push("Library multi-root toolbar requires an explicit five-control grid owner");
 }
+for (const needle of ["--sn-font-body", "--sn-font-caption", "--sn-motion-fast", "--sn-surface-workspace"]) {
+  if (!tokens.includes(needle)) errors.push(`Design token spine is missing: ${needle}`);
+}
+if (workspace.match(/:root\s*\{/g)?.length) {
+  errors.push("Workspace CSS must consume global design tokens instead of redefining :root");
+}
 for (const needle of ["@media (max-width: 1040px)", "grid-template-columns: 1fr", "repeat(2, minmax(0, 1fr))"]) {
   if (!workspace.includes(needle)) errors.push(`Windows scaled-layout contract is missing: ${needle}`);
 }
@@ -184,6 +191,9 @@ for (const needle of [
 ]) {
   if (!discover.includes(needle)) errors.push(`Discover feedback contract is missing: ${needle}`);
 }
+if (!presentation.includes("transform: scale(.98)") || !catalogModal.includes("catalog-modal__backdrop")) {
+  errors.push("Restrained interaction polish contract is missing");
+}
 for (const needle of [
   "Ready to download",
   "Download file unavailable",
@@ -202,8 +212,11 @@ for (const needle of ["Export report", "exportDiagnosticsReport", "Diagnostics e
 if (!sharedTypes.includes('| "package"')) {
   errors.push("Frontend diagnostic component contract is missing package events");
 }
-for (const needle of ["Required by", "Remove anyway", "Duplicate installation", "Dependency version too old"]) {
+for (const needle of ["Required by", "Remove anyway", "Duplicate installation", "Dependency version too old", "library-detail__health-list"]) {
   if (!libraryDetail.includes(needle)) errors.push(`Library relationship/safety contract is missing: ${needle}`);
+}
+if (library.includes('item.status === "ready" ? "Ready" : "Needs review"') || library.includes('? "Needs review" : "Healthy"')) {
+  errors.push("Library rows must keep healthy state visually quiet");
 }
 for (const needle of ["Ready to install", "Same version already installed", "Older package detected", "Installation conflict", "Bundle changes"]) {
   if (!packageModal.includes(needle)) errors.push(`Package decision contract is missing: ${needle}`);
