@@ -810,6 +810,9 @@
         item={detailItem}
         libraryItems={snapshot.library.items}
         duplicates={selectedDuplicates}
+        hasDuplicate={detailItem ? duplicateIds.has(detailItem.id) : false}
+        hasMissingDependency={detailItem ? missingDependencyIds.has(detailItem.id) : false}
+        hasOutdatedDependency={detailItem ? outdatedDependencyIds.has(detailItem.id) : false}
         rootLabel={rootLabel}
         onOpenFolder={openSelectedFolder}
         onExport={exportSelectedContent}
