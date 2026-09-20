@@ -384,13 +384,13 @@
           </div>
           <div class="catalog-card__body">
             <h2 title={item.title}>{item.title}</h2>
-            <div class="catalog-card__creator">{item.creatorName ? `By ${item.creatorName}` : item.provider}</div>
+            <div class="catalog-card__creator">{item.creatorName ? `By ${item.creatorName}` : `Source · ${item.provider}`}</div>
             <div class="catalog-card__facts">
               {#if item.updatedAtMs}<span>Updated {formatDate(item.updatedAtMs)}</span>{:else if item.publishedAtMs}<span>Released {formatDate(item.publishedAtMs)}</span>{/if}
               {#if item.expectedBytes}<span>{formatBytes(item.expectedBytes)}</span>{/if}
             </div>
             <div class="catalog-card__bottom">
-              <span class="catalog-card__source">{item.provider}</span>
+              <span></span>
               <span class:catalog-card__availability--unavailable={!item.download || !item.fileName} class="catalog-card__availability">
                 {item.download && item.fileName ? "Available" : "Preview only"}
               </span>
