@@ -71,6 +71,32 @@ export function canRemove(job: DownloadJob): boolean {
   return job.state === "completed" || job.state === "failed" || job.state === "cancelled";
 }
 
+export function downloadStageDetail(job: DownloadJob): string {
+  switch (job.state) {
+    case "queued": return "Waiting for an available download slot.";
+    case "preparing": return "Preparing the destination and validating the download request.";
+    case "transferring": return "Downloading content.";
+    case "pauseRequested": return "Finishing the current transfer step before pausing.";
+    case "paused": return "Download is paused. Resume when you are ready.";
+    case "finalizing": return "Verifying and saving the completed file safely.";
+    case "cancelRequested": return "Stopping the current operation safely.";
+    case "completed": return "Download finished and the file was saved successfully.";
+    case "failed": return job.lastError?.retryable
+      ? "The download stopped with a recoverable error."
+      : "The download stopped and needs attention before it can continue.";
+    case "cancelled": return "Download was cancelled. You can retry it from the beginning.";
+    case "interrupted": return "SearchNow recovered this unfinished download after an interruption.";
+  }
+}
+
+export function downloadRecoveryHint(job: DownloadJob): string | null {
+  if (job.state === "interrupted") return "Resume to continue this recovered download.";
+  if (job.state === "cancelled") return "Retry to start this download again.";
+  if (job.state !== "failed") return null;
+  if (job.lastError?.retryable) return "Retry the download. If it fails again, check the destination folder and your connection.";
+  return "Review the error details and destination folder before trying again.";
+}
+
 export class DownloadTransferEstimator {
   readonly #samples = new Map<string, TransferSample>();
 
