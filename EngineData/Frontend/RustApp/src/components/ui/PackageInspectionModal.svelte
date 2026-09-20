@@ -12,7 +12,9 @@
     onClose,
     onImport,
     onUpdate,
+    onLocateMinecraft,
     importBusy = false,
+    locationBusy = false,
   }: {
     inspection: PackageInspection | null;
     open: boolean;
@@ -21,10 +23,13 @@
     onClose: () => void;
     onImport: (rootId: string) => void;
     onUpdate: (rootId: string) => void;
+    onLocateMinecraft: () => void;
     importBusy?: boolean;
+    locationBusy?: boolean;
   } = $props();
 
   let selectedRootId = $state("");
+  let modalBusy = $derived(importBusy || locationBusy);
   let dialogElement: HTMLElement | null = $state(null);
 
   $effect(() => {
@@ -45,12 +50,12 @@
   });
 
   function handleBackdrop(event: MouseEvent): void {
-    if (event.target === event.currentTarget && !importBusy) onClose();
+    if (event.target === event.currentTarget && !modalBusy) onClose();
   }
 
   function handleKeydown(event: KeyboardEvent): void {
     if (!open) return;
-    if (event.key === "Escape" && !importBusy) {
+    if (event.key === "Escape" && !modalBusy) {
       event.preventDefault();
       onClose();
       return;
@@ -192,8 +197,8 @@
 
 {#if open && inspection}
   <div class="catalog-modal__backdrop" role="presentation" onclick={handleBackdrop}>
-    <div bind:this={dialogElement} class="catalog-modal" role="dialog" aria-modal="true" aria-labelledby="package-inspection-title" aria-busy={importBusy} tabindex="-1">
-      <button class="catalog-modal__close" type="button" aria-label="Close package inspection" onclick={onClose} disabled={importBusy}>
+    <div bind:this={dialogElement} class="catalog-modal" role="dialog" aria-modal="true" aria-labelledby="package-inspection-title" aria-busy={modalBusy} tabindex="-1">
+      <button class="catalog-modal__close" type="button" aria-label="Close package inspection" onclick={onClose} disabled={modalBusy}>
         <X size={18} aria-hidden="true" />
       </button>
 
@@ -215,6 +220,13 @@
           <div><span>Issues</span><strong>{inspection.issues.length}</strong></div>
           {#if inspection.archive}<div><span>Files</span><strong>{inspection.archive.files}</strong></div>{/if}
         </div>
+
+        {#if roots.length === 0}
+          <div class="catalog-modal__issue">
+            <strong>Minecraft storage required</strong>
+            <span>Locate your Minecraft data folder before importing or updating this package.</span>
+          </div>
+        {/if}
 
         {#if inspection.world}
           <div class="catalog-modal__issue">
@@ -253,7 +265,7 @@
         {#if roots.length > 1}
           <label>
             <span>Import target</span>
-            <select class="select-field" bind:value={selectedRootId} disabled={importBusy}>
+            <select class="select-field" bind:value={selectedRootId} disabled={modalBusy}>
               {#each roots as root}
                 <option value={root.id}>{root.accountHint ?? root.storageKind} · {root.root}</option>
               {/each}
@@ -272,11 +284,20 @@
         />
 
         <div class="catalog-modal__footer">
-          {#if canAutoUpdate()}
+          {#if roots.length === 0}
             <button
               class="button button--primary"
               type="button"
-              disabled={roots.length === 0 || importBusy}
+              disabled={modalBusy}
+              onclick={onLocateMinecraft}
+            >
+              {locationBusy ? "Locating…" : "Locate Minecraft"}
+            </button>
+          {:else if canAutoUpdate()}
+            <button
+              class="button button--primary"
+              type="button"
+              disabled={modalBusy}
               onclick={() => onUpdate(selectedRootId)}
             >
               {importBusy ? "Updating…" : inspection.inputKind === "mcAddon" ? "Update add-on bundle" : "Update installed pack"}
@@ -285,7 +306,7 @@
             <button
               class="button button--primary"
               type="button"
-              disabled={!canAutoImport() || roots.length === 0 || importBusy}
+              disabled={!canAutoImport() || modalBusy}
               onclick={() => onImport(selectedRootId)}
             >
               {importBusy ? "Importing…" : "Import package"}

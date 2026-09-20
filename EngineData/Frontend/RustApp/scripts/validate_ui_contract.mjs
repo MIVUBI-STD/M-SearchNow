@@ -33,8 +33,11 @@ if (!dialogFocus.includes("active === last || !container.contains(active)")) {
 for (const needle of ['aria-busy={downloadBusy}', 'disabled={downloadBusy}']) {
   if (!catalogModal.includes(needle)) errors.push(`Catalog modal busy-state contract is missing: ${needle}`);
 }
-if (!packageModal.includes('aria-busy={importBusy}')) {
-  errors.push("Package inspection modal must expose import busy state");
+if (!packageModal.includes('aria-busy={modalBusy}')) {
+  errors.push("Package inspection modal must expose combined import/location busy state");
+}
+for (const needle of ["Locate Minecraft", "Minecraft storage required", "onLocateMinecraft"]) {
+  if (!packageModal.includes(needle)) errors.push(`Package inspection recovery contract is missing: ${needle}`);
 }
 
 for (const needle of [
@@ -46,6 +49,7 @@ for (const needle of [
   "Drop to inspect",
   "subscribeDesktopDrops",
   "inspectDroppedPackage",
+  "recoverExportDirectory",
 ]) {
   if (!library.includes(needle)) errors.push(`Library UX contract is missing: ${needle}`);
 }

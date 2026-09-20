@@ -112,11 +112,79 @@
     selectedIds = [];
   }
 
+  async function recoverExportDirectory(): Promise<"recovered" | "cancelled" | "unavailable"> {
+    feedback = null;
+    const settings = await runtimeProductFacade.loadSettings();
+    if (!settings.ok) {
+      feedback = {
+        tone: "error",
+        title: "Export settings could not be loaded",
+        message: settings.error.message,
+      };
+      return "unavailable";
+    }
+    if (!settings.data.export.defaultDirectory) {
+      return "unavailable";
+    }
+
+    const picker = await runtimeProductFacade.chooseExportDirectory();
+    if (!picker.ok) {
+      feedback = {
+        tone: "error",
+        title: "Export folder could not be chosen",
+        message: picker.error.message,
+        actionLabel: "Try again",
+        action: () => void recoverExportDirectory(),
+      };
+      return "unavailable";
+    }
+    if (!picker.data) {
+      feedback = {
+        tone: "warning",
+        title: "Export not completed",
+        message: "The configured export folder is unavailable. Choose a replacement folder before exporting again.",
+      };
+      return "cancelled";
+    }
+
+    const saved = await runtimeProductFacade.saveSettings({
+      ...settings.data,
+      export: {
+        ...settings.data.export,
+        defaultDirectory: picker.data,
+      },
+    });
+    if (!saved.ok) {
+      feedback = {
+        tone: "error",
+        title: "Export folder could not be saved",
+        message: saved.error.message,
+      };
+      return "unavailable";
+    }
+
+    feedback = {
+      tone: "success",
+      title: "Export folder updated",
+      message: "SearchNow will use the replacement folder for future Library exports.",
+    };
+    return "recovered";
+  }
+
   async function exportSelectedBatch(): Promise<void> {
     if (selectedIds.length === 0 || batchBusy) return;
     batchBusy = true;
     feedback = null;
-    const result = await runtimeProductFacade.exportLocalContentBatch(selectedIds);
+    let result = await runtimeProductFacade.exportLocalContentBatch(selectedIds);
+    if (!result.ok && result.error.code === "library_export_destination_invalid") {
+      const recovery = await recoverExportDirectory();
+      if (recovery === "recovered") {
+        result = await runtimeProductFacade.exportLocalContentBatch(selectedIds);
+      } else if (recovery === "cancelled" || feedback) {
+        batchBusy = false;
+        return;
+      }
+    }
     if (result.ok && result.data) {
       feedback = {
         tone: "success",
@@ -148,7 +216,16 @@
     if (!item || actionBusy) return;
     actionBusy = true;
     feedback = null;
-    const result = await runtimeProductFacade.exportLocalContent(item.id);
+    let result = await runtimeProductFacade.exportLocalContent(item.id);
+    if (!result.ok && result.error.code === "library_export_destination_invalid") {
+      const recovery = await recoverExportDirectory();
+      if (recovery === "recovered") {
+        result = await runtimeProductFacade.exportLocalContent(item.id);
+      } else if (recovery === "cancelled" || feedback) {
+        actionBusy = false;
+        return;
+      }
+    }
     if (result.ok && result.data) {
       feedback = {
         tone: "success",
@@ -746,5 +823,7 @@
   }}
   onImport={importInspectedPackage}
   onUpdate={updateInspectedPackage}
+  onLocateMinecraft={() => void locateMinecraftRoot()}
   {importBusy}
+  {locationBusy}
 />
