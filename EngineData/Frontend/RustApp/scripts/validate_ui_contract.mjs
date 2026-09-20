@@ -121,6 +121,12 @@ if (!workspace.includes(".library-setup-state .empty-panel")) {
 if (!workspace.includes(".toolbar--library-multi-root")) {
   errors.push("Library multi-root toolbar requires an explicit five-control grid owner");
 }
+for (const needle of ["queryInput", "setTimeout(() =>", "query = value", "160)"]) {
+  if (!library.includes(needle)) errors.push(`Library scale contract is missing: ${needle}`);
+}
+for (const needle of ["content-visibility: auto", "contain-intrinsic-size: 64px", "contain-intrinsic-size: 78px"]) {
+  if (!workspace.includes(needle)) errors.push(`Large-list rendering contract is missing: ${needle}`);
+}
 
 for (const needle of [
   "DownloadFeedback",
