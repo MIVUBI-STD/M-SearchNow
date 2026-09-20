@@ -303,12 +303,12 @@
 
       <div class="discover-controls__row">
         <div class="discover-tabs" role="group" aria-label="Content type">
-          <button class:discover-tab--active={contentFilter === "all"} class="discover-tab" type="button" onclick={() => (contentFilter = "all")}>All</button>
-          <button class:discover-tab--active={contentFilter === "world"} class="discover-tab" type="button" onclick={() => (contentFilter = "world")}>Worlds</button>
-          <button class:discover-tab--active={contentFilter === "addon"} class="discover-tab" type="button" onclick={() => (contentFilter = "addon")}>Add-Ons</button>
-          <button class:discover-tab--active={contentFilter === "resourcePack"} class="discover-tab" type="button" onclick={() => (contentFilter = "resourcePack")}>Resource Packs</button>
-          <button class:discover-tab--active={contentFilter === "skin"} class="discover-tab" type="button" onclick={() => (contentFilter = "skin")}>Skins</button>
-          <button class:discover-tab--active={contentFilter === "persona"} class="discover-tab" type="button" onclick={() => (contentFilter = "persona")}>Persona</button>
+          <button class:discover-tab--active={contentFilter === "all"} class="discover-tab" type="button" aria-pressed={contentFilter === "all"} onclick={() => (contentFilter = "all")}>All</button>
+          <button class:discover-tab--active={contentFilter === "world"} class="discover-tab" type="button" aria-pressed={contentFilter === "world"} onclick={() => (contentFilter = "world")}>Worlds</button>
+          <button class:discover-tab--active={contentFilter === "addon"} class="discover-tab" type="button" aria-pressed={contentFilter === "addon"} onclick={() => (contentFilter = "addon")}>Add-Ons</button>
+          <button class:discover-tab--active={contentFilter === "resourcePack"} class="discover-tab" type="button" aria-pressed={contentFilter === "resourcePack"} onclick={() => (contentFilter = "resourcePack")}>Resource Packs</button>
+          <button class:discover-tab--active={contentFilter === "skin"} class="discover-tab" type="button" aria-pressed={contentFilter === "skin"} onclick={() => (contentFilter = "skin")}>Skins</button>
+          <button class:discover-tab--active={contentFilter === "persona"} class="discover-tab" type="button" aria-pressed={contentFilter === "persona"} onclick={() => (contentFilter = "persona")}>Persona</button>
         </div>
 
         <div class="discover-controls__secondary">
