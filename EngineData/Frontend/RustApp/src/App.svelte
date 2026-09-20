@@ -46,12 +46,28 @@
     sessionStorage.setItem(ROUTE_STORAGE_KEY, next);
   }
 
+  function handleAppShortcut(event: KeyboardEvent): void {
+    if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    const shortcuts: Record<string, AppRoute> = {
+      "1": "library",
+      "2": "discover",
+      "3": "downloads",
+      "4": "settings",
+    };
+    const next = shortcuts[event.key];
+    if (!next) return;
+    event.preventDefault();
+    navigate(next);
+  }
+
   onMount(() => {
     const storedRoute = sessionStorage.getItem(ROUTE_STORAGE_KEY);
     if (isAppRoute(storedRoute)) route = storedRoute;
     void refreshRuntime();
   });
 </script>
+
+<svelte:window onkeydown={handleAppShortcut} />
 
 <div class="app-shell" aria-busy={booting || refreshing}>
   <Sidebar {route} onNavigate={navigate} />
