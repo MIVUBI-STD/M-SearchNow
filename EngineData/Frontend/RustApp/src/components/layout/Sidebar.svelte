@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Activity, Download, Library, Search, Settings } from "@lucide/svelte";
+  import { Activity, Blocks, Download, Library, Search, Settings } from "@lucide/svelte";
   import type { Component } from "svelte";
   import { APP_ROUTES } from "../../app/shared/navigation";
   import type { AppRoute } from "../../app/shared/types";
@@ -28,7 +28,7 @@
 <aside class="sidebar">
   <div class="brand">
     <div class="brand__mark" aria-hidden="true">
-      <Search size={16} strokeWidth={2} />
+      <Blocks size={16} strokeWidth={1.9} />
     </div>
     <strong>SearchNow</strong>
   </div>
