@@ -96,6 +96,7 @@ select:disabled {
 .app-main {
   min-width: 0;
   overflow: auto;
+  scrollbar-gutter: stable;
   background: var(--sn-bg);
 }
 
