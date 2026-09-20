@@ -71,7 +71,7 @@
           <h2 id="activity-dialog-title">Recent activity</h2>
           <p>Installs, updates, backups, removals, and download actions from this SearchNow session.</p>
         </div>
-        <button class="button button--secondary button--compact" type="button" onclick={refresh} disabled={!runtimeReady || loading}>
+        <button class="button button--secondary button--compact" type="button" onclick={refresh} aria-busy={loading} disabled={!runtimeReady || loading}>
           <RefreshCw size={14} class={loading ? "spin" : ""} aria-hidden="true" />
           Refresh
         </button>
