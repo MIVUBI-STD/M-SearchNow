@@ -162,7 +162,8 @@ fn scan_container(
     if !container.is_dir() {
         return;
     }
-    let (entries, truncated) = match bounded_container_entries(&container, MAX_ITEMS_PER_CONTAINER) {
+    let (entries, truncated) = match bounded_container_entries(&container, MAX_ITEMS_PER_CONTAINER)
+    {
         Ok(result) => result,
         Err(error) => {
             warnings.push(LibraryWarning {
