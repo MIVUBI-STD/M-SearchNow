@@ -28,7 +28,7 @@ const surfaces = [
     path: "src/pages/Discover.svelte",
     markers: [
       "Discover unavailable",
-      "No content source connected",
+      "No content source available",
       "Searching",
       "No matching content",
       "Content unavailable",
