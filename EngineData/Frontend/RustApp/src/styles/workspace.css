@@ -1289,3 +1289,10 @@
 .library-detail__health-item--warning small {
   color: var(--sn-warning);
 }
+
+
+.library-detail__action-primary {
+  border-color: var(--sn-border-strong);
+  background: var(--sn-surface-raised);
+  color: var(--sn-text);
+}
