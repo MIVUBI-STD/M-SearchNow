@@ -20,7 +20,7 @@ Current implemented scope includes:
 - settings schema v2 with compatible v1 migration, default export-directory preference, and explicit `keepBoth` / `stopOnConflict` backup behavior;
 - export archives re-inspected before success, with truthful verification/rollback cleanup failures;
 - bounded deterministic Library container scanning instead of collecting an unbounded directory before truncation;
-- Linux repository/backend/frontend verification plus hosted Windows release executable launch, compact/standard/default viewport screenshot attempts, NSIS build, install/launch/uninstall lifecycle, uninstall user-state preservation, and version-upgrade state preservation.
+- Linux repository/backend/frontend verification plus hosted Windows release executable launch, required Library/Discover/Downloads/Settings viewport evidence, NSIS build, install/launch/uninstall lifecycle, uninstall user-state preservation, and version-upgrade state preservation.
 
 ## Verification authority
 
