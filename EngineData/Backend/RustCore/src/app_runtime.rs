@@ -457,17 +457,15 @@ impl SearchNowBackendRuntime {
         export_directory(&item.path, destination)?;
 
         let verification = inspect_package(destination);
-        let valid = verification
-            .as_ref()
-            .is_ok_and(|inspection| {
-                inspection.safety == crate::package::PackageSafety::Safe
-                    && match item.content_type {
-                        LocalContentType::World => inspection.world.is_some(),
-                        LocalContentType::BehaviorPack
-                        | LocalContentType::ResourcePack
-                        | LocalContentType::SkinPack => !inspection.packs.is_empty(),
-                    }
-            });
+        let valid = verification.as_ref().is_ok_and(|inspection| {
+            inspection.safety == crate::package::PackageSafety::Safe
+                && match item.content_type {
+                    LocalContentType::World => inspection.world.is_some(),
+                    LocalContentType::BehaviorPack
+                    | LocalContentType::ResourcePack
+                    | LocalContentType::SkinPack => !inspection.packs.is_empty(),
+                }
+        });
 
         if !valid {
             let _ = std::fs::remove_file(destination);
