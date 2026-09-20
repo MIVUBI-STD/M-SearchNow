@@ -16,8 +16,8 @@
         "title": "SearchNow",
         "width": 1440,
         "height": 900,
-        "minWidth": 1120,
-        "minHeight": 700,
+        "minWidth": 960,
+        "minHeight": 640,
         "resizable": true,
         "fullscreen": false,
         "theme": "Dark"
