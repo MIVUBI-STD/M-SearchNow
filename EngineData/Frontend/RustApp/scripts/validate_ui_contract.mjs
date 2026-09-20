@@ -301,6 +301,23 @@ if (!facade.includes("exportDiagnosticsReport")) {
   errors.push("runtimeProductFacade is missing diagnostics report export");
 }
 
+
+for (const needle of ["aria-busy={saving}", "aria-busy={scanning}", "aria-busy={minecraftDirectoryBusy}", "aria-busy={exportDirectoryBusy}"]) {
+  if (!settings.includes(needle)) errors.push(`Settings async-state contract is missing: ${needle}`);
+}
+if ((library.match(/aria-busy=\{inspectionBusy\}/g) ?? []).length < 2) {
+  errors.push("Library file/folder inspection actions must expose the shared busy state");
+}
+for (const needle of ["aria-busy={loading}", "aria-busy={clearingCompleted}"]) {
+  if (!downloads.includes(needle)) errors.push(`Downloads async-state contract is missing: ${needle}`);
+}
+if (!activityDialog.includes("onclick={refresh} aria-busy={loading}")) {
+  errors.push("Activity refresh action must expose its busy state");
+}
+if (!catalogModal.includes("onclick={() => onDownload?.()} aria-busy={downloadBusy}")) {
+  errors.push("Catalog download action must expose its busy state");
+}
+
 if (errors.length) {
   for (const error of errors) console.error(`ERROR: ${error}`);
   process.exit(1);
