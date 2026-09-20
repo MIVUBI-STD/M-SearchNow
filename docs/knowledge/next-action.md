@@ -32,7 +32,9 @@ This file owns continuation intent only. GitHub Actions owns exact executable ve
 
 ## Current engineering priority
 
-Remote-foundation hardening is now at its intended ceiling. Keep the current `develop` HEAD behind `Repository Verify`, keep repository memory truthful, and do not add architecture-only layers. Further work should produce new product/runtime evidence rather than more speculative abstractions.
+Remote-foundation hardening is now at its intended ceiling and the remote UI/product hardening pass is complete. Do not add more remote-only polish, abstractions, managers, policy layers, or speculative architecture before local acceptance.
+
+The next work session should start from **target-Windows local acceptance** against the current verified `develop` baseline. Any further remote changes should be driven by concrete findings from that local test.
 
 ## Remaining product evidence
 
@@ -46,12 +48,30 @@ The following remain unproven until exercised directly:
 - representative performance and scale;
 - owner target-machine installer interaction, branding/signing, clean-machine and release acceptance.
 
+## Next local acceptance checklist
+
+When local testing resumes, use this order:
+
+1. Launch SearchNow from the verified `develop` baseline on the target Windows machine.
+2. Check Windows scaling at 100%, 125%, and 150%, including resize down to 960×640.
+3. Verify keyboard flows: Alt+1..4, Ctrl+F, Arrow Up/Down, Home/End, Esc, and Ctrl+A in selection mode.
+4. Verify Minecraft auto-detection and manual folder recovery.
+5. Verify package import for `.mcpack`, `.mcaddon`, `.mcworld`, unpacked folders, and Explorer drag-and-drop.
+6. Verify update, duplicate detection, dependency warnings, export/backup, remove confirmation, and recovery behavior.
+7. Verify Downloads pause/resume/retry/cancel and network interruption recovery.
+8. Verify Activity and Diagnostics behavior.
+9. Test with a representative large Minecraft library and watch startup, scan, search, list scrolling, and memory behavior.
+10. Record only concrete runtime/UI issues; fix those back on `develop`.
+
 ## Next functional paths
 
 ```text
 REMOTE_FOUNDATION_HARDENING_COMPLETE
-├── TARGET_WINDOWS_ACCEPTANCE
-└── REAL_PROVIDER_INTEGRATION
+└── TARGET_WINDOWS_ACCEPTANCE
+    ├── LOCAL_UI_INTERACTION
+    ├── REAL_MINECRAFT_STORAGE
+    ├── LARGE_LIBRARY_SCALE
+    └── REAL_PROVIDER_INTEGRATION (later)
 ```
 
 Do not create placeholder providers, speculative credential abstractions, new managers, new policy layers, or additional architecture documentation to avoid those evidence dependencies.
