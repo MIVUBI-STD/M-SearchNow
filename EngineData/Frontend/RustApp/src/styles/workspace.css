@@ -593,7 +593,7 @@
 }
 
 .library-detail__remove-confirm {
-  color: #f0a0aa;
+  color: var(--sn-danger);
 }
 
 .library-detail__empty {
@@ -845,7 +845,7 @@
   border-radius: 8px;
   background: rgb(84 28 38 / 0.18);
   padding: 8px 9px;
-  color: #f0a0aa;
+  color: var(--sn-danger);
   font-size: 10px;
   line-height: 1.45;
 }
