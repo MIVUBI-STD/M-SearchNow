@@ -6,6 +6,7 @@ const appRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const read = (path) => readFile(resolve(appRoot, path), "utf8");
 const errors = [];
 
+const app = await read("src/App.svelte");
 const library = await read("src/pages/Library.svelte");
 const settings = await read("src/pages/Settings.svelte");
 const downloads = await read("src/pages/Downloads.svelte");
@@ -15,6 +16,8 @@ const libraryDetail = await read("src/components/library/LibraryDetailPanel.svel
 const downloadView = await read("src/app/shared/downloadView.ts");
 const sharedTypes = await read("src/app/shared/types.ts");
 const workspace = await read("src/styles/workspace.css");
+const presentation = await read("src/styles/presentation.css");
+const appStyles = await read("src/styles/app.css");
 const catalogModal = await read("src/components/ui/CatalogDetailModal.svelte");
 const packageModal = await read("src/components/ui/PackageInspectionModal.svelte");
 const dialogFocus = await read("src/app/shared/dialogFocus.ts");
@@ -33,6 +36,11 @@ for (const [label, text] of [
 }
 if (!dialogFocus.includes("active === last || !container.contains(active)")) {
   errors.push("Dialog focus trap must recover forward Tab when focus escapes the dialog");
+}
+for (const needle of ["handleAppShortcut", '"1": "library"', '"4": "settings"', "event.altKey"]) {
+  if (!app.includes(needle)) {
+    errors.push(`Desktop keyboard navigation contract is missing: ${needle}`);
+  }
 }
 for (const needle of ['aria-busy={downloadBusy}', 'disabled={downloadBusy}']) {
   if (!catalogModal.includes(needle)) errors.push(`Catalog modal busy-state contract is missing: ${needle}`);
@@ -107,6 +115,9 @@ const windowConfig = tauriConfig?.app?.windows?.[0] ?? {};
 if (windowConfig.theme !== "Dark") {
   errors.push("Main Tauri window must use the dark native theme");
 }
+if (Number(windowConfig.minWidth ?? 0) > 960 || Number(windowConfig.minHeight ?? 0) > 640) {
+  errors.push("Main Tauri window minimum size is too large for DPI-scaled Windows desktops");
+}
 const minWidth = Number(windowConfig.minWidth ?? 0);
 const responsiveWidths = [...workspace.matchAll(/@media \(max-width: (\d+)px\)/g)]
   .map((match) => Number(match[1]));
@@ -121,11 +132,23 @@ if (!workspace.includes(".library-setup-state .empty-panel")) {
 if (!workspace.includes(".toolbar--library-multi-root")) {
   errors.push("Library multi-root toolbar requires an explicit five-control grid owner");
 }
+for (const needle of ["@media (max-width: 1040px)", "grid-template-columns: 1fr", "repeat(2, minmax(0, 1fr))"]) {
+  if (!workspace.includes(needle)) errors.push(`Windows scaled-layout contract is missing: ${needle}`);
+}
+if (!workspace.includes("border-left: 0")) {
+  errors.push("Library detail must collapse below the list on narrow Windows viewports");
+}
 for (const needle of ["queryInput", "setTimeout(() =>", "query = value", "160)"]) {
   if (!library.includes(needle)) errors.push(`Library scale contract is missing: ${needle}`);
 }
 for (const needle of ["content-visibility: auto", "contain-intrinsic-size: 64px", "contain-intrinsic-size: 78px"]) {
   if (!workspace.includes(needle)) errors.push(`Large-list rendering contract is missing: ${needle}`);
+}
+if (!appStyles.includes("scrollbar-gutter: stable")) {
+  errors.push("Windows scroll layout must reserve stable scrollbar space");
+}
+if (!presentation.includes("@media (forced-colors: active)") || !presentation.includes("outline: 2px solid Highlight")) {
+  errors.push("Windows high-contrast focus contract is missing");
 }
 
 for (const needle of [
