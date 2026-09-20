@@ -1257,3 +1257,35 @@
     justify-content: flex-end;
   }
 }
+
+
+.library-detail__health-list {
+  display: grid;
+  gap: 0;
+  margin-top: 7px;
+  border-top: 1px solid var(--sn-border);
+}
+
+.library-detail__health-item {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--sn-border);
+}
+
+.library-detail__health-item span {
+  color: var(--sn-text-muted);
+  font-size: var(--sn-font-caption);
+  font-weight: 650;
+}
+
+.library-detail__health-item small {
+  color: var(--sn-text-soft);
+  font-size: var(--sn-font-caption);
+  line-height: 1.45;
+}
+
+.library-detail__health-item--warning span,
+.library-detail__health-item--warning small {
+  color: var(--sn-warning);
+}
