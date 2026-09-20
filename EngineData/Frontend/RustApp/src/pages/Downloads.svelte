@@ -18,6 +18,8 @@
     canResume,
     canRetry,
     displayRank,
+    downloadRecoveryHint,
+    downloadStageDetail,
     DownloadTransferEstimator,
     matchesDownloadFilter,
     queueIndex,
@@ -389,6 +391,11 @@
               <span class="download-row__time">{formatDateTime(job.updatedAtMs)}</span>
             </div>
 
+            <div class="download-row__stage">
+              <strong>{downloadStateLabel(job.state)}</strong>
+              <span>{downloadStageDetail(job)}</span>
+            </div>
+
             <div
               class:progress-track--indeterminate={percent === null && ["preparing", "transferring", "pauseRequested", "finalizing"].includes(job.state)}
               class="progress-track download-row__progress"
@@ -417,7 +424,13 @@
             </div>
 
             {#if job.lastError}
-              <div class="download-row__error">{job.lastError.message}</div>
+              <div class="download-row__error">
+                <strong>{job.lastError.retryable ? "Download can be retried" : "Download needs attention"}</strong>
+                <span>{job.lastError.message}</span>
+                {#if downloadRecoveryHint(job)}<small>{downloadRecoveryHint(job)}</small>{/if}
+              </div>
+            {:else if downloadRecoveryHint(job)}
+              <div class="download-row__recovery">{downloadRecoveryHint(job)}</div>
             {/if}
 
             <TechnicalDetails
