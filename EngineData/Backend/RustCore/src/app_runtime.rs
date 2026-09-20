@@ -680,7 +680,8 @@ impl SearchNowBackendRuntime {
         }
 
         let started = Instant::now();
-        let result = replace_single_pack(&request.source_path, &root.root, &root.id, &existing.path);
+        let result =
+            replace_single_pack(&request.source_path, &root.root, &root.id, &existing.path);
         self.diagnostics.record_outcome(
             DiagnosticComponent::Package,
             started,
