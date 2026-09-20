@@ -237,6 +237,12 @@ for (const needle of ["No content source available", "does not have a catalog pr
 if (!library.includes('"Import content"') || !library.includes("inspectPackage")) {
   errors.push("Empty Library must offer a real import recovery action");
 }
+if ((discover.match(/aria-pressed=/g) ?? []).length < 6) {
+  errors.push("Discover filter controls must expose their selected state with aria-pressed");
+}
+if ((downloads.match(/aria-pressed=/g) ?? []).length < 4) {
+  errors.push("Downloads filter controls must expose their selected state with aria-pressed");
+}
 for (const needle of [
   "DiscoverFeedback",
   "Download folder could not be chosen",
