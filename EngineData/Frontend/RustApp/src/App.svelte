@@ -47,7 +47,21 @@
   }
 
   function handleAppShortcut(event: KeyboardEvent): void {
-    if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    const target = event.target;
+    const editing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
+
+    if (event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey && event.key.toLowerCase() === "f") {
+      if (route === "settings") return;
+      const search = Array.from(document.querySelectorAll<HTMLInputElement>("[data-page-search]"))
+        .find((element) => element.offsetParent !== null);
+      if (!search) return;
+      event.preventDefault();
+      search.focus();
+      search.select();
+      return;
+    }
+
+    if (editing || !event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     const shortcuts: Record<string, AppRoute> = {
       "1": "library",
       "2": "discover",
