@@ -51,6 +51,9 @@ for (const needle of [
   "subscribeDesktopDrops",
   "inspectDroppedPackage",
   "recoverExportDirectory",
+  "Connect SearchNow to your Minecraft data folder.",
+  'snapshot.library.items.length > 0',
+  "Minecraft location required",
 ]) {
   if (!library.includes(needle)) errors.push(`Library UX contract is missing: ${needle}`);
 }
@@ -96,7 +99,11 @@ if (!facade.includes("inspectPackagePath") || !facade.includes("subscribeDesktop
   errors.push("runtimeProductFacade is missing package drag/drop support");
 }
 
-const minWidth = Number(tauriConfig?.app?.windows?.[0]?.minWidth ?? 0);
+const windowConfig = tauriConfig?.app?.windows?.[0] ?? {};
+if (windowConfig.theme !== "Dark") {
+  errors.push("Main Tauri window must use the dark native theme");
+}
+const minWidth = Number(windowConfig.minWidth ?? 0);
 const responsiveWidths = [...workspace.matchAll(/@media \(max-width: (\d+)px\)/g)]
   .map((match) => Number(match[1]));
 if (!responsiveWidths.some((width) => width >= minWidth)) {

@@ -598,15 +598,25 @@
   <div class="page-heading page-heading--actions">
     <div>
       <h1>Library</h1>
-      <p>Worlds and packs detected on this device.</p>
+      <p>
+        {snapshot?.minecraft.state === "notFound"
+          ? "Connect SearchNow to your Minecraft data folder."
+          : snapshot?.minecraft.state === "unsupportedPlatform"
+            ? "Minecraft storage detection is unavailable on this platform."
+            : snapshot?.minecraft.state === "found"
+              ? "Worlds and packs found in your Minecraft storage."
+              : "Manage local Minecraft worlds and packs."}
+      </p>
       <div class="library-summary">
-        {#if snapshot}
+        {#if snapshot?.minecraft.state === "found"}
           <span>{snapshot.library.summary.total} items</span>
           <span>{snapshot.library.summary.worlds} worlds</span>
           <span>{snapshot.library.summary.behaviorPacks + snapshot.library.summary.resourcePacks + snapshot.library.summary.skinPacks} packs</span>
           {#if snapshot.library.summary.invalidItems > 0}
             <span class="library-summary__warning">{snapshot.library.summary.invalidItems} need review</span>
           {/if}
+        {:else if snapshot?.minecraft.state === "notFound"}
+          <span>Minecraft location required</span>
         {:else}
           <span>Local Minecraft content</span>
         {/if}
@@ -621,22 +631,24 @@
         <FolderOpen size={15} aria-hidden="true" />
         Import folder
       </button>
-      <button
-        class="button button--secondary"
-        type="button"
-        onclick={() => {
-          selectionMode = !selectionMode;
-          if (!selectionMode) selectedIds = [];
-        }}
-        disabled={!runtimeReady || batchBusy || (snapshot?.library.items.length ?? 0) === 0}
-      >
-        <CheckSquare size={15} aria-hidden="true" />
-        {selectionMode ? "Selecting…" : "Select"}
-      </button>
+      {#if (snapshot?.library.items.length ?? 0) > 0}
+        <button
+          class="button button--secondary"
+          type="button"
+          onclick={() => {
+            selectionMode = !selectionMode;
+            if (!selectionMode) selectedIds = [];
+          }}
+          disabled={!runtimeReady || batchBusy}
+        >
+          <CheckSquare size={15} aria-hidden="true" />
+          {selectionMode ? "Selecting…" : "Select"}
+        </button>
+      {/if}
     </div>
   </div>
 
-  {#if snapshot}
+  {#if snapshot && snapshot.library.items.length > 0}
     <div
       class:toolbar--library-multi-root={snapshot.minecraft.roots.length > 1}
       class="toolbar toolbar--library"
