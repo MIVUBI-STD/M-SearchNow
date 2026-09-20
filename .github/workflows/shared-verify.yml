@@ -177,27 +177,33 @@ jobs:
                 Save-SearchNowWindow -Name $viewport.Name -Width $viewport.Width -Height $viewport.Height
               }
 
-              try {
-                $shell = New-Object -ComObject WScript.Shell
-                [void]$shell.AppActivate($process.Id)
-                foreach ($route in @(
-                  @{ Name = "discover-compact"; Keys = "%2" },
-                  @{ Name = "downloads-compact"; Keys = "%3" },
-                  @{ Name = "settings-compact"; Keys = "%4" }
-                )) {
-                  [void]$shell.AppActivate($process.Id)
-                  Start-Sleep -Milliseconds 250
-                  $shell.SendKeys($route.Keys)
-                  Start-Sleep -Milliseconds 200
-                  # Repeat the same idempotent shortcut once so a focus-transition key loss
-                  # cannot silently capture the previous route.
-                  $shell.SendKeys($route.Keys)
-                  Start-Sleep -Milliseconds 700
-                  Save-SearchNowWindow -Name $route.Name -Width 960 -Height 640
+              # Route evidence must not depend on window focus or synthetic keystrokes.
+              # Start a clean process per route with an explicit verification-only startup override.
+              if ($process -and !$process.HasExited) {
+            Stop-Process -Id $process.Id -Force
+          }
+          Remove-Item Env:SEARCHNOW_VERIFY_ROUTE -ErrorAction SilentlyContinue
+              $process = $null
+              foreach ($route in @(
+                @{ Name = "discover-compact"; Route = "discover" },
+                @{ Name = "downloads-compact"; Route = "downloads" },
+                @{ Name = "settings-compact"; Route = "settings" }
+              )) {
+                $env:SEARCHNOW_VERIFY_ROUTE = $route.Route
+                $process = Start-Process -FilePath $exe -PassThru
+                Start-Sleep -Seconds 5
+                if ($process.HasExited) {
+                  throw "SearchNow exited while capturing route $($route.Route) with code $($process.ExitCode)."
                 }
-              } catch {
-                Write-Warning "Route screenshot automation was unavailable: $($_.Exception.Message)"
+                $process.Refresh()
+                if ($process.MainWindowHandle -eq 0) {
+                  throw "SearchNow route $($route.Route) did not expose a capturable window."
+                }
+                Save-SearchNowWindow -Name $route.Name -Width 960 -Height 640
+                Stop-Process -Id $process.Id -Force
+                $process = $null
               }
+              Remove-Item Env:SEARCHNOW_VERIFY_ROUTE -ErrorAction SilentlyContinue
             }
           } catch {
             Write-Warning "Runtime screenshot capture was unavailable: $($_.Exception.Message)"
