@@ -49,6 +49,7 @@
   }
 
   function handleAppShortcut(event: KeyboardEvent): void {
+    if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
     const target = event.target;
     const editing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
 
