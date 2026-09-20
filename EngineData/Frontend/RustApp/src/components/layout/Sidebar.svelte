@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Download, Library, Search, Settings } from "@lucide/svelte";
+  import { Activity, Download, Library, Search, Settings } from "@lucide/svelte";
   import type { Component } from "svelte";
   import { APP_ROUTES } from "../../app/shared/navigation";
   import type { AppRoute } from "../../app/shared/types";
@@ -7,9 +7,11 @@
   let {
     route,
     onNavigate,
+    onOpenActivity,
   }: {
     route: AppRoute;
     onNavigate: (route: AppRoute) => void;
+    onOpenActivity: () => void;
   } = $props();
 
   const icons: Record<AppRoute, Component> = {
@@ -53,6 +55,10 @@
   {#if settingsRoute}
     {@const SettingsIcon = icons[settingsRoute.id]}
     <nav class="sidebar__utility" aria-label="Application">
+      <button class="nav-item" type="button" title="Recent activity" onclick={onOpenActivity}>
+        <Activity size={18} strokeWidth={1.8} aria-hidden="true" />
+        <span>Activity</span>
+      </button>
       <button
         class:nav-item--active={route === settingsRoute.id}
         class="nav-item"
