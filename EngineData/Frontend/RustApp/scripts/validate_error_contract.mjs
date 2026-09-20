@@ -44,7 +44,14 @@ for (const code of mappedCodes) {
   }
 }
 
-for (const code of [...sourceCodes].filter((value) => value.startsWith("package_bundle_"))) {
+const diagnosticOnlyCodes = new Set([
+  "package_bundle_replace_ok",
+  "package_bundle_replace_failed",
+]);
+
+for (const code of [...sourceCodes].filter(
+  (value) => value.startsWith("package_bundle_") && !diagnosticOnlyCodes.has(value),
+)) {
   if (!mappedCodes.has(code)) {
     errors.push(`transactional package bundle backend code is missing friendly frontend copy: ${code}`);
   }
