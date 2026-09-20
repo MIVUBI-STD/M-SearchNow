@@ -11,6 +11,9 @@ const settings = await read("src/pages/Settings.svelte");
 const downloads = await read("src/pages/Downloads.svelte");
 const discover = await read("src/pages/Discover.svelte");
 const diagnosticsPanel = await read("src/components/settings/DiagnosticsPanel.svelte");
+const libraryDetail = await read("src/components/library/LibraryDetailPanel.svelte");
+const downloadView = await read("src/app/shared/downloadView.ts");
+const sharedTypes = await read("src/app/shared/types.ts");
 const workspace = await read("src/styles/workspace.css");
 const catalogModal = await read("src/components/ui/CatalogDetailModal.svelte");
 const packageModal = await read("src/components/ui/PackageInspectionModal.svelte");
@@ -119,8 +122,18 @@ if (!workspace.includes(".toolbar--library-multi-root")) {
   errors.push("Library multi-root toolbar requires an explicit five-control grid owner");
 }
 
-for (const needle of ["DownloadFeedback", "Queue order could not be changed", "Download folder could not be opened"]) {
+for (const needle of [
+  "DownloadFeedback",
+  "Queue order could not be changed",
+  "Download folder could not be opened",
+  "downloadStageDetail",
+  "downloadRecoveryHint",
+  "Download can be retried",
+]) {
   if (!downloads.includes(needle)) errors.push(`Downloads feedback contract is missing: ${needle}`);
+}
+for (const needle of ["downloadStageDetail", "downloadRecoveryHint", "Verifying and saving the completed file safely."]) {
+  if (!downloadView.includes(needle)) errors.push(`Download stage contract is missing: ${needle}`);
 }
 if (downloads.includes('title="Something went wrong"')) {
   errors.push("Downloads must not fall back to the generic Something went wrong notice");
@@ -133,15 +146,38 @@ if (settings.includes('title="Could not update settings."')) {
   errors.push("Settings must not use the generic Could not update settings notice");
 }
 
-for (const needle of ["DiscoverFeedback", "Download folder could not be chosen", "Download could not start"]) {
+for (const needle of [
+  "DiscoverFeedback",
+  "Download folder could not be chosen",
+  "Download could not start",
+  "Preview only",
+  "Available",
+]) {
   if (!discover.includes(needle)) errors.push(`Discover feedback contract is missing: ${needle}`);
+}
+for (const needle of [
+  "Ready to download",
+  "Download file unavailable",
+  "Download source unavailable",
+  "safe output filename",
+]) {
+  if (!catalogModal.includes(needle)) errors.push(`Catalog availability contract is missing: ${needle}`);
 }
 if (discover.includes("downloadMessage")) {
   errors.push("Discover must use structured download feedback instead of downloadMessage");
 }
 
-for (const needle of ["Export report", "exportDiagnosticsReport", "Diagnostics exported"]) {
+for (const needle of ["Export report", "exportDiagnosticsReport", "Diagnostics exported", "Recent activity", "This list resets when the app restarts."]) {
   if (!diagnosticsPanel.includes(needle)) errors.push(`Diagnostics support workflow is missing: ${needle}`);
+}
+if (!sharedTypes.includes('| "package"')) {
+  errors.push("Frontend diagnostic component contract is missing package events");
+}
+for (const needle of ["Required by", "Remove anyway", "Duplicate installation", "Dependency version too old"]) {
+  if (!libraryDetail.includes(needle)) errors.push(`Library relationship/safety contract is missing: ${needle}`);
+}
+for (const needle of ["Ready to install", "Same version already installed", "Older package detected", "Installation conflict", "Bundle changes"]) {
+  if (!packageModal.includes(needle)) errors.push(`Package decision contract is missing: ${needle}`);
 }
 if (!runtimeApi.includes("export_diagnostics_report")) {
   errors.push("runtimeApi is missing export_diagnostics_report");
