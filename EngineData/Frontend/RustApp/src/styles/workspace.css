@@ -170,13 +170,13 @@
 
 /* Library */
 .library-setup-state {
-  width: min(720px, 100%);
+  width: min(860px, 100%);
   margin-top: 2px;
 }
 
 .library-setup-state .empty-panel {
-  min-height: 156px;
-  padding: 24px 28px;
+  min-height: clamp(240px, 34vh, 320px);
+  padding: 28px 30px;
 }
 
 .library-summary {
@@ -1294,4 +1294,16 @@
   border-color: var(--sn-border-strong);
   background: var(--sn-surface-raised);
   color: var(--sn-text);
+}
+
+
+.settings-save-state {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 4px;
+  color: var(--sn-success);
+  font-size: var(--sn-font-caption);
+  font-weight: 650;
 }
