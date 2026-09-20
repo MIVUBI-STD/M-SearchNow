@@ -1,5 +1,6 @@
 <script lang="ts">
   import { X } from "@lucide/svelte";
+  import { focusFirstInDialog, trapDialogFocus } from "../../app/shared/dialogFocus";
   import { catalogContentTypeLabel, formatBytes, formatDate } from "../../app/shared/format";
   import type { CatalogItem } from "../../app/shared/types";
   import ContentTypeMark from "./ContentTypeMark.svelte";
@@ -19,13 +20,31 @@
   } = $props();
 
   let canDownload = $derived(Boolean(item?.download && item?.fileName && onDownload));
+  let dialogElement: HTMLElement | null = $state(null);
+  let previousFocus: HTMLElement | null = null;
+
+  $effect(() => {
+    if (!open || !item) return;
+    previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    queueMicrotask(() => focusFirstInDialog(dialogElement));
+
+    return () => {
+      queueMicrotask(() => previousFocus?.focus());
+    };
+  });
 
   function handleBackdrop(event: MouseEvent): void {
     if (event.target === event.currentTarget) onClose();
   }
 
   function handleKeydown(event: KeyboardEvent): void {
-    if (open && event.key === "Escape") onClose();
+    if (!open) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+    trapDialogFocus(event, dialogElement);
   }
 </script>
 
@@ -33,7 +52,7 @@
 
 {#if open && item}
   <div class="catalog-modal__backdrop" role="presentation" onclick={handleBackdrop}>
-    <div class="catalog-modal" role="dialog" aria-modal="true" aria-labelledby="catalog-modal-title">
+    <div bind:this={dialogElement} class="catalog-modal" role="dialog" aria-modal="true" aria-labelledby="catalog-modal-title" tabindex="-1">
       <button class="catalog-modal__close" type="button" aria-label="Close details" onclick={onClose}>
         <X size={18} aria-hidden="true" />
       </button>

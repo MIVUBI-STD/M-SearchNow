@@ -1,5 +1,6 @@
 <script lang="ts">
   import { FileArchive, X } from "@lucide/svelte";
+  import { focusFirstInDialog, trapDialogFocus } from "../../app/shared/dialogFocus";
   import type { LocalContentItem, MinecraftStorageRoot, PackageInspection, PackKind } from "../../app/shared/types";
   import TechnicalDetails from "./TechnicalDetails.svelte";
 
@@ -24,6 +25,18 @@
   } = $props();
 
   let selectedRootId = $state("");
+  let dialogElement: HTMLElement | null = $state(null);
+  let previousFocus: HTMLElement | null = null;
+
+  $effect(() => {
+    if (!open || !inspection) return;
+    previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    queueMicrotask(() => focusFirstInDialog(dialogElement));
+
+    return () => {
+      queueMicrotask(() => previousFocus?.focus());
+    };
+  });
 
   $effect(() => {
     if (!open || roots.length === 0) return;
@@ -35,7 +48,13 @@
   }
 
   function handleKeydown(event: KeyboardEvent): void {
-    if (open && event.key === "Escape" && !importBusy) onClose();
+    if (!open) return;
+    if (event.key === "Escape" && !importBusy) {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+    trapDialogFocus(event, dialogElement);
   }
 
   function inputKindLabel(): string {
@@ -172,7 +191,7 @@
 
 {#if open && inspection}
   <div class="catalog-modal__backdrop" role="presentation" onclick={handleBackdrop}>
-    <div class="catalog-modal" role="dialog" aria-modal="true" aria-labelledby="package-inspection-title">
+    <div bind:this={dialogElement} class="catalog-modal" role="dialog" aria-modal="true" aria-labelledby="package-inspection-title" tabindex="-1">
       <button class="catalog-modal__close" type="button" aria-label="Close package inspection" onclick={onClose} disabled={importBusy}>
         <X size={18} aria-hidden="true" />
       </button>

@@ -18,6 +18,13 @@
     | "missingDependencies"
     | "outdatedDependencies";
   type LibrarySort = "nameAsc" | "nameDesc" | "type" | "status";
+  type LibraryFeedback = {
+    tone: "success" | "error";
+    title: string;
+    message: string;
+    actionLabel?: string;
+    action?: () => void;
+  };
 
   let { runtimeReady, active }: { runtimeReady: boolean; active: boolean } = $props();
   let loading = $state(false);
@@ -31,8 +38,7 @@
   let selectionMode = $state(false);
   let selectedIds = $state<string[]>([]);
   let batchBusy = $state(false);
-  let success = $state("");
-  let error = $state("");
+  let feedback = $state<LibraryFeedback | null>(null);
   let query = $state("");
   let filter = $state<LibraryFilter>("all");
   let rootFilter = $state("all");
@@ -216,14 +222,23 @@
   async function exportSelectedBatch(): Promise<void> {
     if (selectedIds.length === 0 || batchBusy) return;
     batchBusy = true;
-    error = "";
-    success = "";
+    feedback = null;
     const result = await runtimeProductFacade.exportLocalContentBatch(selectedIds);
     if (result.ok && result.data) {
-      success = `${result.data.length} backup${result.data.length === 1 ? "" : "s"} exported successfully.`;
+      feedback = {
+        tone: "success",
+        title: "Export complete",
+        message: `${result.data.length} backup${result.data.length === 1 ? "" : "s"} exported successfully.`,
+      };
       exitSelectionMode();
     } else if (!result.ok) {
-      error = result.error.message;
+      feedback = {
+        tone: "error",
+        title: "Export failed",
+        message: result.error.message,
+        actionLabel: "Try export again",
+        action: () => void exportSelectedBatch(),
+      };
     }
     batchBusy = false;
   }
@@ -233,13 +248,22 @@
     const item = detailItem;
     if (!item || actionBusy) return;
     actionBusy = true;
-    error = "";
-    success = "";
+    feedback = null;
     const result = await runtimeProductFacade.exportLocalContent(item.id);
     if (result.ok && result.data) {
-      success = `${result.data} exported successfully.`;
+      feedback = {
+        tone: "success",
+        title: "Export complete",
+        message: `${result.data} exported successfully.`,
+      };
     } else if (!result.ok) {
-      error = result.error.message;
+      feedback = {
+        tone: "error",
+        title: "Export failed",
+        message: result.error.message,
+        actionLabel: "Try export again",
+        action: () => void exportSelectedContent(),
+      };
     }
     actionBusy = false;
   }
@@ -248,15 +272,22 @@
     const item = detailItem;
     if (!item || actionBusy) return;
     actionBusy = true;
-    error = "";
-    success = "";
+    feedback = null;
     const result = await runtimeProductFacade.removeLocalContent(item.id);
     if (result.ok) {
       snapshot = result.data;
-      success = `${item.title} removed from this device.`;
+      feedback = {
+        tone: "success",
+        title: "Content removed",
+        message: `${item.title} was removed from this device.`,
+      };
       selectedItem = null;
     } else {
-      error = result.error.message;
+      feedback = {
+        tone: "error",
+        title: "Remove failed",
+        message: result.error.message,
+      };
     }
     actionBusy = false;
   }
@@ -266,30 +297,55 @@
     if (!item || actionBusy) return;
     actionBusy = true;
     const result = await runtimeProductFacade.openLocalContentDirectory(item.id);
-    if (!result.ok) error = result.error.message;
-    else error = "";
+    if (!result.ok) {
+      feedback = {
+        tone: "error",
+        title: "Folder could not be opened",
+        message: result.error.message,
+        actionLabel: "Try again",
+        action: () => void openSelectedFolder(),
+      };
+    } else {
+      feedback = null;
+    }
     actionBusy = false;
   }
 
   async function inspectPackage(): Promise<void> {
     if (!runtimeReady || inspectionBusy) return;
     inspectionBusy = true;
-    error = "";
-    success = "";
+    feedback = null;
     const result = await runtimeProductFacade.chooseAndInspectPackage();
-    if (result.ok) packageInspection = result.data;
-    else error = result.error.message;
+    if (result.ok) {
+      packageInspection = result.data;
+    } else {
+      feedback = {
+        tone: "error",
+        title: "File could not be inspected",
+        message: result.error.message,
+        actionLabel: "Choose another file",
+        action: () => void inspectPackage(),
+      };
+    }
     inspectionBusy = false;
   }
 
   async function inspectPackageFolder(): Promise<void> {
     if (!runtimeReady || inspectionBusy) return;
     inspectionBusy = true;
-    error = "";
-    success = "";
+    feedback = null;
     const result = await runtimeProductFacade.chooseAndInspectPackageFolder();
-    if (result.ok) packageInspection = result.data;
-    else error = result.error.message;
+    if (result.ok) {
+      packageInspection = result.data;
+    } else {
+      feedback = {
+        tone: "error",
+        title: "Folder could not be inspected",
+        message: result.error.message,
+        actionLabel: "Choose another folder",
+        action: () => void inspectPackageFolder(),
+      };
+    }
     inspectionBusy = false;
   }
 
@@ -297,8 +353,7 @@
     const inspection = packageInspection;
     if (!inspection || importBusy) return;
     importBusy = true;
-    error = "";
-    success = "";
+    feedback = null;
     const request = {
       sourcePath: inspection.sourcePath,
       rootId,
@@ -308,14 +363,22 @@
       : await runtimeProductFacade.replacePackage(request);
     if (result.ok) {
       const names = result.data.imported.map((item) => item.name);
-      success = names.length === 1
-        ? `${names[0]} updated successfully.`
-        : `${names.length} bundle items updated/imported successfully.`;
+      feedback = {
+        tone: "success",
+        title: "Update complete",
+        message: names.length === 1
+          ? `${names[0]} updated successfully.`
+          : `${names.length} bundle items updated/imported successfully.`,
+      };
       packageInspection = null;
       loaded = false;
       await refresh();
     } else {
-      error = result.error.message;
+      feedback = {
+        tone: "error",
+        title: "Update failed",
+        message: result.error.message,
+      };
     }
     importBusy = false;
   }
@@ -324,8 +387,7 @@
     const inspection = packageInspection;
     if (!inspection || importBusy) return;
     importBusy = true;
-    error = "";
-    success = "";
+    feedback = null;
     const result = await runtimeProductFacade.importPackage({
       sourcePath: inspection.sourcePath,
       rootId,
@@ -334,14 +396,22 @@
       const importedNames = result.data.world
         ? [result.data.world.name]
         : result.data.imported.map((item) => item.name);
-      success = importedNames.length === 1
-        ? `${importedNames[0]} imported successfully.`
-        : `${importedNames.length} items imported successfully.`;
+      feedback = {
+        tone: "success",
+        title: "Import complete",
+        message: importedNames.length === 1
+          ? `${importedNames[0]} imported successfully.`
+          : `${importedNames.length} items imported successfully.`,
+      };
       packageInspection = null;
       loaded = false;
       await refresh();
     } else {
-      error = result.error.message;
+      feedback = {
+        tone: "error",
+        title: "Import failed",
+        message: result.error.message,
+      };
     }
     importBusy = false;
   }
@@ -349,10 +419,19 @@
   async function refresh(): Promise<void> {
     if (!runtimeReady || loading) return;
     loading = true;
-    error = "";
+    feedback = null;
     const result = await runtimeProductFacade.loadLibrary();
-    if (result.ok) snapshot = result.data;
-    else error = result.error.message;
+    if (result.ok) {
+      snapshot = result.data;
+    } else {
+      feedback = {
+        tone: "error",
+        title: "Library scan failed",
+        message: result.error.message,
+        actionLabel: "Scan again",
+        action: () => void refresh(),
+      };
+    }
     loaded = true;
     loading = false;
   }
@@ -360,8 +439,7 @@
   $effect(() => {
     if (runtimeReady) return;
     loaded = false;
-    error = "";
-    success = "";
+    feedback = null;
     actionBusy = false;
     selectedItem = null;
     packageInspection = null;
@@ -421,7 +499,10 @@
   </div>
 
   {#if snapshot}
-    <div class="toolbar toolbar--library">
+    <div
+      class:toolbar--library-multi-root={snapshot.minecraft.roots.length > 1}
+      class="toolbar toolbar--library"
+    >
       <label class="search-field">
         <Search size={15} aria-hidden="true" />
         <input bind:value={query} type="search" placeholder="Search your library" aria-label="Search your library" />
@@ -498,12 +579,14 @@
     />
   {/if}
 
-  {#if success}
-    <Notice tone="success" title="Import complete" message={success} />
-  {/if}
-
-  {#if error}
-    <Notice tone="error" title="Library needs attention" message={error} actionLabel="Try again" onAction={refresh} />
+  {#if feedback}
+    <Notice
+      tone={feedback.tone}
+      title={feedback.title}
+      message={feedback.message}
+      actionLabel={feedback.actionLabel ?? null}
+      onAction={feedback.action ?? null}
+    />
   {/if}
 
   {#if !runtimeReady}
@@ -511,7 +594,7 @@
   {:else if loading && !loaded}
     <PageState kind="loading" title="Scanning content" message="Checking your Minecraft locations." />
   {:else if snapshot && filteredItems.length > 0}
-    <div class="library-workspace">
+    <div class:library-workspace--selection={selectionMode} class="library-workspace">
       <div class="library-list">
       {#each filteredItems as item (item.id)}
         <button
@@ -550,6 +633,7 @@
       {/each}
       </div>
 
+      {#if !selectionMode}
       <LibraryDetailPanel
         item={detailItem}
         libraryItems={snapshot.library.items}
@@ -561,6 +645,7 @@
         onSelectRelated={(item) => (selectedItem = item)}
         {actionBusy}
       />
+      {/if}
     </div>
   {:else if snapshot}
     <PageState
