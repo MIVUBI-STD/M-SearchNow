@@ -19,7 +19,7 @@
     | "outdatedDependencies";
   type LibrarySort = "nameAsc" | "nameDesc" | "type" | "status";
   type LibraryFeedback = {
-    tone: "success" | "error";
+    tone: "success" | "warning" | "error";
     title: string;
     message: string;
     actionLabel?: string;
@@ -38,6 +38,7 @@
   let selectionMode = $state(false);
   let selectedIds = $state<string[]>([]);
   let batchBusy = $state(false);
+  let locationBusy = $state(false);
   let feedback = $state<LibraryFeedback | null>(null);
   let query = $state("");
   let filter = $state<LibraryFilter>("all");
@@ -416,8 +417,8 @@
     importBusy = false;
   }
 
-  async function refresh(): Promise<void> {
-    if (!runtimeReady || loading) return;
+  async function refresh(): Promise<boolean> {
+    if (!runtimeReady || loading) return false;
     loading = true;
     feedback = null;
     const result = await runtimeProductFacade.loadLibrary();
@@ -434,6 +435,77 @@
     }
     loaded = true;
     loading = false;
+    return result.ok;
+  }
+
+  async function locateMinecraftRoot(): Promise<void> {
+    if (!runtimeReady || locationBusy) return;
+    locationBusy = true;
+    feedback = null;
+
+    const selected = await runtimeProductFacade.chooseMinecraftDirectory();
+    if (!selected.ok) {
+      feedback = {
+        tone: "error",
+        title: "Folder picker failed",
+        message: selected.error.message,
+        actionLabel: "Try again",
+        action: () => void locateMinecraftRoot(),
+      };
+      locationBusy = false;
+      return;
+    }
+    if (!selected.data) {
+      locationBusy = false;
+      return;
+    }
+
+    const settingsResult = await runtimeProductFacade.loadSettings();
+    if (!settingsResult.ok) {
+      feedback = {
+        tone: "error",
+        title: "Settings could not be loaded",
+        message: settingsResult.error.message,
+      };
+      locationBusy = false;
+      return;
+    }
+
+    const saveResult = await runtimeProductFacade.saveSettings({
+      ...settingsResult.data,
+      minecraft: {
+        ...settingsResult.data.minecraft,
+        rootOverride: selected.data,
+      },
+    });
+    if (!saveResult.ok) {
+      feedback = {
+        tone: "error",
+        title: "Minecraft location could not be saved",
+        message: saveResult.error.message,
+      };
+      locationBusy = false;
+      return;
+    }
+
+    loaded = false;
+    const refreshed = await refresh();
+    if (refreshed) {
+      feedback = snapshot?.minecraft.state === "found"
+        ? {
+            tone: "success",
+            title: "Minecraft location saved",
+            message: "SearchNow is now using the selected Minecraft data folder.",
+          }
+        : {
+            tone: "warning",
+            title: "No Minecraft storage found there",
+            message: "Choose the Minecraft data folder that contains your worlds and packs.",
+            actionLabel: "Choose another folder",
+            action: () => void locateMinecraftRoot(),
+          };
+    }
+    locationBusy = false;
   }
 
   $effect(() => {
@@ -448,6 +520,7 @@
     selectionMode = false;
     selectedIds = [];
     batchBusy = false;
+    locationBusy = false;
   });
 
   $effect(() => {
@@ -650,10 +723,27 @@
   {:else if snapshot}
     <PageState
       marker="01"
-      title={snapshot.library.items.length ? "No matching content" : "No Minecraft content found"}
-      message={snapshot.library.items.length ? "Change the search or filters to see other content." : snapshot.minecraft.message}
-      actionLabel={snapshot.library.items.length && controlsChanged ? "Reset" : null}
-      onAction={snapshot.library.items.length && controlsChanged ? resetControls : null}
+      title={snapshot.library.items.length
+        ? "No matching content"
+        : snapshot.minecraft.state === "notFound"
+          ? "Minecraft wasn't detected"
+          : "No Minecraft content found"}
+      message={snapshot.library.items.length
+        ? "Change the search or filters to see other content."
+        : snapshot.minecraft.state === "notFound"
+          ? "Choose your Minecraft data folder manually, then SearchNow will scan it again."
+          : snapshot.minecraft.message}
+      actionLabel={snapshot.library.items.length && controlsChanged
+        ? "Reset"
+        : snapshot.minecraft.state === "notFound"
+          ? "Locate Minecraft"
+          : null}
+      actionDisabled={locationBusy}
+      onAction={snapshot.library.items.length && controlsChanged
+        ? resetControls
+        : snapshot.minecraft.state === "notFound"
+          ? locateMinecraftRoot
+          : null}
     />
   {/if}
 </section>

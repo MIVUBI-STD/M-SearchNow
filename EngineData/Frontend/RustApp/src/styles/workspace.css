@@ -936,6 +936,30 @@
   line-height: 1.45;
 }
 
+.settings-privacy-list {
+  display: grid;
+  margin-top: 14px;
+  border-top: 1px solid #263241;
+}
+
+.settings-privacy-list > div {
+  display: grid;
+  gap: 4px;
+  border-bottom: 1px solid #263241;
+  padding: 12px 2px;
+}
+
+.settings-privacy-list strong {
+  font-size: 11px;
+}
+
+.settings-privacy-list span {
+  max-width: 620px;
+  color: var(--sn-text-soft);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
 .settings-section--advanced {
   padding-bottom: 0;
 }

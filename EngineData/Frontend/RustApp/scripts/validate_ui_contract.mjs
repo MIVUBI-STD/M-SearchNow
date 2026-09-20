@@ -1,0 +1,72 @@
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const appRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const read = (path) => readFile(resolve(appRoot, path), "utf8");
+const errors = [];
+
+const library = await read("src/pages/Library.svelte");
+const settings = await read("src/pages/Settings.svelte");
+const workspace = await read("src/styles/workspace.css");
+const catalogModal = await read("src/components/ui/CatalogDetailModal.svelte");
+const packageModal = await read("src/components/ui/PackageInspectionModal.svelte");
+const runtimeApi = await read("src/app/bridge/runtimeApi.ts");
+const facade = await read("src/app/bridge/runtimeProductFacade.ts");
+const registry = await read("src-tauri/src/commands/registry.rs");
+const tauriConfig = JSON.parse(await read("src-tauri/tauri.conf.json"));
+
+for (const [label, text] of [
+  ["Catalog detail modal", catalogModal],
+  ["Package inspection modal", packageModal],
+]) {
+  for (const needle of ["trapDialogFocus", "bind:this={dialogElement}", 'tabindex="-1"']) {
+    if (!text.includes(needle)) errors.push(`${label} is missing dialog focus contract: ${needle}`);
+  }
+}
+
+for (const needle of [
+  "toolbar--library-multi-root",
+  "LibraryFeedback",
+  "Locate Minecraft",
+  "locateMinecraftRoot",
+  "library-workspace--selection",
+]) {
+  if (!library.includes(needle)) errors.push(`Library UX contract is missing: ${needle}`);
+}
+
+for (const needle of [
+  "chooseMinecraftDirectory",
+  'id="settings-privacy"',
+  "Local-first by default",
+  "Use automatic detection",
+]) {
+  if (!settings.includes(needle)) errors.push(`Settings UX contract is missing: ${needle}`);
+}
+
+if (!runtimeApi.includes("choose_minecraft_directory")) {
+  errors.push("runtimeApi is missing choose_minecraft_directory");
+}
+if (!registry.includes("choose_minecraft_directory")) {
+  errors.push("Tauri registry is missing choose_minecraft_directory");
+}
+if (!facade.includes("chooseMinecraftDirectory")) {
+  errors.push("runtimeProductFacade is missing Minecraft directory picker");
+}
+
+const minWidth = Number(tauriConfig?.app?.windows?.[0]?.minWidth ?? 0);
+const responsiveWidths = [...workspace.matchAll(/@media \(max-width: (\d+)px\)/g)]
+  .map((match) => Number(match[1]));
+if (!responsiveWidths.some((width) => width >= minWidth)) {
+  errors.push(`Desktop responsive rules are unreachable at configured minWidth ${minWidth}px`);
+}
+
+if (!workspace.includes(".toolbar--library-multi-root")) {
+  errors.push("Library multi-root toolbar requires an explicit five-control grid owner");
+}
+
+if (errors.length) {
+  for (const error of errors) console.error(`ERROR: ${error}`);
+  process.exit(1);
+}
+console.log("SearchNow UI contract: PASS");

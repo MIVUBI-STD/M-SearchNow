@@ -169,6 +169,13 @@ export const runtimeProductFacade = {
     );
   },
 
+  chooseMinecraftDirectory(): Promise<ProductResult<string | null>> {
+    return productCall(
+      () => runtimeApi.chooseMinecraftDirectory(),
+      "SearchNow could not choose a Minecraft data folder.",
+    );
+  },
+
   openLocalContentDirectory(itemId: string): Promise<ProductResult<void>> {
     return productCall(
       () => runtimeApi.openLocalContentDirectory(itemId),

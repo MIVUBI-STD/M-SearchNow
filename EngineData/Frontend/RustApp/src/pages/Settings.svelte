@@ -15,6 +15,7 @@
   let includeDevelopmentContent = $state(false);
   let bandwidthLimitMib = $state("");
   let defaultDownloadDirectory = $state("");
+  let minecraftDirectoryBusy = $state(false);
   let discovery = $state<MinecraftDiscoverySnapshot | null>(null);
   let baselineSettings = $state<AppSettings | null>(null);
   let loading = $state(false);
@@ -113,6 +114,23 @@
     saving = false;
   }
 
+  async function chooseMinecraftDirectory(): Promise<void> {
+    if (!active || !snapshot?.ready || saving || scanning || minecraftDirectoryBusy) return;
+    minecraftDirectoryBusy = true;
+    const result = await runtimeProductFacade.chooseMinecraftDirectory();
+    if (!result.ok) {
+      error = result.error.message;
+      minecraftDirectoryBusy = false;
+      return;
+    }
+    if (result.data) {
+      rootOverride = result.data;
+      error = "";
+      saved = false;
+    }
+    minecraftDirectoryBusy = false;
+  }
+
   async function chooseDefaultDownloadDirectory(): Promise<void> {
     if (!active || !snapshot?.ready || saving || scanning) return;
     const result = await runtimeProductFacade.chooseDownloadDirectory();
@@ -196,6 +214,7 @@
       <a href="#settings-minecraft">Minecraft</a>
       <a href="#settings-downloads">Downloads</a>
       <a href="#settings-storage">Detected storage</a>
+      <a href="#settings-privacy">Privacy</a>
       <a href="#settings-advanced">Advanced</a>
     </nav>
 
@@ -216,9 +235,21 @@
 
         <label class="field">
           <span>Minecraft data folder (optional)</span>
-          <input bind:value={rootOverride} type="text" placeholder="Leave empty for automatic detection" disabled={!active || !snapshot?.ready || loading || saving || scanning} />
+          <input bind:value={rootOverride} type="text" placeholder="Leave empty for automatic detection" disabled={!active || !snapshot?.ready || loading || saving || scanning || minecraftDirectoryBusy} />
           <small>Use this only if SearchNow cannot find your Minecraft data automatically.</small>
         </label>
+        <div class="action-row">
+          <button class="button button--secondary" type="button" onclick={chooseMinecraftDirectory} disabled={!active || !snapshot?.ready || loading || saving || scanning || minecraftDirectoryBusy}>
+            <FolderOpen size={15} aria-hidden="true" />
+            {minecraftDirectoryBusy ? "Choosing…" : "Choose folder"}
+          </button>
+          {#if rootOverride}
+            <button class="button button--ghost" type="button" onclick={() => (rootOverride = "")} disabled={!active || !snapshot?.ready || loading || saving || scanning || minecraftDirectoryBusy}>
+              <X size={15} aria-hidden="true" />
+              Use automatic detection
+            </button>
+          {/if}
+        </div>
 
         <div class="toggle-list">
           <label class="toggle-row">
@@ -297,6 +328,27 @@
             {/each}
           </div>
         {/if}
+      </section>
+
+      <section class="settings-section" id="settings-privacy">
+        <div class="settings-section__heading">
+          <div><h2>Privacy</h2><p>Understand what stays on this device and when SearchNow can contact external services.</p></div>
+        </div>
+
+        <div class="settings-privacy-list">
+          <div>
+            <strong>Local-first by default</strong>
+            <span>Your library, settings, download state, and diagnostics are stored locally on this device.</span>
+          </div>
+          <div>
+            <strong>External requests are feature-bound</strong>
+            <span>SearchNow only contacts a configured content provider when you explicitly use provider-backed Discover or download features.</span>
+          </div>
+          <div>
+            <strong>Diagnostics stay local</strong>
+            <span>Runtime diagnostics are not uploaded automatically. You decide if you want to share them for support.</span>
+          </div>
+        </div>
       </section>
 
       <section class="settings-section settings-section--advanced" id="settings-advanced">
