@@ -49,6 +49,14 @@
   let rootFilter = $state("all");
   let sort = $state<LibrarySort>("nameAsc");
 
+  let selectedIdSet = $derived(new Set(selectedIds));
+  let rootLabelsById = $derived.by(() => {
+    const labels = new Map<string, string>();
+    for (const root of snapshot?.minecraft.roots ?? []) {
+      labels.set(root.id, root.accountHint ?? root.storageKind);
+    }
+    return labels;
+  });
   let duplicateIds = $derived(findDuplicateIds(snapshot?.library.items ?? []));
   let missingDependencyIds = $derived(findMissingDependencyIds(snapshot?.library.items ?? []));
   let outdatedDependencyIds = $derived(findOutdatedDependencyIds(snapshot?.library.items ?? []));
@@ -102,9 +110,7 @@
   );
 
   function rootLabel(rootId: string): string {
-    const root = snapshot?.minecraft.roots.find((candidate) => candidate.id === rootId);
-    if (!root) return "Unknown storage";
-    return root.accountHint ?? root.storageKind;
+    return rootLabelsById.get(rootId) ?? "Unknown storage";
   }
 
   function resetControls(): void {
@@ -826,10 +832,10 @@
       {#each filteredItems as item (item.id)}
         <button
           class="library-row"
-          class:library-row--selected={selectedIds.includes(item.id)}
+          class:library-row--selected={selectedIdSet.has(item.id)}
           class:library-row--active={!selectionMode && detailItem?.id === item.id}
           type="button"
-          aria-pressed={selectionMode ? selectedIds.includes(item.id) : undefined}
+          aria-pressed={selectionMode ? selectedIdSet.has(item.id) : undefined}
           aria-keyshortcuts={!selectionMode ? "ArrowUp ArrowDown Home End" : undefined}
           data-library-id={item.id}
           onclick={() => openDetails(item)}
