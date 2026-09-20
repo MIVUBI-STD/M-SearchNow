@@ -9,6 +9,20 @@
     formatTransferRate,
     progressPercent,
   } from "../app/shared/format";
+  import {
+    canCancel,
+    canMoveEarlier,
+    canMoveLater,
+    canPause,
+    canRemove,
+    canResume,
+    canRetry,
+    displayRank,
+    DownloadTransferEstimator,
+    matchesDownloadFilter,
+    queueIndex,
+    type DownloadFilter,
+  } from "../app/shared/downloadView";
   import type { DownloadJob, DownloadManagerSnapshot } from "../app/shared/types";
   import Notice from "../components/ui/Notice.svelte";
   import PageState from "../components/ui/PageState.svelte";
@@ -16,7 +30,6 @@
   import StatePill from "../components/ui/StatePill.svelte";
   import TechnicalDetails from "../components/ui/TechnicalDetails.svelte";
 
-  type DownloadFilter = "all" | "active" | "completed" | "issues";
   type DownloadFeedback = {
     tone: "error";
     title: string;
@@ -24,15 +37,6 @@
     actionLabel?: string;
     action?: () => void;
   };
-  type TransferSample = {
-    bytes: number;
-    sampledAtMs: number;
-    bytesPerSecond: number | null;
-  };
-
-  const SPEED_EMA_ALPHA = 0.35;
-  const MAX_REASONABLE_ETA_SECONDS = 7 * 24 * 60 * 60;
-
   let { runtimeReady, active }: { runtimeReady: boolean; active: boolean } = $props();
   let snapshot = $state<DownloadManagerSnapshot | null>(null);
   let loading = $state(false);
@@ -42,7 +46,7 @@
   let query = $state("");
   let filter = $state<DownloadFilter>("all");
   let refreshSequence = 0;
-  const transferSamples = new Map<string, TransferSample>();
+  const transferEstimator = new DownloadTransferEstimator();
 
   let queuedJobs = $derived((snapshot?.jobs ?? []).filter((job) => job.state === "queued"));
   let jobs = $derived(
@@ -51,117 +55,18 @@
       const bRank = displayRank(b);
       if (aRank !== bRank) return aRank - bRank;
       if (a.state === "queued" && b.state === "queued") {
-        return queueIndex(a) - queueIndex(b);
+        return queueIndex(a, queuedJobs) - queueIndex(b, queuedJobs);
       }
       return b.updatedAtMs - a.updatedAtMs;
     }),
   );
-  let visibleJobs = $derived(jobs.filter((job) => matchesFilter(job)));
+  let visibleJobs = $derived(jobs.filter((job) => matchesDownloadFilter(job, filter, query)));
   let completedJobs = $derived(jobs.filter((job) => job.state === "completed").length);
   let controlsChanged = $derived(query.trim().length > 0 || filter !== "all");
-
-  function displayRank(job: DownloadJob): number {
-    if (["preparing", "transferring", "pauseRequested", "finalizing", "cancelRequested"].includes(job.state)) return 0;
-    if (job.state === "queued") return 1;
-    if (["paused", "interrupted"].includes(job.state)) return 2;
-    return 3;
-  }
-
-  function queueIndex(job: DownloadJob): number {
-    return queuedJobs.findIndex((candidate) => candidate.id === job.id);
-  }
-
-  function canMoveEarlier(job: DownloadJob): boolean {
-    return job.state === "queued" && queueIndex(job) > 0;
-  }
-
-  function canMoveLater(job: DownloadJob): boolean {
-    const index = queueIndex(job);
-    return job.state === "queued" && index >= 0 && index < queuedJobs.length - 1;
-  }
-
-  function matchesFilter(job: DownloadJob): boolean {
-    if (
-      filter === "active" &&
-      !["queued", "preparing", "transferring", "pauseRequested", "paused", "finalizing", "cancelRequested"].includes(job.state)
-    ) return false;
-    if (filter === "completed" && job.state !== "completed") return false;
-    if (filter === "issues" && !["failed", "interrupted", "cancelled"].includes(job.state)) return false;
-    const needle = query.trim().toLowerCase();
-    if (!needle) return true;
-    return `${job.displayName} ${job.destinationFileName} ${job.destinationDirectory ?? ""} ${job.state}`.toLowerCase().includes(needle);
-  }
 
   function resetControls(): void {
     query = "";
     filter = "all";
-  }
-
-  function canPause(job: DownloadJob): boolean {
-    return ["queued", "preparing", "transferring"].includes(job.state);
-  }
-
-  function canResume(job: DownloadJob): boolean {
-    return job.state === "paused" || job.state === "interrupted";
-  }
-
-  function canCancel(job: DownloadJob): boolean {
-    return ["queued", "preparing", "transferring", "pauseRequested", "paused"].includes(job.state);
-  }
-
-  function canRetry(job: DownloadJob): boolean {
-    if (job.state === "failed") return job.lastError?.retryable ?? false;
-    return job.state === "cancelled";
-  }
-
-  function canRemove(job: DownloadJob): boolean {
-    return job.state === "completed" || job.state === "failed" || job.state === "cancelled";
-  }
-
-  function updateTransferSamples(next: DownloadManagerSnapshot): void {
-    const sampledAtMs = performance.now();
-    const activeIds = new Set<string>();
-
-    for (const job of next.jobs) {
-      if (job.state !== "transferring") continue;
-      activeIds.add(job.id);
-      const previous = transferSamples.get(job.id);
-      let bytesPerSecond: number | null = previous?.bytesPerSecond ?? null;
-
-      if (previous && job.progress.downloadedBytes >= previous.bytes) {
-        const elapsedSeconds = (sampledAtMs - previous.sampledAtMs) / 1000;
-        const deltaBytes = job.progress.downloadedBytes - previous.bytes;
-        if (elapsedSeconds > 0 && deltaBytes > 0) {
-          const instantRate = deltaBytes / elapsedSeconds;
-          bytesPerSecond =
-            previous.bytesPerSecond === null
-              ? instantRate
-              : previous.bytesPerSecond * (1 - SPEED_EMA_ALPHA) + instantRate * SPEED_EMA_ALPHA;
-        }
-      }
-
-      transferSamples.set(job.id, {
-        bytes: job.progress.downloadedBytes,
-        sampledAtMs,
-        bytesPerSecond,
-      });
-    }
-
-    for (const jobId of transferSamples.keys()) {
-      if (!activeIds.has(jobId)) transferSamples.delete(jobId);
-    }
-  }
-
-  function transferRate(job: DownloadJob): number | null {
-    return job.state === "transferring" ? (transferSamples.get(job.id)?.bytesPerSecond ?? null) : null;
-  }
-
-  function etaSeconds(job: DownloadJob): number | null {
-    const rate = transferRate(job);
-    const total = job.progress.totalBytes;
-    if (rate === null || rate <= 0 || total === null || total <= job.progress.downloadedBytes) return null;
-    const eta = (total - job.progress.downloadedBytes) / rate;
-    return Number.isFinite(eta) && eta <= MAX_REASONABLE_ETA_SECONDS ? eta : null;
   }
 
   async function refresh(showBusy = true, reportFailure = true): Promise<boolean> {
@@ -174,7 +79,7 @@
     if (sequence !== refreshSequence) return false;
 
     if (result.ok) {
-      updateTransferSamples(result.data);
+      transferEstimator.update(result.data);
       snapshot = result.data;
       if (reportFailure) feedback = null;
     } else if (reportFailure) {
@@ -472,8 +377,8 @@
     <div class="download-queue" aria-live="polite">
       {#each visibleJobs as job (job.id)}
         {@const percent = progressPercent(job.progress.downloadedBytes, job.progress.totalBytes)}
-        {@const rate = transferRate(job)}
-        {@const eta = etaSeconds(job)}
+        {@const rate = transferEstimator.rate(job)}
+        {@const eta = transferEstimator.etaSeconds(job)}
         <article class="download-row" aria-busy={actionJobId === job.id}>
           <div class="download-row__main">
             <div class="download-row__topline">
@@ -532,10 +437,10 @@
               </button>
             {/if}
             {#if job.state === "queued"}
-              <button class="icon-button" type="button" title="Move earlier" aria-label={`Move ${job.displayName} earlier in queue`} onclick={() => moveInQueue(job, "earlier")} disabled={actionJobId === job.id || !canMoveEarlier(job)}>
+              <button class="icon-button" type="button" title="Move earlier" aria-label={`Move ${job.displayName} earlier in queue`} onclick={() => moveInQueue(job, "earlier")} disabled={actionJobId === job.id || !canMoveEarlier(job, queuedJobs)}>
                 <ArrowUp size={16} aria-hidden="true" />
               </button>
-              <button class="icon-button" type="button" title="Move later" aria-label={`Move ${job.displayName} later in queue`} onclick={() => moveInQueue(job, "later")} disabled={actionJobId === job.id || !canMoveLater(job)}>
+              <button class="icon-button" type="button" title="Move later" aria-label={`Move ${job.displayName} later in queue`} onclick={() => moveInQueue(job, "later")} disabled={actionJobId === job.id || !canMoveLater(job, queuedJobs)}>
                 <ArrowDown size={16} aria-hidden="true" />
               </button>
             {/if}
