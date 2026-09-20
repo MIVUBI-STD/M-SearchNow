@@ -41,7 +41,7 @@ for (const [label, text] of [
 if (!dialogFocus.includes("active === last || !container.contains(active)")) {
   errors.push("Dialog focus trap must recover forward Tab when focus escapes the dialog");
 }
-for (const needle of ["handleAppShortcut", '"1": "library"', '"4": "settings"', "event.altKey", "[data-page-search]"]) {
+for (const needle of ["handleAppShortcut", '"1": "library"', '"4": "settings"', "event.altKey", "[data-page-search]", '[role="dialog"][aria-modal="true"]']) {
   if (!app.includes(needle)) {
     errors.push(`Desktop keyboard navigation contract is missing: ${needle}`);
   }
@@ -191,7 +191,7 @@ for (const needle of ["data-page-search", 'aria-keyshortcuts="Control+F"']) {
     errors.push(`Search shortcut contract is missing on one or more searchable surfaces: ${needle}`);
   }
 }
-for (const needle of ["handleLibraryShortcut", "handleRowKeydown", "focusLibraryItem", 'event.key === "Escape"', 'event.key.toLowerCase() === "a"', '"ArrowDown"', '"Home"', "data-library-id"]) {
+for (const needle of ["handleLibraryShortcut", "handleRowKeydown", "focusLibraryItem", '[role="dialog"][aria-modal="true"]', 'event.key === "Escape"', 'event.key.toLowerCase() === "a"', '"ArrowDown"', '"Home"', "data-library-id"]) {
   if (!library.includes(needle)) errors.push(`Library keyboard selection contract is missing: ${needle}`);
 }
 
