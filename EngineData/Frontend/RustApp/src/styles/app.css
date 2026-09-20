@@ -109,7 +109,7 @@ select:disabled {
   background: var(--sn-surface-soft);
   padding: 6px 9px;
   color: var(--sn-text-muted);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   white-space: nowrap;
 }
 
@@ -177,7 +177,7 @@ select:disabled {
   max-width: 680px;
   margin: 9px 0 0;
   color: var(--sn-text-muted);
-  font-size: 13px;
+  font-size: var(--sn-font-body-lg);
   line-height: 1.6;
 }
 
@@ -191,7 +191,7 @@ select:disabled {
   border-radius: var(--sn-radius-md);
   background: transparent;
   padding: 0 13px;
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
   font-weight: 650;
   cursor: pointer;
   transition:
@@ -279,7 +279,7 @@ select:disabled {
   outline: 0;
   background: transparent;
   color: var(--sn-text);
-  font-size: 12px;
+  font-size: var(--sn-font-body);
 }
 
 .search-field input::placeholder {
@@ -294,7 +294,7 @@ select:disabled {
   background: var(--sn-surface);
   padding: 0 34px 0 12px;
   color: var(--sn-text-muted);
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
 }
 
 .select-field:focus {
@@ -311,7 +311,7 @@ select:disabled {
   background: var(--sn-surface);
   padding: 0 14px;
   color: var(--sn-text-soft);
-  font-size: 12px;
+  font-size: var(--sn-font-body);
 }
 
 .search-shell > span {
@@ -337,7 +337,7 @@ select:disabled {
   border: 1px solid var(--sn-border);
   border-radius: var(--sn-radius-md);
   padding: 12px 14px;
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
   line-height: 1.5;
 }
 
@@ -393,20 +393,20 @@ select:disabled {
   border-radius: 12px;
   background: var(--sn-surface);
   color: var(--sn-text-soft);
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
   font-weight: 700;
 }
 
 .empty-panel h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--sn-font-title);
 }
 
 .empty-panel p {
   max-width: 650px;
   margin: 7px 0 0;
   color: var(--sn-text-muted);
-  font-size: 12px;
+  font-size: var(--sn-font-body);
   line-height: 1.6;
 }
 
@@ -448,7 +448,7 @@ select:disabled {
 
 .technical-details summary {
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   cursor: pointer;
   user-select: none;
 }
@@ -487,7 +487,7 @@ select:disabled {
   background: var(--sn-surface-soft);
   padding: 3px 6px;
   color: var(--sn-text-muted);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -572,7 +572,7 @@ select:disabled {
   outline: 0;
   padding: 0 11px;
   color: var(--sn-text);
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
 }
 
 .field input:focus {
@@ -609,7 +609,7 @@ select:disabled {
 }
 
 .toggle-row strong {
-  font-size: 11px;
+  font-size: var(--sn-font-caption);
 }
 
 .toggle-row span {
