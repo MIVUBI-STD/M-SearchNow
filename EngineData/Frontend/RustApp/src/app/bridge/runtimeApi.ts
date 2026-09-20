@@ -102,6 +102,10 @@ export const runtimeApi = {
     return invoke<PackageImportResult>("replace_package_bundle", { request });
   },
 
+  getStartupRouteOverride(): Promise<string | null> {
+    return invoke<string | null>("get_startup_route_override");
+  },
+
   chooseDownloadDirectory(): Promise<string | null> {
     return invoke<string | null>("choose_download_directory");
   },
