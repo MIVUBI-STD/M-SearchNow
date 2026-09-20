@@ -95,58 +95,102 @@ jobs:
             public static extern bool SetWindowPos(
               IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags
             );
+
+            [DllImport("user32.dll", SetLastError = true)]
+            public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdcBlt, uint nFlags);
           }
           "@
 
               $artifactDir = Join-Path $PWD "artifacts/runtime"
               New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
 
-              $viewports = @(
-                @{ Name = "compact"; Width = 960; Height = 640 },
-                @{ Name = "standard"; Width = 1280; Height = 720 },
-                @{ Name = "default"; Width = 1440; Height = 900 }
-              )
+              function Save-SearchNowWindow {
+                param(
+                  [string]$Name,
+                  [int]$Width,
+                  [int]$Height
+                )
 
-              foreach ($viewport in $viewports) {
                 $resized = [SearchNowWindowCapture]::SetWindowPos(
                   $process.MainWindowHandle,
                   [IntPtr]::Zero,
-                  40,
-                  40,
-                  $viewport.Width,
-                  $viewport.Height,
+                  0,
+                  0,
+                  $Width,
+                  $Height,
                   0x0040
                 )
                 if (!$resized) {
-                  Write-Warning "Could not resize SearchNow to $($viewport.Width)x$($viewport.Height)."
-                  continue
+                  Write-Warning "Could not resize SearchNow to $($Width)x$($Height)."
+                  return
                 }
 
-                Start-Sleep -Milliseconds 500
+                Start-Sleep -Milliseconds 600
                 $rect = New-Object SearchNowWindowCapture+RECT
                 if (![SearchNowWindowCapture]::GetWindowRect($process.MainWindowHandle, [ref]$rect)) {
-                  Write-Warning "Could not read SearchNow bounds for $($viewport.Name) screenshot."
-                  continue
+                  Write-Warning "Could not read SearchNow bounds for $Name screenshot."
+                  return
                 }
 
-                $width = $rect.Right - $rect.Left
-                $height = $rect.Bottom - $rect.Top
-                if ($width -le 0 -or $height -le 0) {
-                  Write-Warning "SearchNow reported invalid dimensions for $($viewport.Name)."
-                  continue
+                $actualWidth = $rect.Right - $rect.Left
+                $actualHeight = $rect.Bottom - $rect.Top
+                if ($actualWidth -le 0 -or $actualHeight -le 0) {
+                  Write-Warning "SearchNow reported invalid dimensions for $Name."
+                  return
                 }
 
-                $target = Join-Path $artifactDir "searchnow-windows-$($viewport.Name)-$($width)x$($height).png"
-                $bitmap = New-Object System.Drawing.Bitmap $width, $height
+                $target = Join-Path $artifactDir "searchnow-windows-$Name-$($actualWidth)x$($actualHeight).png"
+                $bitmap = New-Object System.Drawing.Bitmap $actualWidth, $actualHeight
                 $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+                $hdc = [IntPtr]::Zero
                 try {
-                  $graphics.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bitmap.Size)
+                  $hdc = $graphics.GetHdc()
+                  $printed = [SearchNowWindowCapture]::PrintWindow(
+                    $process.MainWindowHandle,
+                    $hdc,
+                    0x00000002
+                  )
+                  $graphics.ReleaseHdc($hdc)
+                  $hdc = [IntPtr]::Zero
+
+                  if (!$printed) {
+                    Write-Warning "PrintWindow failed for $Name; falling back to visible-screen capture."
+                    $graphics.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bitmap.Size)
+                  }
+
                   $bitmap.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
                   Write-Host "Runtime screenshot:" $target
                 } finally {
+                  if ($hdc -ne [IntPtr]::Zero) {
+                    $graphics.ReleaseHdc($hdc)
+                  }
                   $graphics.Dispose()
                   $bitmap.Dispose()
                 }
+              }
+
+              foreach ($viewport in @(
+                @{ Name = "library-compact"; Width = 960; Height = 640 },
+                @{ Name = "library-standard"; Width = 1280; Height = 720 },
+                @{ Name = "library-default"; Width = 1440; Height = 900 }
+              )) {
+                Save-SearchNowWindow -Name $viewport.Name -Width $viewport.Width -Height $viewport.Height
+              }
+
+              try {
+                $shell = New-Object -ComObject WScript.Shell
+                [void]$shell.AppActivate($process.Id)
+                foreach ($route in @(
+                  @{ Name = "discover-compact"; Keys = "%2" },
+                  @{ Name = "downloads-compact"; Keys = "%3" },
+                  @{ Name = "settings-compact"; Keys = "%4" }
+                )) {
+                  $shell.SendKeys($route.Keys)
+                  Start-Sleep -Milliseconds 700
+                  Save-SearchNowWindow -Name $route.Name -Width 960 -Height 640
+                }
+              } catch {
+                Write-Warning "Route screenshot automation was unavailable: $($_.Exception.Message)"
               }
             }
           } catch {
