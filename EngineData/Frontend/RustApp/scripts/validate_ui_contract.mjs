@@ -209,7 +209,15 @@ if (downloads.includes('title="Something went wrong"')) {
   errors.push("Downloads must not fall back to the generic Something went wrong notice");
 }
 
-for (const needle of ["SettingsFeedback", "minecraftDirty", "Settings could not be saved", "Your download and export preferences are now active."]) {
+for (const needle of [
+  "SettingsFeedback",
+  "minecraftDirty",
+  "Settings could not be saved",
+  "Your download and export preferences are now active.",
+  "class:button--primary={dirty || saving}",
+  "class:button--secondary={!dirty && !saving}",
+  'loaded && !dirty ? "Saved" : "Save changes"',
+]) {
   if (!settings.includes(needle)) errors.push(`Settings feedback contract is missing: ${needle}`);
 }
 if (settings.includes('title="Could not update settings."')) {
