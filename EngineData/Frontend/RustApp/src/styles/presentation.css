@@ -40,7 +40,7 @@
 
 .search-field:focus-within,
 .field input:focus {
-  box-shadow: 0 0 0 3px rgb(114 167 255 / 0.1);
+  box-shadow: var(--sn-focus-ring);
 }
 
 .search-field:hover,
@@ -141,7 +141,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 summary:focus-visible {
-  outline: 2px solid var(--sn-text-muted);
+  outline: 2px solid var(--sn-focus);
   outline-offset: 2px;
 }
 
@@ -169,5 +169,26 @@ summary:focus-visible {
   .library-row--active,
   .library-row--selected {
     outline: 1px solid Highlight;
+  }
+}
+
+
+@media (hover: hover) and (pointer: fine) {
+  .button:not(:disabled):hover,
+  .icon-button:not(:disabled):hover,
+  .nav-item:not(:disabled):hover,
+  .catalog-card:not(:disabled):hover,
+  .library-row:not(:disabled):hover {
+    transition-duration: var(--sn-motion-fast);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button:not(:disabled):active,
+  .icon-button:not(:disabled):active,
+  .nav-item:not(:disabled):active,
+  .catalog-card:not(:disabled):active,
+  .library-row:not(:disabled):active {
+    transform: none;
   }
 }
