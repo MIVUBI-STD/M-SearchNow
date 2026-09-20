@@ -1,5 +1,7 @@
 .catalog-modal__backdrop {
   overscroll-behavior: contain;
+  opacity: 1;
+  transition: opacity var(--sn-motion-base) var(--sn-ease-out);
   position: fixed;
   inset: 0;
   z-index: 80;
@@ -12,6 +14,10 @@
 
 .catalog-modal {
   overscroll-behavior: contain;
+  transform: scale(1);
+  transition:
+    transform var(--sn-motion-base) var(--sn-ease-out),
+    opacity var(--sn-motion-base) var(--sn-ease-out);
   position: relative;
   width: min(760px, 100%);
   max-height: min(780px, calc(100vh - 48px));
@@ -309,4 +315,16 @@
   color: var(--sn-text-muted);
   font-size: var(--sn-font-body);
   line-height: 1.55;
+}
+
+
+@starting-style {
+  .catalog-modal__backdrop {
+    opacity: 0;
+  }
+
+  .catalog-modal {
+    opacity: 0;
+    transform: scale(.985);
+  }
 }
