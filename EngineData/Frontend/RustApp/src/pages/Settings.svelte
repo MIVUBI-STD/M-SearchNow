@@ -298,6 +298,7 @@
         class="button button--primary"
         type="button"
         onclick={save}
+        aria-busy={saving}
         disabled={!active || !snapshot?.ready || loading || saving || scanning || exportDirectoryBusy || !dirty || bandwidthLimitInvalid}
       >
         <Save size={15} aria-hidden="true" />
@@ -348,6 +349,7 @@
             type="button"
             title={dirty ? "Save changes before scanning again" : "Scan Minecraft locations again"}
             onclick={rescan}
+            aria-busy={scanning}
             disabled={!active || !snapshot?.ready || scanning || saving || dirty}
           >
             <RefreshCw size={14} class={scanning ? "spin" : ""} aria-hidden="true" />{scanning ? "Scanning" : "Scan again"}
@@ -360,7 +362,7 @@
           <small>Use this only if SearchNow cannot find your Minecraft data automatically.</small>
         </label>
         <div class="action-row">
-          <button class="button button--secondary" type="button" onclick={chooseMinecraftDirectory} disabled={!active || !snapshot?.ready || loading || saving || scanning || minecraftDirectoryBusy}>
+          <button class="button button--secondary" type="button" onclick={chooseMinecraftDirectory} aria-busy={minecraftDirectoryBusy} disabled={!active || !snapshot?.ready || loading || saving || scanning || minecraftDirectoryBusy}>
             <FolderOpen size={15} aria-hidden="true" />
             {minecraftDirectoryBusy ? "Choosing…" : "Choose folder"}
           </button>
@@ -451,7 +453,7 @@
             <small>When empty, SearchNow keeps the existing save dialog behavior.</small>
           </label>
           <div class="action-row">
-            <button class="button button--secondary" type="button" onclick={chooseExportDirectory} disabled={!active || !snapshot?.ready || loading || saving || scanning || exportDirectoryBusy}>
+            <button class="button button--secondary" type="button" onclick={chooseExportDirectory} aria-busy={exportDirectoryBusy} disabled={!active || !snapshot?.ready || loading || saving || scanning || exportDirectoryBusy}>
               <FolderOpen size={15} aria-hidden="true" />
               {exportDirectoryBusy ? "Choosing…" : "Choose export folder"}
             </button>
