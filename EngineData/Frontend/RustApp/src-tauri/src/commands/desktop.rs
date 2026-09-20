@@ -33,6 +33,13 @@ pub async fn choose_minecraft_directory<R: Runtime>(
 }
 
 #[tauri::command]
+pub async fn choose_export_directory<R: Runtime>(
+    app: AppHandle<R>,
+) -> Result<Option<String>, CommandError> {
+    pick_directory(&app)
+}
+
+#[tauri::command]
 pub fn open_local_content_directory(
     state: State<'_, SearchNowBackendRuntime>,
     item_id: String,

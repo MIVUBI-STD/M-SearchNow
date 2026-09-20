@@ -105,10 +105,18 @@ export type DownloadSettings = {
   defaultDirectory: string | null;
 };
 
+export type ExportDuplicatePolicy = "keepBoth" | "stopOnConflict";
+
+export type ExportSettings = {
+  defaultDirectory: string | null;
+  duplicatePolicy: ExportDuplicatePolicy;
+};
+
 export type AppSettings = {
   schemaVersion: number;
   minecraft: MinecraftSettings;
   download: DownloadSettings;
+  export: ExportSettings;
 };
 
 export type DownloadJobState =

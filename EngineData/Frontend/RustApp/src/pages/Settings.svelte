@@ -2,7 +2,12 @@
   import { Check, FolderOpen, RefreshCw, Save, X } from "@lucide/svelte";
   import { runtimeProductFacade } from "../app/bridge/runtimeProductFacade";
   import { minecraftChannelLabel, minecraftStorageKindLabel } from "../app/shared/format";
-  import type { AppSettings, MinecraftDiscoverySnapshot, ProductRuntimeSnapshot } from "../app/shared/types";
+  import type {
+    AppSettings,
+    ExportDuplicatePolicy,
+    MinecraftDiscoverySnapshot,
+    ProductRuntimeSnapshot,
+  } from "../app/shared/types";
   import DiagnosticsPanel from "../components/settings/DiagnosticsPanel.svelte";
   import Notice from "../components/ui/Notice.svelte";
   import StatePill from "../components/ui/StatePill.svelte";
@@ -23,7 +28,10 @@
   let includeDevelopmentContent = $state(false);
   let bandwidthLimitMib = $state("");
   let defaultDownloadDirectory = $state("");
+  let defaultExportDirectory = $state("");
+  let exportDuplicatePolicy = $state<ExportDuplicatePolicy>("keepBoth");
   let minecraftDirectoryBusy = $state(false);
+  let exportDirectoryBusy = $state(false);
   let discovery = $state<MinecraftDiscoverySnapshot | null>(null);
   let baselineSettings = $state<AppSettings | null>(null);
   let loading = $state(false);
@@ -40,7 +48,9 @@
         includeLegacyUwp !== baselineSettings.minecraft.includeLegacyUwp ||
         includeDevelopmentContent !== baselineSettings.minecraft.includeDevelopmentContent ||
         bandwidthLimitMib !== formatBandwidthLimit(baselineSettings.download.bandwidthLimitBytesPerSecond) ||
-        defaultDownloadDirectory !== (baselineSettings.download.defaultDirectory ?? "")),
+        defaultDownloadDirectory !== (baselineSettings.download.defaultDirectory ?? "") ||
+        defaultExportDirectory !== (baselineSettings.export.defaultDirectory ?? "") ||
+        exportDuplicatePolicy !== baselineSettings.export.duplicatePolicy),
   );
   let minecraftDirty = $derived(
     baselineSettings !== null &&
@@ -81,6 +91,8 @@
     includeDevelopmentContent = settings.minecraft.includeDevelopmentContent;
     bandwidthLimitMib = formatBandwidthLimit(settings.download.bandwidthLimitBytesPerSecond);
     defaultDownloadDirectory = settings.download.defaultDirectory ?? "";
+    defaultExportDirectory = settings.export.defaultDirectory ?? "";
+    exportDuplicatePolicy = settings.export.duplicatePolicy;
     baselineSettings = settings;
   }
 
@@ -129,6 +141,10 @@
         bandwidthLimitBytesPerSecond: parsedBandwidthLimit(),
         defaultDirectory: defaultDownloadDirectory || null,
       },
+      export: {
+        defaultDirectory: defaultExportDirectory || null,
+        duplicatePolicy: exportDuplicatePolicy,
+      },
     });
     if (result.ok) {
       applySettings(result.data);
@@ -138,7 +154,7 @@
         title: "Settings saved",
         message: requiresMinecraftRescan
           ? "Minecraft settings changed. Scan again to refresh detected locations."
-          : "Your download preferences are now active.",
+          : "Your download and export preferences are now active.",
       };
     } else {
       feedback = {
@@ -173,6 +189,29 @@
       saved = false;
     }
     minecraftDirectoryBusy = false;
+  }
+
+  async function chooseExportDirectory(): Promise<void> {
+    if (!active || !snapshot?.ready || saving || scanning || exportDirectoryBusy) return;
+    exportDirectoryBusy = true;
+    const result = await runtimeProductFacade.chooseExportDirectory();
+    if (!result.ok) {
+      feedback = {
+        tone: "error",
+        title: "Export folder could not be chosen",
+        message: result.error.message,
+        actionLabel: "Try again",
+        action: () => void chooseExportDirectory(),
+      };
+      exportDirectoryBusy = false;
+      return;
+    }
+    if (result.data) {
+      defaultExportDirectory = result.data;
+      feedback = null;
+      saved = false;
+    }
+    exportDirectoryBusy = false;
   }
 
   async function chooseDefaultDownloadDirectory(): Promise<void> {
@@ -217,6 +256,8 @@
     if (snapshot?.ready) return;
     feedback = null;
     saved = false;
+    minecraftDirectoryBusy = false;
+    exportDirectoryBusy = false;
     if (!dirty) {
       loaded = false;
       baselineSettings = null;
@@ -247,7 +288,7 @@
       <h1>Settings</h1>
       <p>Configure Minecraft locations and download behavior.</p>
     </div>
-    <button class="button button--primary" type="button" onclick={save} disabled={!active || !snapshot?.ready || loading || saving || scanning || !dirty || bandwidthLimitInvalid}>
+    <button class="button button--primary" type="button" onclick={save} disabled={!active || !snapshot?.ready || loading || saving || scanning || exportDirectoryBusy || !dirty || bandwidthLimitInvalid}>
       {#if saved && !saving}<Check size={15} aria-hidden="true" />{:else}<Save size={15} aria-hidden="true" />{/if}
       {saving ? "Saving" : saved ? "Saved" : "Save changes"}
     </button>
@@ -259,7 +300,7 @@
       title={feedback.title}
       message={feedback.message}
       actionLabel={feedback.actionLabel ?? null}
-      actionDisabled={loading || saving || scanning || minecraftDirectoryBusy}
+      actionDisabled={loading || saving || scanning || minecraftDirectoryBusy || exportDirectoryBusy}
       onAction={feedback.action ?? null}
     />
   {:else if bandwidthLimitInvalid}
@@ -377,6 +418,46 @@
           />
           <small>Leave empty for unlimited speed. One global limit is shared fairly by concurrent downloads.</small>
         </label>
+
+        <div class="settings-subsection">
+          <div>
+            <strong>Exports</strong>
+            <span>Optionally send Library backups to one folder without opening a picker each time.</span>
+          </div>
+
+          <label class="field">
+            <span>Default export folder</span>
+            <input
+              value={defaultExportDirectory}
+              type="text"
+              placeholder="Ask every time"
+              readonly
+              disabled={!active || !snapshot?.ready || loading || saving || scanning || exportDirectoryBusy}
+            />
+            <small>When empty, SearchNow keeps the existing save dialog behavior.</small>
+          </label>
+          <div class="action-row">
+            <button class="button button--secondary" type="button" onclick={chooseExportDirectory} disabled={!active || !snapshot?.ready || loading || saving || scanning || exportDirectoryBusy}>
+              <FolderOpen size={15} aria-hidden="true" />
+              {exportDirectoryBusy ? "Choosing…" : "Choose export folder"}
+            </button>
+            {#if defaultExportDirectory}
+              <button class="button button--ghost" type="button" onclick={() => (defaultExportDirectory = "")} disabled={!active || !snapshot?.ready || loading || saving || scanning || exportDirectoryBusy}>
+                <X size={15} aria-hidden="true" />
+                Ask every time
+              </button>
+            {/if}
+          </div>
+
+          <label class="field">
+            <span>When an export name already exists</span>
+            <select class="select-field settings-select" bind:value={exportDuplicatePolicy} disabled={!active || !snapshot?.ready || loading || saving || scanning}>
+              <option value="keepBoth">Keep both with a new file name</option>
+              <option value="stopOnConflict">Stop and ask me to resolve it</option>
+            </select>
+            <small>SearchNow never overwrites an existing backup silently.</small>
+          </label>
+        </div>
       </section>
 
       <section class="settings-section" id="settings-storage">

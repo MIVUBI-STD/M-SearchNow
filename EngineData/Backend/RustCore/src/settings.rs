@@ -5,7 +5,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-pub const CURRENT_SCHEMA_VERSION: u32 = 1;
+pub const CURRENT_SCHEMA_VERSION: u32 = 2;
 const MAX_SETTINGS_BYTES: u64 = 512 * 1024;
 const MIN_BANDWIDTH_LIMIT_BYTES_PER_SECOND: u64 = 64 * 1024;
 const MAX_BANDWIDTH_LIMIT_BYTES_PER_SECOND: u64 = 1024 * 1024 * 1024;
@@ -19,6 +19,8 @@ pub struct AppSettings {
     pub minecraft: MinecraftSettings,
     #[serde(default)]
     pub download: DownloadSettings,
+    #[serde(default)]
+    pub export: ExportSettings,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -28,6 +30,23 @@ pub struct DownloadSettings {
     pub bandwidth_limit_bytes_per_second: Option<u64>,
     #[serde(default)]
     pub default_directory: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum ExportDuplicatePolicy {
+    #[default]
+    KeepBoth,
+    StopOnConflict,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ExportSettings {
+    #[serde(default)]
+    pub default_directory: Option<PathBuf>,
+    #[serde(default)]
+    pub duplicate_policy: ExportDuplicatePolicy,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -49,6 +68,7 @@ impl Default for AppSettings {
             schema_version: CURRENT_SCHEMA_VERSION,
             minecraft: MinecraftSettings::default(),
             download: DownloadSettings::default(),
+            export: ExportSettings::default(),
         }
     }
 }
@@ -100,6 +120,17 @@ impl AppSettings {
             ));
         }
         if self
+            .export
+            .default_directory
+            .as_ref()
+            .is_some_and(|path| path.as_os_str().is_empty())
+        {
+            return Err(BackendError::new(
+                "settings_export_directory_invalid",
+                "Default export directory cannot be empty.",
+            ));
+        }
+        if self
             .minecraft
             .root_override
             .as_ref()
@@ -134,12 +165,49 @@ impl SettingsStore {
         let Some(text) = self.file.read_to_string(MAX_SETTINGS_BYTES)? else {
             return Ok(AppSettings::default());
         };
-        let settings: AppSettings = serde_json::from_str(&text).map_err(|error| {
+        let value: serde_json::Value = serde_json::from_str(&text).map_err(|error| {
             BackendError::new(
                 "settings_invalid_json",
                 format!("SearchNow settings are invalid: {error}"),
             )
         })?;
+        let schema_version = value
+            .get("schemaVersion")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or(1);
+
+        let settings = match schema_version {
+            1 => {
+                let legacy: LegacyAppSettingsV1 =
+                    serde_json::from_value(value).map_err(|error| {
+                        BackendError::new(
+                            "settings_invalid_json",
+                            format!("SearchNow settings are invalid: {error}"),
+                        )
+                    })?;
+                AppSettings {
+                    schema_version: CURRENT_SCHEMA_VERSION,
+                    minecraft: legacy.minecraft,
+                    download: legacy.download,
+                    export: ExportSettings::default(),
+                }
+            }
+            version if version == CURRENT_SCHEMA_VERSION as u64 => serde_json::from_value(value).map_err(|error| {
+                BackendError::new(
+                    "settings_invalid_json",
+                    format!("SearchNow settings are invalid: {error}"),
+                )
+            })?,
+            unsupported => {
+                return Err(BackendError::new(
+                    "settings_schema_unsupported",
+                    format!(
+                        "Settings schema {unsupported} is not supported by this SearchNow build."
+                    ),
+                ))
+            }
+        };
+
         settings.validate()?;
         Ok(settings)
     }
@@ -156,8 +224,24 @@ impl SettingsStore {
     }
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct LegacyAppSettingsV1 {
+    #[serde(default = "legacy_schema_version")]
+    #[allow(dead_code)]
+    schema_version: u32,
+    #[serde(default)]
+    minecraft: MinecraftSettings,
+    #[serde(default)]
+    download: DownloadSettings,
+}
+
 fn current_schema_version() -> u32 {
     CURRENT_SCHEMA_VERSION
+}
+
+fn legacy_schema_version() -> u32 {
+    1
 }
 
 fn default_true() -> bool {
@@ -178,6 +262,8 @@ mod tests {
         assert!(settings.minecraft.root_override.is_none());
         assert!(settings.download.bandwidth_limit_bytes_per_second.is_none());
         assert!(settings.download.default_directory.is_none());
+        assert!(settings.export.default_directory.is_none());
+        assert_eq!(settings.export.duplicate_policy, ExportDuplicatePolicy::KeepBoth);
     }
 
     #[test]
@@ -218,7 +304,7 @@ mod tests {
     #[test]
     fn unknown_settings_fields_fail_closed() {
         let json = r#"{
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "minecraft": {
                 "includePreview": false,
                 "includeLegacyUwp": true,
@@ -252,6 +338,9 @@ mod tests {
         assert!(settings.minecraft.include_preview);
         assert!(settings.download.bandwidth_limit_bytes_per_second.is_none());
         assert!(settings.download.default_directory.is_none());
+        assert_eq!(settings.schema_version, CURRENT_SCHEMA_VERSION);
+        assert!(settings.export.default_directory.is_none());
+        assert_eq!(settings.export.duplicate_policy, ExportDuplicatePolicy::KeepBoth);
     }
 
     #[test]
@@ -325,5 +414,32 @@ mod download_setting_tests {
             Some(MAX_BANDWIDTH_LIMIT_BYTES_PER_SECOND + 1);
         let error = settings.validate().expect_err("too-large limit must fail");
         assert_eq!(error.code(), "settings_download_bandwidth_invalid");
+    }
+}
+
+
+#[cfg(test)]
+mod export_setting_tests {
+    use super::*;
+
+    #[test]
+    fn default_export_directory_rejects_empty_path() {
+        let mut settings = AppSettings::default();
+        settings.export.default_directory = Some(PathBuf::new());
+        let error = settings
+            .validate()
+            .expect_err("empty export directory must fail");
+        assert_eq!(error.code(), "settings_export_directory_invalid");
+    }
+
+    #[test]
+    fn export_duplicate_policy_round_trips() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let store = SettingsStore::new(directory.path().join("settings.json"));
+        let mut settings = AppSettings::default();
+        settings.export.default_directory = Some(directory.path().join("exports"));
+        settings.export.duplicate_policy = ExportDuplicatePolicy::StopOnConflict;
+        store.save(&settings).expect("save");
+        assert_eq!(store.load().expect("load"), settings);
     }
 }

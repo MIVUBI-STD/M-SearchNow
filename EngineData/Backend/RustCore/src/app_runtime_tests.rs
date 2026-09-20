@@ -10,6 +10,7 @@ use crate::{
     package::PackageImportRequest,
     platform::PlatformContext,
     provider_adapter::IntegratedProvider,
+    settings::ExportDuplicatePolicy,
 };
 use std::{
     fs,
@@ -457,6 +458,60 @@ fn export_local_content_creates_reimportable_archive() {
     );
     assert_eq!(inspection.packs.len(), 1);
     assert_eq!(inspection.packs[0].name, "Export Me");
+}
+
+#[test]
+fn configured_export_policy_keeps_both_or_stops_on_conflict() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let root = temp.path().join("minecraft-root");
+    let pack = root.join("resource_packs/export-policy");
+    fs::create_dir_all(&pack).expect("pack");
+    fs::write(
+        pack.join("manifest.json"),
+        r#"{"header":{"name":"Export Policy","uuid":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaab","version":[1,0,0]},"modules":[{"type":"resources","uuid":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbc","version":[1,0,0]}]}"#,
+    )
+    .expect("manifest");
+
+    let runtime = SearchNowBackendRuntime::compose(
+        SearchNowBackendPaths::from_roots(temp.path().join("config"), temp.path().join("data")),
+        PlatformContext::windows(temp.path().join("roaming"), temp.path().join("local")),
+        Vec::new(),
+        HttpTransport::new_test_http(test_http_policy()).expect("test HTTP"),
+    )
+    .expect("runtime");
+    let mut settings = runtime.load_settings().expect("settings");
+    settings.minecraft.root_override = Some(root);
+    runtime.save_settings(&settings).expect("save settings");
+
+    let snapshot = runtime.scan_local_library().expect("library");
+    let item = snapshot
+        .library
+        .items
+        .iter()
+        .find(|item| item.title == "Export Policy")
+        .expect("export item");
+
+    let exports = temp.path().join("exports");
+    fs::create_dir_all(&exports).expect("exports");
+
+    let first = runtime
+        .export_local_content_to_directory(&item.id, &exports, ExportDuplicatePolicy::KeepBoth)
+        .expect("first export");
+    let second = runtime
+        .export_local_content_to_directory(&item.id, &exports, ExportDuplicatePolicy::KeepBoth)
+        .expect("second export");
+
+    assert_eq!(first, "Export Policy.mcpack");
+    assert_eq!(second, "Export Policy (2).mcpack");
+
+    let error = runtime
+        .export_local_content_to_directory(
+            &item.id,
+            &exports,
+            ExportDuplicatePolicy::StopOnConflict,
+        )
+        .expect_err("conflict must stop");
+    assert_eq!(error.code(), "library_export_destination_exists");
 }
 
 #[test]

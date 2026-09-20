@@ -41,6 +41,10 @@ for (const needle of [
   'id="settings-privacy"',
   "Local-first by default",
   "Use automatic detection",
+  "chooseExportDirectory",
+  "defaultExportDirectory",
+  "exportDuplicatePolicy",
+  "Keep both with a new file name",
 ]) {
   if (!settings.includes(needle)) errors.push(`Settings UX contract is missing: ${needle}`);
 }
@@ -48,11 +52,20 @@ for (const needle of [
 if (!runtimeApi.includes("choose_minecraft_directory")) {
   errors.push("runtimeApi is missing choose_minecraft_directory");
 }
+if (!runtimeApi.includes("choose_export_directory")) {
+  errors.push("runtimeApi is missing choose_export_directory");
+}
 if (!registry.includes("choose_minecraft_directory")) {
   errors.push("Tauri registry is missing choose_minecraft_directory");
 }
+if (!registry.includes("choose_export_directory")) {
+  errors.push("Tauri registry is missing choose_export_directory");
+}
 if (!facade.includes("chooseMinecraftDirectory")) {
   errors.push("runtimeProductFacade is missing Minecraft directory picker");
+}
+if (!facade.includes("chooseExportDirectory")) {
+  errors.push("runtimeProductFacade is missing export directory picker");
 }
 
 const minWidth = Number(tauriConfig?.app?.windows?.[0]?.minWidth ?? 0);

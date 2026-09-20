@@ -21,7 +21,7 @@ use crate::{
     platform::PlatformContext,
     provider_adapter::{IntegratedProvider, ProviderAdapterRuntime, ProviderRuntimeStatus},
     runtime::{runtime_status, RuntimeStatus},
-    settings::{AppSettings, SettingsStore},
+    settings::{AppSettings, ExportDuplicatePolicy, SettingsStore},
     LocalBackendSnapshot,
 };
 use serde::{Deserialize, Serialize};
@@ -457,6 +457,34 @@ impl SearchNowBackendRuntime {
         export_directory(&item.path, destination)
     }
 
+    pub fn export_local_content_to_directory(
+        &self,
+        item_id: &str,
+        destination_directory: &Path,
+        duplicate_policy: ExportDuplicatePolicy,
+    ) -> BackendResult<String> {
+        if !destination_directory.is_dir() {
+            return Err(BackendError::new(
+                "library_export_destination_invalid",
+                "The selected export folder is not available.",
+            ));
+        }
+
+        let suggested = self.local_content_export_file_name(item_id)?;
+        let mut reserved = std::collections::HashSet::new();
+        let destination = export_destination(
+            destination_directory,
+            &suggested,
+            duplicate_policy,
+            &mut reserved,
+        )?;
+        self.export_local_content(item_id, &destination)?;
+        Ok(destination
+            .file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+            .unwrap_or(suggested))
+    }
+
     pub fn replace_package(
         &self,
         request: PackageReplaceRequest,
@@ -581,6 +609,19 @@ impl SearchNowBackendRuntime {
         item_ids: &[String],
         destination_directory: &Path,
     ) -> BackendResult<Vec<String>> {
+        self.export_local_content_batch_with_policy(
+            item_ids,
+            destination_directory,
+            ExportDuplicatePolicy::KeepBoth,
+        )
+    }
+
+    pub fn export_local_content_batch_with_policy(
+        &self,
+        item_ids: &[String],
+        destination_directory: &Path,
+        duplicate_policy: ExportDuplicatePolicy,
+    ) -> BackendResult<Vec<String>> {
         if item_ids.is_empty() {
             return Err(BackendError::new(
                 "library_batch_export_empty",
@@ -605,8 +646,12 @@ impl SearchNowBackendRuntime {
         for item_id in item_ids {
             let item = self.resolve_local_content(item_id)?;
             let suggested = self.local_content_export_file_name(item_id)?;
-            let destination =
-                next_batch_export_destination(destination_directory, &suggested, &mut reserved)?;
+            let destination = export_destination(
+                destination_directory,
+                &suggested,
+                duplicate_policy,
+                &mut reserved,
+            )?;
             destinations.push((item.id, destination));
         }
 
@@ -1061,6 +1106,29 @@ impl SearchNowBackendRuntime {
     fn scan_local_library_raw(&self) -> BackendResult<LocalBackendSnapshot> {
         let settings = self.settings.load()?;
         Ok(build_local_backend_snapshot(&settings, &self.platform))
+    }
+}
+
+fn export_destination(
+    directory: &Path,
+    suggested: &str,
+    duplicate_policy: ExportDuplicatePolicy,
+    reserved: &mut std::collections::HashSet<PathBuf>,
+) -> BackendResult<PathBuf> {
+    match duplicate_policy {
+        ExportDuplicatePolicy::KeepBoth => {
+            next_batch_export_destination(directory, suggested, reserved)
+        }
+        ExportDuplicatePolicy::StopOnConflict => {
+            let candidate = directory.join(suggested);
+            if candidate.exists() || !reserved.insert(candidate.clone()) {
+                return Err(BackendError::new(
+                    "library_export_destination_exists",
+                    "A backup with this file name already exists.",
+                ));
+            }
+            Ok(candidate)
+        }
     }
 }
 

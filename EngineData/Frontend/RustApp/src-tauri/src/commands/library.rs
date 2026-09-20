@@ -42,6 +42,28 @@ pub async fn export_local_content<R: Runtime>(
     state: State<'_, SearchNowBackendRuntime>,
     item_id: String,
 ) -> Result<Option<String>, CommandError> {
+    let settings = state.load_settings().map_err(CommandError::from)?;
+    if let Some(directory) = settings.export.default_directory {
+        let duplicate_policy = settings.export.duplicate_policy;
+        let runtime = state.inner().clone();
+        return tauri::async_runtime::spawn_blocking(move || {
+            runtime.export_local_content_to_directory(
+                &item_id,
+                &directory,
+                duplicate_policy,
+            )
+        })
+        .await
+        .map_err(|error| {
+            CommandError::new(
+                "library_export_task_failed",
+                format!("Local content export task failed: {error}"),
+            )
+        })?
+        .map(Some)
+        .map_err(CommandError::from);
+    }
+
     let suggested = state
         .local_content_export_file_name(&item_id)
         .map_err(CommandError::from)?;
@@ -89,6 +111,28 @@ pub async fn export_local_content_batch<R: Runtime>(
     state: State<'_, SearchNowBackendRuntime>,
     item_ids: Vec<String>,
 ) -> Result<Option<Vec<String>>, CommandError> {
+    let settings = state.load_settings().map_err(CommandError::from)?;
+    if let Some(directory) = settings.export.default_directory {
+        let duplicate_policy = settings.export.duplicate_policy;
+        let runtime = state.inner().clone();
+        return tauri::async_runtime::spawn_blocking(move || {
+            runtime.export_local_content_batch_with_policy(
+                &item_ids,
+                &directory,
+                duplicate_policy,
+            )
+        })
+        .await
+        .map_err(|error| {
+            CommandError::new(
+                "library_export_task_failed",
+                format!("Batch export task failed: {error}"),
+            )
+        })?
+        .map(Some)
+        .map_err(CommandError::from);
+    }
+
     let selected = app
         .dialog()
         .file()

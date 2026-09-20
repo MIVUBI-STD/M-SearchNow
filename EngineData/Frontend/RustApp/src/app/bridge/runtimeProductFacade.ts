@@ -176,6 +176,13 @@ export const runtimeProductFacade = {
     );
   },
 
+  chooseExportDirectory(): Promise<ProductResult<string | null>> {
+    return productCall(
+      () => runtimeApi.chooseExportDirectory(),
+      "SearchNow could not choose an export folder.",
+    );
+  },
+
   openLocalContentDirectory(itemId: string): Promise<ProductResult<void>> {
     return productCall(
       () => runtimeApi.openLocalContentDirectory(itemId),

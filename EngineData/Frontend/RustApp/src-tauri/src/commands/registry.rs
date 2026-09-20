@@ -18,6 +18,7 @@ pub fn register<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         crate::commands::catalog::query_catalog,
         crate::commands::desktop::choose_download_directory,
         crate::commands::desktop::choose_minecraft_directory,
+        crate::commands::desktop::choose_export_directory,
         crate::commands::desktop::open_local_content_directory,
         crate::commands::desktop::open_download_directory,
         crate::commands::download::get_download_snapshot,

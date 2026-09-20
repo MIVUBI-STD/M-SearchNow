@@ -87,6 +87,10 @@ export const runtimeApi = {
     return invoke<string | null>("choose_minecraft_directory");
   },
 
+  chooseExportDirectory(): Promise<string | null> {
+    return invoke<string | null>("choose_export_directory");
+  },
+
   openLocalContentDirectory(itemId: string): Promise<void> {
     return invoke<void>("open_local_content_directory", { itemId });
   },
