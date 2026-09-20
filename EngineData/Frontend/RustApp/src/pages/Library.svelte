@@ -812,7 +812,7 @@
   {/if}
 
   {#if !runtimeReady}
-    <PageState marker="01" title="Library unavailable" message="SearchNow cannot read your Minecraft content right now." />
+    <PageState icon="library" title="Library unavailable" message="SearchNow cannot read your Minecraft content right now." />
   {:else if loading && !loaded}
     <PageState kind="loading" title="Scanning content" message="Checking your Minecraft locations." />
   {:else if snapshot && filteredItems.length > 0}
@@ -878,7 +878,7 @@
   {:else if snapshot?.minecraft.state === "notFound"}
     <div class="library-setup-state">
       <PageState
-        marker="01"
+        icon="folder"
         title="Minecraft wasn't detected"
         message="Choose your Minecraft data folder manually, then SearchNow will scan it again."
         actionLabel="Locate Minecraft"
@@ -888,7 +888,7 @@
     </div>
   {:else if snapshot}
     <PageState
-      marker="01"
+      icon={snapshot.library.items.length ? "search" : "library"}
       title={snapshot.library.items.length ? "No matching content" : "No Minecraft content found"}
       message={snapshot.library.items.length
         ? "Change the search or filters to see other content."
