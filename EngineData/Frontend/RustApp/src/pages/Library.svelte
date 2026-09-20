@@ -43,6 +43,7 @@
   let locationBusy = $state(false);
   let dropActive = $state(false);
   let feedback = $state<LibraryFeedback | null>(null);
+  let queryInput = $state("");
   let query = $state("");
   let filter = $state<LibraryFilter>("all");
   let rootFilter = $state("all");
@@ -94,7 +95,7 @@
   );
   let selectedDuplicates = $derived(findDuplicatesForItem(detailItem, snapshot?.library.items ?? []));
   let controlsChanged = $derived(
-    query.trim().length > 0 ||
+    queryInput.trim().length > 0 ||
     filter !== "all" ||
     rootFilter !== "all" ||
     sort !== "nameAsc",
@@ -107,6 +108,7 @@
   }
 
   function resetControls(): void {
+    queryInput = "";
     query = "";
     filter = "all";
     rootFilter = "all";
@@ -601,6 +603,14 @@
   });
 
   $effect(() => {
+    const value = queryInput;
+    const timer = setTimeout(() => {
+      query = value;
+    }, 160);
+    return () => clearTimeout(timer);
+  });
+
+  $effect(() => {
     if (!active || !runtimeReady) return;
     if (!loaded && !loading) void refresh();
   });
@@ -677,7 +687,7 @@
     >
       <label class="search-field">
         <Search size={15} aria-hidden="true" />
-        <input bind:value={query} type="search" placeholder="Search your library" aria-label="Search your library" />
+        <input bind:value={queryInput} type="search" placeholder="Search your library" aria-label="Search your library" />
       </label>
       <select class="select-field" bind:value={filter} aria-label="Filter content type">
         <option value="all">All content</option>
