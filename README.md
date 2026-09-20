@@ -78,12 +78,14 @@ Implemented remotely against the existing runtime contracts:
 
 - runtime/health bootstrap and refresh;
 - package file/folder inspection, safe `.mcpack` / `.mcaddon` / `.mcworld` import, single-pack update, transactional `.mcaddon` bundle update, local export, and content removal;
-- Library scan, summary, search/filter, warning/error/empty states, and collapsed technical details;
-- Downloads queue/history, progress, adaptive refresh, cancel/retry/remove actions, and scheduler-error state;
-- Settings load/save with dirty-state protection and Minecraft storage rescan;
-- safe runtime diagnostics in Settings;
+- Library scan, debounced search/filter, content health/relationships, keyboard row navigation, warning/error/empty states, safe destructive-action context, and collapsed technical details;
+- Downloads queue/history, meaningful operation stages, progress/rate/ETA, adaptive refresh, recovery guidance, cancel/retry/remove actions, and scheduler-error state;
+- Settings load/save with dirty-state protection, field-bound validation, and Minecraft storage rescan;
+- user-facing session Activity separated from safe runtime diagnostics in Settings;
 - provider-neutral Discover search/filter/sort/pagination when a catalog-capable provider is registered;
-- one `runtimeProductFacade` over one raw Tauri `runtimeApi`; pages do not own runtime truth.
+- compact/DPI-scaled Windows layout, Ctrl+F page search, Alt+1..4 navigation, reduced-motion/high-contrast handling, and semantic UI tokens;
+- one `runtimeProductFacade` over one raw Tauri `runtimeApi`; pages do not own runtime truth;
+- one `npm run validate:ui` gate covering UI contracts, design-system intent, motion rules, and state coverage.
 
 Not implemented yet:
 
