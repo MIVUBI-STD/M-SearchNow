@@ -129,6 +129,9 @@ if (!responsiveWidths.some((width) => width >= minWidth)) {
   errors.push(`Desktop responsive rules are unreachable at configured minWidth ${minWidth}px`);
 }
 
+if (!appStyles.includes("min-height: clamp(240px, 34vh, 320px)")) {
+  errors.push("Empty states must own enough vertical space to avoid floating at the top of the window");
+}
 if (!workspace.includes(".library-setup-state .empty-panel")) {
   errors.push("Library Minecraft recovery must use the focused setup-state layout");
 }
@@ -214,9 +217,10 @@ for (const needle of [
   "minecraftDirty",
   "Settings could not be saved",
   "Your download and export preferences are now active.",
-  "class:button--primary={dirty || saving}",
-  "class:button--secondary={!dirty && !saving}",
-  'loaded && !dirty ? "Saved" : "Save changes"',
+  'class="settings-save-state"',
+  'role="status"',
+  'class="button button--primary"',
+  'saving ? "Saving" : "Save changes"',
 ]) {
   if (!settings.includes(needle)) errors.push(`Settings feedback contract is missing: ${needle}`);
 }
@@ -224,6 +228,9 @@ if (settings.includes('title="Could not update settings."')) {
   errors.push("Settings must not use the generic Could not update settings notice");
 }
 
+if (discover.includes("Source unavailable") || discover.includes('class="search-shell" aria-disabled="true"')) {
+  errors.push("Discover must not render a fake search control when no content source exists");
+}
 for (const needle of [
   "DiscoverFeedback",
   "Download folder could not be chosen",
@@ -254,7 +261,7 @@ for (const needle of ["Export report", "exportDiagnosticsReport", "Diagnostics e
 for (const needle of ["Recent activity", "session-only", "Activity unavailable"]) {
   if (!activityDialog.includes(needle)) errors.push(`Activity workflow is missing: ${needle}`);
 }
-if (!sidebar.includes("Recent activity") || !sidebar.includes("onOpenActivity") || !sidebar.includes('aria-haspopup="dialog"')) {
+if (!sidebar.includes("Recent activity") || !sidebar.includes("onOpenActivity") || !sidebar.includes('aria-haspopup="dialog"') || !sidebar.includes("<Blocks")) {
   errors.push("Sidebar must expose Recent Activity as a dialog utility without adding another product route");
 }
 for (const needle of ['aria-keyshortcuts=', 'aria-current=']) {
