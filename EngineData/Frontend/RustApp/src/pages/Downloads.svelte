@@ -300,12 +300,12 @@
     </div>
     <div class="action-row action-row--heading">
       {#if completedJobs > 0}
-        <button class="button button--ghost" type="button" onclick={clearCompleted} disabled={!runtimeReady || clearingCompleted || actionJobId !== null}>
+        <button class="button button--ghost" type="button" onclick={clearCompleted} aria-busy={clearingCompleted} disabled={!runtimeReady || clearingCompleted || actionJobId !== null}>
           <Trash2 size={15} aria-hidden="true" />
           {clearingCompleted ? "Clearing" : "Clear completed"}
         </button>
       {/if}
-      <button class="button button--secondary" type="button" onclick={() => refresh()} disabled={!runtimeReady || loading || clearingCompleted}>
+      <button class="button button--secondary" type="button" onclick={() => refresh()} aria-busy={loading} disabled={!runtimeReady || loading || clearingCompleted}>
         <RefreshCw size={15} class={loading ? "spin" : ""} aria-hidden="true" />
         Refresh
       </button>
