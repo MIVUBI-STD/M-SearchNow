@@ -209,6 +209,7 @@ export type DiagnosticComponent =
   | "settings"
   | "minecraft"
   | "library"
+  | "package"
   | "catalog"
   | "provider"
   | "download";
