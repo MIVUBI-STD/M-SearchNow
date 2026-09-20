@@ -125,7 +125,7 @@
 
         {#if onDownload && item.download && item.fileName}
           <div class="catalog-modal__footer">
-            <button class="button button--primary" type="button" onclick={() => onDownload?.()} disabled={!canDownload || downloadBusy}>
+            <button class="button button--primary" type="button" onclick={() => onDownload?.()} aria-busy={downloadBusy} disabled={!canDownload || downloadBusy}>
               {downloadBusy ? "Starting…" : "Download"}
             </button>
           </div>
