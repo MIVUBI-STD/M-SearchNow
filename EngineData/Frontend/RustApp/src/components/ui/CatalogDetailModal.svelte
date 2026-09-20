@@ -111,7 +111,6 @@
             <div><span>Size</span><strong>{formatBytes(item.expectedBytes)}</strong></div>
           {/if}
           <div><span>Source</span><strong>{item.provider}</strong></div>
-          <div><span>Type</span><strong>{catalogContentTypeLabel(item.contentType)}</strong></div>
         </div>
 
         {#if item.description}
