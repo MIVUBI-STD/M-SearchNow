@@ -370,7 +370,7 @@ select:disabled {
 
 .empty-panel {
   display: flex;
-  min-height: 200px;
+  min-height: clamp(240px, 34vh, 320px);
   align-items: center;
   gap: 18px;
   border: 1px solid #334257;
