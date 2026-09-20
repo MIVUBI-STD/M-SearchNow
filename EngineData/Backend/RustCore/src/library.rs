@@ -523,6 +523,39 @@ mod tests {
     }
 
     #[test]
+    fn large_library_fixture_scans_completely_and_deterministically() {
+        const ITEM_COUNT: usize = 500;
+        let directory = tempfile::tempdir().expect("tempdir");
+        let container = directory.path().join("resource_packs");
+        fs::create_dir_all(&container).expect("container");
+
+        for index in (0..ITEM_COUNT).rev() {
+            let pack = container.join(format!("pack-{index:04}"));
+            fs::create_dir_all(&pack).expect("pack");
+            fs::write(
+                pack.join("manifest.json"),
+                format!(
+                    r#"{{"header":{{"name":"Pack {index:04}","uuid":"fixture-{index:04}","version":[1,0,0]}}}}"#
+                ),
+            )
+            .expect("manifest");
+        }
+
+        let first = scan_library(&[root(directory.path())], false);
+        let second = scan_library(&[root(directory.path())], false);
+
+        assert_eq!(first.summary.total, ITEM_COUNT);
+        assert_eq!(first.summary.invalid_items, 0);
+        assert!(first.warnings.is_empty());
+        assert_eq!(
+            first.items.iter().map(|item| &item.id).collect::<Vec<_>>(),
+            second.items.iter().map(|item| &item.id).collect::<Vec<_>>()
+        );
+        assert_eq!(first.items.first().map(|item| item.title.as_str()), Some("Pack 0000"));
+        assert_eq!(first.items.last().map(|item| item.title.as_str()), Some("Pack 0499"));
+    }
+
+    #[test]
     fn item_identity_preserves_case_to_avoid_case_sensitive_collisions() {
         let upper = item_id(Path::new("/minecraft/resource_packs/Pack"));
         let lower = item_id(Path::new("/minecraft/resource_packs/pack"));
