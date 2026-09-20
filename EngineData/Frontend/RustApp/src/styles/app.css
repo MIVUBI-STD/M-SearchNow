@@ -363,9 +363,9 @@ select:disabled {
 }
 
 .notice--error {
-  border-color: #60353a;
-  background: #271416;
-  color: #f0a0aa;
+  border-color: var(--sn-danger-border);
+  background: var(--sn-danger-surface);
+  color: var(--sn-danger);
 }
 
 .empty-panel {
@@ -500,9 +500,9 @@ select:disabled {
 
 .state-pill--failed,
 .state-pill--interrupted {
-  border-color: #60353a;
-  background: #271416;
-  color: #f0a0aa;
+  border-color: var(--sn-danger-border);
+  background: var(--sn-danger-surface);
+  color: var(--sn-danger);
 }
 
 .state-pill--cancelled {
