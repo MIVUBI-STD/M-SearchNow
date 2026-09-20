@@ -135,6 +135,29 @@
     selectedIds = [];
   }
 
+  function focusLibraryItem(item: LocalContentItem): void {
+    selectedItem = item;
+    queueMicrotask(() => {
+      document.querySelector<HTMLElement>(`[data-library-id="${item.id}"]`)?.focus();
+    });
+  }
+
+  function handleRowKeydown(event: KeyboardEvent, item: LocalContentItem): void {
+    if (selectionMode || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    const index = filteredItems.findIndex((candidate) => candidate.id === item.id);
+    if (index < 0) return;
+
+    let nextIndex = index;
+    if (event.key === "ArrowDown") nextIndex = Math.min(filteredItems.length - 1, index + 1);
+    if (event.key === "ArrowUp") nextIndex = Math.max(0, index - 1);
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = filteredItems.length - 1;
+    if (nextIndex === index) return;
+
+    event.preventDefault();
+    focusLibraryItem(filteredItems[nextIndex]);
+  }
+
   function handleLibraryShortcut(event: KeyboardEvent): void {
     if (!active || !selectionMode || batchBusy) return;
     const target = event.target;
@@ -802,7 +825,10 @@
           class:library-row--active={!selectionMode && detailItem?.id === item.id}
           type="button"
           aria-pressed={selectionMode ? selectedIds.includes(item.id) : undefined}
+          aria-keyshortcuts={!selectionMode ? "ArrowUp ArrowDown Home End" : undefined}
+          data-library-id={item.id}
           onclick={() => openDetails(item)}
+          onkeydown={(event) => handleRowKeydown(event, item)}
         >
           <div class="library-row__icon">
             <ContentTypeMark kind={item.contentType} />
