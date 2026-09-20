@@ -222,7 +222,13 @@ for (const needle of [
 ]) {
   if (!frontendTypes.includes(needle)) errors.push(`frontend download request contract is missing ${needle}`);
 }
-if (frontendTypes.includes('| "package"')) errors.push("frontend DiagnosticComponent must not expose inactive package runtime diagnostics");
+if (!frontendTypes.includes('| "package"')) {
+  errors.push("frontend DiagnosticComponent must include active package runtime diagnostics");
+}
+const diagnosticsModel = await readFile(resolve(backendRoot, "src/diagnostics.rs"), "utf8");
+if (!diagnosticsModel.includes("Package,")) {
+  errors.push("backend DiagnosticComponent must retain Package while package operations are recorded");
+}
 
 for (const needle of [
   'pub struct AppSettings',
