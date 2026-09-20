@@ -273,6 +273,8 @@
 }
 
 .library-row {
+  content-visibility: auto;
+  contain-intrinsic-size: 64px;
   display: grid;
   width: 100%;
   min-height: 64px;
@@ -744,6 +746,8 @@
 }
 
 .download-row {
+  content-visibility: auto;
+  contain-intrinsic-size: 78px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
