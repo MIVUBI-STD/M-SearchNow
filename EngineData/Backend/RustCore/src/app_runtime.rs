@@ -429,7 +429,19 @@ impl SearchNowBackendRuntime {
                 "A pack with the same manifest UUID is already installed in the selected Minecraft storage.",
             ));
         }
-        import_archive(&request.source_path, &root.root, &root.id)
+        let started = Instant::now();
+        let result = import_archive(&request.source_path, &root.root, &root.id);
+        self.diagnostics.record_outcome(
+            DiagnosticComponent::Package,
+            started,
+            result.is_ok(),
+            "package_import_ok",
+            "Minecraft package installed successfully.",
+            "package_import_failed",
+            "Minecraft package installation failed.",
+            DiagnosticSeverity::Warning,
+        );
+        result
     }
 
     pub fn local_content_export_file_name(&self, item_id: &str) -> BackendResult<String> {
@@ -531,11 +543,24 @@ impl SearchNowBackendRuntime {
             duplicate_policy,
             &mut reserved,
         )?;
-        self.export_local_content(item_id, &destination)?;
-        Ok(destination
-            .file_name()
-            .map(|name| name.to_string_lossy().into_owned())
-            .unwrap_or(suggested))
+        let started = Instant::now();
+        let result = self.export_local_content(item_id, &destination).map(|()| {
+            destination
+                .file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+                .unwrap_or(suggested)
+        });
+        self.diagnostics.record_outcome(
+            DiagnosticComponent::Library,
+            started,
+            result.is_ok(),
+            "library_export_ok",
+            "Minecraft content backup exported successfully.",
+            "library_export_failed",
+            "Minecraft content backup export failed.",
+            DiagnosticSeverity::Warning,
+        );
+        result
     }
 
     pub fn replace_package(
@@ -654,7 +679,19 @@ impl SearchNowBackendRuntime {
             ));
         }
 
-        replace_single_pack(&request.source_path, &root.root, &root.id, &existing.path)
+        let started = Instant::now();
+        let result = replace_single_pack(&request.source_path, &root.root, &root.id, &existing.path);
+        self.diagnostics.record_outcome(
+            DiagnosticComponent::Package,
+            started,
+            result.is_ok(),
+            "package_replace_ok",
+            "Installed Minecraft pack updated successfully.",
+            "package_replace_failed",
+            "Minecraft pack update failed.",
+            DiagnosticSeverity::Warning,
+        );
+        result
     }
 
     pub fn export_local_content_batch(
@@ -927,7 +964,19 @@ impl SearchNowBackendRuntime {
         }
 
         validate_bundle_dependencies(&inspection, &library.items, &plans)?;
-        replace_bundle(&request.source_path, &root.root, &root.id, &plans)
+        let started = Instant::now();
+        let result = replace_bundle(&request.source_path, &root.root, &root.id, &plans);
+        self.diagnostics.record_outcome(
+            DiagnosticComponent::Package,
+            started,
+            result.is_ok(),
+            "package_bundle_replace_ok",
+            "Minecraft add-on bundle updated successfully.",
+            "package_bundle_replace_failed",
+            "Minecraft add-on bundle update failed.",
+            DiagnosticSeverity::Warning,
+        );
+        result
     }
 
     pub fn remove_local_content(&self, item_id: &str) -> BackendResult<LocalBackendSnapshot> {
@@ -986,13 +1035,25 @@ impl SearchNowBackendRuntime {
             ));
         }
 
-        std::fs::remove_dir_all(&item.path).map_err(|error| {
+        let started = Instant::now();
+        let removal = std::fs::remove_dir_all(&item.path).map_err(|error| {
             BackendError::from_io(
                 "library_remove_failed",
                 "SearchNow could not remove the selected Minecraft content.",
                 error,
             )
-        })?;
+        });
+        self.diagnostics.record_outcome(
+            DiagnosticComponent::Library,
+            started,
+            removal.is_ok(),
+            "library_remove_ok",
+            "Minecraft content removed successfully.",
+            "library_remove_failed",
+            "Minecraft content removal failed.",
+            DiagnosticSeverity::Warning,
+        );
+        removal?;
         self.scan_local_library_raw()
     }
 
