@@ -151,33 +151,33 @@
 
     <div class="library-detail__section">
       <span class="library-detail__label">Health</span>
-      <div class="library-detail__links">
-        <div class="library-detail__link">
+      <div class="library-detail__health-list">
+        <div class:library-detail__health-item--warning={item.status !== "ready"} class="library-detail__health-item">
           <span>{item.status === "ready" ? "Metadata valid" : "Metadata needs review"}</span>
           <small>{item.status === "ready" ? "Manifest metadata was read successfully." : (item.issue ?? "SearchNow could not validate this content metadata.")}</small>
         </div>
         {#if hasMissingDependency}
-          <div class="library-detail__link library-detail__link--missing">
+          <div class="library-detail__health-item library-detail__health-item--warning">
             <span>Missing dependency</span>
             <small>Install the required pack before relying on this content.</small>
           </div>
         {/if}
         {#if hasOutdatedDependency}
-          <div class="library-detail__link library-detail__link--missing">
+          <div class="library-detail__health-item library-detail__health-item--warning">
             <span>Dependency version too old</span>
-            <small>Update the required pack to at least the version requested by this content.</small>
+            <small>Update the required pack to at least the requested version.</small>
           </div>
         {/if}
         {#if hasDuplicate}
-          <div class="library-detail__link library-detail__link--missing">
+          <div class="library-detail__health-item library-detail__health-item--warning">
             <span>Duplicate installation</span>
-            <small>Another installed item uses the same manifest UUID. Review both copies before updating or removing either one.</small>
+            <small>Another installed item uses the same manifest UUID.</small>
           </div>
         {/if}
         {#if !needsReview()}
-          <div class="library-detail__link">
+          <div class="library-detail__health-item">
             <span>No known issues</span>
-            <small>SearchNow found no metadata, dependency, or duplicate conflicts for this item.</small>
+            <small>Dependencies and duplicate checks are clear.</small>
           </div>
         {/if}
       </div>
