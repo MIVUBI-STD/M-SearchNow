@@ -25,6 +25,11 @@
   --sn-success-surface: #11271d;
   --sn-warning: #efbd6e;
   --sn-warning-surface: #2b2114;
+  --sn-danger: #f0a0aa;
+  --sn-danger-surface: #271416;
+  --sn-danger-border: #60353a;
+  --sn-focus: #b8d4ff;
+  --sn-focus-ring: 0 0 0 3px rgb(114 167 255 / 0.18);
 
   --sn-font-micro: 10px;
   --sn-font-caption: 11px;
