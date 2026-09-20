@@ -25,7 +25,9 @@
 
 <aside class="sidebar">
   <div class="brand">
-    <div class="brand__mark" aria-hidden="true">S</div>
+    <div class="brand__mark" aria-hidden="true">
+      <Search size={16} strokeWidth={2} />
+    </div>
     <strong>SearchNow</strong>
   </div>
 
