@@ -185,6 +185,12 @@ jobs:
                   @{ Name = "downloads-compact"; Keys = "%3" },
                   @{ Name = "settings-compact"; Keys = "%4" }
                 )) {
+                  [void]$shell.AppActivate($process.Id)
+                  Start-Sleep -Milliseconds 250
+                  $shell.SendKeys($route.Keys)
+                  Start-Sleep -Milliseconds 200
+                  # Repeat the same idempotent shortcut once so a focus-transition key loss
+                  # cannot silently capture the previous route.
                   $shell.SendKeys($route.Keys)
                   Start-Sleep -Milliseconds 700
                   Save-SearchNowWindow -Name $route.Name -Width 960 -Height 640
@@ -221,7 +227,27 @@ jobs:
             }
           }
 
-          Write-Host "Windows UI evidence: PASS ($($required.Count) screenshots)"
+          $libraryCompact = Get-ChildItem "artifacts/runtime/searchnow-windows-library-compact-*.png" | Select-Object -First 1
+          $libraryHash = (Get-FileHash $libraryCompact.FullName -Algorithm SHA256).Hash
+          $routeScreens = @(
+            Get-ChildItem "artifacts/runtime/searchnow-windows-discover-compact-*.png" | Select-Object -First 1
+            Get-ChildItem "artifacts/runtime/searchnow-windows-downloads-compact-*.png" | Select-Object -First 1
+            Get-ChildItem "artifacts/runtime/searchnow-windows-settings-compact-*.png" | Select-Object -First 1
+          )
+
+          $routeHashes = @{}
+          foreach ($screen in $routeScreens) {
+            $hash = (Get-FileHash $screen.FullName -Algorithm SHA256).Hash
+            if ($hash -eq $libraryHash) {
+              throw "Windows UI screenshot $($screen.Name) is identical to Library; route capture did not switch surfaces."
+            }
+            if ($routeHashes.ContainsKey($hash)) {
+              throw "Windows UI screenshots $($screen.Name) and $($routeHashes[$hash]) are identical; route evidence is not trustworthy."
+            }
+            $routeHashes[$hash] = $screen.Name
+          }
+
+          Write-Host "Windows UI evidence: PASS ($($required.Count) screenshots, distinct route captures)"
 
       - name: Upload Windows runtime screenshot
         if: always()
