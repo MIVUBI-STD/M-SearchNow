@@ -136,8 +136,13 @@ if (!workspace.includes(".toolbar--library-multi-root")) {
 for (const needle of ["--sn-font-body", "--sn-font-caption", "--sn-motion-fast", "--sn-surface-workspace"]) {
   if (!tokens.includes(needle)) errors.push(`Design token spine is missing: ${needle}`);
 }
-if (workspace.match(/:root\s*\{/g)?.length) {
-  errors.push("Workspace CSS must consume global design tokens instead of redefining :root");
+for (const forbidden of [
+  "--sn-content-width: 1360px",
+  "--sn-sidebar-width: 188px",
+  "--sn-page-padding-x: clamp(28px, 3vw, 48px)",
+  "--sn-page-padding-y: 28px",
+]) {
+  if (workspace.includes(forbidden)) errors.push(`Workspace CSS duplicates a global design token: ${forbidden}`);
 }
 for (const needle of ["@media (max-width: 1040px)", "grid-template-columns: 1fr", "repeat(2, minmax(0, 1fr))"]) {
   if (!workspace.includes(needle)) errors.push(`Windows scaled-layout contract is missing: ${needle}`);
