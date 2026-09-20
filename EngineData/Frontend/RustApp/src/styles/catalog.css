@@ -56,7 +56,7 @@
   background: rgb(8 12 17 / 0.82);
   padding: 4px 7px;
   color: #dce4ee;
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-weight: 700;
   backdrop-filter: blur(8px);
 }
@@ -69,7 +69,7 @@
   overflow: hidden;
   margin: 0;
   color: var(--sn-text);
-  font-size: 12px;
+  font-size: var(--sn-font-body);
   font-weight: 650;
   line-height: 1.35;
   text-overflow: ellipsis;
@@ -80,7 +80,7 @@
   overflow: hidden;
   margin-top: 4px;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -97,13 +97,13 @@
 
 .catalog-card__facts {
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-variant-numeric: tabular-nums;
 }
 
 .catalog-card__availability {
   color: var(--sn-success);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-weight: 650;
 }
 
@@ -115,7 +115,7 @@
   gap: 4px 10px;
   margin-top: 9px;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   font-variant-numeric: tabular-nums;
 }
 
@@ -128,7 +128,7 @@
 .catalog-card__source {
   overflow: hidden;
   color: var(--sn-text-soft);
-  font-size: 10px;
+  font-size: var(--sn-font-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
