@@ -170,7 +170,7 @@ for (const needle of ["data-page-search", 'aria-keyshortcuts="Control+F"']) {
     errors.push(`Search shortcut contract is missing on one or more searchable surfaces: ${needle}`);
   }
 }
-for (const needle of ["handleLibraryShortcut", 'event.key === "Escape"', 'event.key.toLowerCase() === "a"']) {
+for (const needle of ["handleLibraryShortcut", "handleRowKeydown", "focusLibraryItem", 'event.key === "Escape"', 'event.key.toLowerCase() === "a"', '"ArrowDown"', '"Home"', "data-library-id"]) {
   if (!library.includes(needle)) errors.push(`Library keyboard selection contract is missing: ${needle}`);
 }
 
@@ -228,8 +228,11 @@ for (const needle of ["Export report", "exportDiagnosticsReport", "Diagnostics e
 for (const needle of ["Recent activity", "session-only", "Activity unavailable"]) {
   if (!activityDialog.includes(needle)) errors.push(`Activity workflow is missing: ${needle}`);
 }
-if (!sidebar.includes("Recent activity") || !sidebar.includes("onOpenActivity")) {
-  errors.push("Sidebar must expose Recent Activity without adding another product route");
+if (!sidebar.includes("Recent activity") || !sidebar.includes("onOpenActivity") || !sidebar.includes('aria-haspopup="dialog"')) {
+  errors.push("Sidebar must expose Recent Activity as a dialog utility without adding another product route");
+}
+for (const needle of ['aria-keyshortcuts=', 'aria-current=']) {
+  if (!sidebar.includes(needle)) errors.push(`Sidebar keyboard/accessibility contract is missing: ${needle}`);
 }
 if (!sharedTypes.includes('| "package"')) {
   errors.push("Frontend diagnostic component contract is missing package events");
