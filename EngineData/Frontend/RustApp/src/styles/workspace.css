@@ -561,6 +561,26 @@
   margin-bottom: 8px;
 }
 
+.library-detail__danger-impact {
+  border: 1px solid #5c4826;
+  border-radius: 8px;
+  background: #211a10;
+  padding: 9px 10px;
+}
+
+.library-detail__danger-impact small {
+  color: var(--sn-warning);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.library-detail__danger-actions {
+  display: flex !important;
+  justify-content: flex-end;
+  gap: 6px !important;
+  margin-bottom: 0 !important;
+}
+
 .library-detail__danger strong {
   font-size: 10px;
 }
