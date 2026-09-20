@@ -362,7 +362,11 @@
   {#if !runtimeReady}
     <PageState icon="search" title="Discover unavailable" message="SearchNow cannot access connected content sources right now." />
   {:else if catalogProviders.length === 0}
-    <PageState icon="search" title="No content source connected" message="Connect a supported source to browse downloadable content." />
+    <PageState
+      icon="search"
+      title="No content source available"
+      message="This SearchNow build does not have a catalog provider enabled yet. Local Library and package import remain available."
+    />
   {:else if loading && !page}
     <PageState kind="loading" title="Searching" message="Loading content from the selected source." />
   {:else if page && page.items.length > 0}
