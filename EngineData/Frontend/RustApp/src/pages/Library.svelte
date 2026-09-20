@@ -160,6 +160,7 @@
 
   function handleLibraryShortcut(event: KeyboardEvent): void {
     if (!active || !selectionMode || batchBusy) return;
+    if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
     const target = event.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return;
 
