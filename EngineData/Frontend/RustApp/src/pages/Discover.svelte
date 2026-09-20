@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Search } from "@lucide/svelte";
   import { runtimeProductFacade } from "../app/bridge/runtimeProductFacade";
-  import { catalogContentTypeLabel, formatDate } from "../app/shared/format";
+  import { catalogContentTypeLabel, formatBytes, formatDate } from "../app/shared/format";
   import type {
     CatalogContentType,
     CatalogItem,
@@ -385,11 +385,15 @@
           <div class="catalog-card__body">
             <h2 title={item.title}>{item.title}</h2>
             <div class="catalog-card__creator">{item.creatorName ? `By ${item.creatorName}` : item.provider}</div>
+            <div class="catalog-card__facts">
+              {#if item.updatedAtMs}<span>Updated {formatDate(item.updatedAtMs)}</span>{:else if item.publishedAtMs}<span>Released {formatDate(item.publishedAtMs)}</span>{/if}
+              {#if item.expectedBytes}<span>{formatBytes(item.expectedBytes)}</span>{/if}
+            </div>
             <div class="catalog-card__bottom">
-              <div class="catalog-card__facts">
-                {#if item.updatedAtMs}<span>{formatDate(item.updatedAtMs)}</span>{:else if item.publishedAtMs}<span>{formatDate(item.publishedAtMs)}</span>{/if}
-              </div>
-              {#if item.download && item.fileName}<span class="catalog-card__availability">Download</span>{/if}
+              <span class="catalog-card__source">{item.provider}</span>
+              <span class:catalog-card__availability--unavailable={!item.download || !item.fileName} class="catalog-card__availability">
+                {item.download && item.fileName ? "Available" : "Preview only"}
+              </span>
             </div>
           </div>
         </button>
