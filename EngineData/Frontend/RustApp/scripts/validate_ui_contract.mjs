@@ -328,6 +328,11 @@ for (const [label, text, needle] of [
   if (!text.includes(needle)) errors.push(`${label} loading feedback is missing: ${needle}`);
 }
 
+
+if (!appStyles.includes('button[aria-busy="true"]:disabled') || !appStyles.includes("cursor: progress")) {
+  errors.push("Async buttons must remain visually active instead of inheriting disabled opacity");
+}
+
 if (errors.length) {
   for (const error of errors) console.error(`ERROR: ${error}`);
   process.exit(1);
