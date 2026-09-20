@@ -34,7 +34,7 @@ const surfaces = [
       "Content unavailable",
       "Download could not start",
       "Preview only",
-      "Ready",
+      "Available",
     ],
   },
   {
