@@ -1,6 +1,6 @@
 # Current Validation
 
-Reviewed: **2026-09-19**
+Reviewed: **2026-09-20**
 
 ## Purpose
 
@@ -19,12 +19,13 @@ A successful current `Repository Verify` run proves:
 - Tauri adapter formatting;
 - locked frontend dependency installation;
 - frontend architecture/source-size checks;
+- UI contract, semantic design-system, motion, and product-state coverage gates;
 - Svelte/TypeScript checking;
 - production frontend build;
 - hosted Windows RustCore tests;
 - hosted Windows frontend build;
 - hosted Windows Tauri compilation;
-- release executable build and launch smoke;
+- release executable build and launch smoke, with best-effort screenshots at 960×640, 1280×720, and 1440×900;
 - NSIS installer production and artifact sanity;
 - silent install → installed launch → uninstall lifecycle;
 - uninstall preservation of user-owned AppData state;
@@ -66,6 +67,7 @@ Remote verification does **not** prove:
 - production provider authentication/session semantics;
 - Marketplace/PlayFab or other real provider endpoint compatibility;
 - production TLS/CDN behavior;
+- pixel-level correctness when hosted screenshot capture is unavailable or visually unreviewed;
 - real-world performance, memory usage or long-running stability;
 - code signing, final branding, OS reputation/SmartScreen behavior, and owner clean-machine release acceptance.
 
