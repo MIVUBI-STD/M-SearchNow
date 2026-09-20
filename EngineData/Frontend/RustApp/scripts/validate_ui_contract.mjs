@@ -12,6 +12,8 @@ const settings = await read("src/pages/Settings.svelte");
 const downloads = await read("src/pages/Downloads.svelte");
 const discover = await read("src/pages/Discover.svelte");
 const diagnosticsPanel = await read("src/components/settings/DiagnosticsPanel.svelte");
+const activityDialog = await read("src/components/ui/ActivityDialog.svelte");
+const sidebar = await read("src/components/layout/Sidebar.svelte");
 const libraryDetail = await read("src/components/library/LibraryDetailPanel.svelte");
 const downloadView = await read("src/app/shared/downloadView.ts");
 const sharedTypes = await read("src/app/shared/types.ts");
@@ -38,7 +40,7 @@ for (const [label, text] of [
 if (!dialogFocus.includes("active === last || !container.contains(active)")) {
   errors.push("Dialog focus trap must recover forward Tab when focus escapes the dialog");
 }
-for (const needle of ["handleAppShortcut", '"1": "library"', '"4": "settings"', "event.altKey"]) {
+for (const needle of ["handleAppShortcut", '"1": "library"', '"4": "settings"', "event.altKey", "[data-page-search]"]) {
   if (!app.includes(needle)) {
     errors.push(`Desktop keyboard navigation contract is missing: ${needle}`);
   }
@@ -163,6 +165,15 @@ if (!presentation.includes("@media (forced-colors: active)") || !presentation.in
   errors.push("Windows high-contrast focus contract is missing");
 }
 
+for (const needle of ["data-page-search", 'aria-keyshortcuts="Control+F"']) {
+  if (!library.includes(needle) || !discover.includes(needle) || !downloads.includes(needle)) {
+    errors.push(`Search shortcut contract is missing on one or more searchable surfaces: ${needle}`);
+  }
+}
+for (const needle of ["handleLibraryShortcut", 'event.key === "Escape"', 'event.key.toLowerCase() === "a"']) {
+  if (!library.includes(needle)) errors.push(`Library keyboard selection contract is missing: ${needle}`);
+}
+
 for (const needle of [
   "DownloadFeedback",
   "Queue order could not be changed",
@@ -211,8 +222,14 @@ if (discover.includes("downloadMessage")) {
   errors.push("Discover must use structured download feedback instead of downloadMessage");
 }
 
-for (const needle of ["Export report", "exportDiagnosticsReport", "Diagnostics exported", "Recent activity", "This list resets when the app restarts."]) {
+for (const needle of ["Export report", "exportDiagnosticsReport", "Diagnostics exported"]) {
   if (!diagnosticsPanel.includes(needle)) errors.push(`Diagnostics support workflow is missing: ${needle}`);
+}
+for (const needle of ["Recent activity", "session-only", "Activity unavailable"]) {
+  if (!activityDialog.includes(needle)) errors.push(`Activity workflow is missing: ${needle}`);
+}
+if (!sidebar.includes("Recent activity") || !sidebar.includes("onOpenActivity")) {
+  errors.push("Sidebar must expose Recent Activity without adding another product route");
 }
 if (!sharedTypes.includes('| "package"')) {
   errors.push("Frontend diagnostic component contract is missing package events");
