@@ -38,6 +38,11 @@ select:disabled {
   opacity: 0.55;
 }
 
+button[aria-busy="true"]:disabled {
+  cursor: progress;
+  opacity: 1;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: var(--sn-sidebar-width) minmax(0, 1fr);
