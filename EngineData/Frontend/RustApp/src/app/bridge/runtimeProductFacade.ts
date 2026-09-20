@@ -179,6 +179,13 @@ export const runtimeProductFacade = {
     );
   },
 
+  getStartupRouteOverride(): Promise<ProductResult<string | null>> {
+    return productCall(
+      () => runtimeApi.getStartupRouteOverride(),
+      "SearchNow could not read the startup route override.",
+    );
+  },
+
   chooseDownloadDirectory(): Promise<ProductResult<string | null>> {
     return productCall(
       () => runtimeApi.chooseDownloadDirectory(),
