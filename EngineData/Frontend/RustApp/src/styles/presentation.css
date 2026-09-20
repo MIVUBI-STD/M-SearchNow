@@ -128,3 +128,30 @@ summary:focus-visible {
   outline: 2px solid var(--sn-text-muted);
   outline-offset: 2px;
 }
+
+
+@media (forced-colors: active) {
+  button,
+  input,
+  select,
+  summary,
+  .library-row,
+  .catalog-card,
+  .download-row,
+  .notice {
+    forced-color-adjust: auto;
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid Highlight;
+  }
+
+  .nav-item--active,
+  .library-row--active,
+  .library-row--selected {
+    outline: 1px solid Highlight;
+  }
+}
