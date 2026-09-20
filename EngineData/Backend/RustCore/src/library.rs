@@ -551,8 +551,14 @@ mod tests {
             first.items.iter().map(|item| &item.id).collect::<Vec<_>>(),
             second.items.iter().map(|item| &item.id).collect::<Vec<_>>()
         );
-        assert_eq!(first.items.first().map(|item| item.title.as_str()), Some("Pack 0000"));
-        assert_eq!(first.items.last().map(|item| item.title.as_str()), Some("Pack 0499"));
+        assert_eq!(
+            first.items.first().map(|item| item.title.as_str()),
+            Some("Pack 0000")
+        );
+        assert_eq!(
+            first.items.last().map(|item| item.title.as_str()),
+            Some("Pack 0499")
+        );
     }
 
     #[test]
