@@ -797,30 +797,26 @@
       />
       {/if}
     </div>
+  {:else if snapshot?.minecraft.state === "notFound"}
+    <div class="library-setup-state">
+      <PageState
+        marker="01"
+        title="Minecraft wasn't detected"
+        message="Choose your Minecraft data folder manually, then SearchNow will scan it again."
+        actionLabel="Locate Minecraft"
+        actionDisabled={locationBusy}
+        onAction={locateMinecraftRoot}
+      />
+    </div>
   {:else if snapshot}
     <PageState
       marker="01"
-      title={snapshot.library.items.length
-        ? "No matching content"
-        : snapshot.minecraft.state === "notFound"
-          ? "Minecraft wasn't detected"
-          : "No Minecraft content found"}
+      title={snapshot.library.items.length ? "No matching content" : "No Minecraft content found"}
       message={snapshot.library.items.length
         ? "Change the search or filters to see other content."
-        : snapshot.minecraft.state === "notFound"
-          ? "Choose your Minecraft data folder manually, then SearchNow will scan it again."
-          : snapshot.minecraft.message}
-      actionLabel={snapshot.library.items.length && controlsChanged
-        ? "Reset"
-        : snapshot.minecraft.state === "notFound"
-          ? "Locate Minecraft"
-          : null}
-      actionDisabled={locationBusy}
-      onAction={snapshot.library.items.length && controlsChanged
-        ? resetControls
-        : snapshot.minecraft.state === "notFound"
-          ? locateMinecraftRoot
-          : null}
+        : snapshot.minecraft.message}
+      actionLabel={snapshot.library.items.length && controlsChanged ? "Reset" : null}
+      onAction={snapshot.library.items.length && controlsChanged ? resetControls : null}
     />
   {/if}
 </section>

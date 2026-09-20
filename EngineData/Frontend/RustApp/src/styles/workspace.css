@@ -177,6 +177,16 @@
 }
 
 /* Library */
+.library-setup-state {
+  width: min(720px, 100%);
+  margin-top: 2px;
+}
+
+.library-setup-state .empty-panel {
+  min-height: 156px;
+  padding: 24px 28px;
+}
+
 .library-summary {
   display: flex;
   flex-wrap: wrap;

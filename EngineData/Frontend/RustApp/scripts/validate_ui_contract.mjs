@@ -54,6 +54,7 @@ for (const needle of [
   "Connect SearchNow to your Minecraft data folder.",
   'snapshot.library.items.length > 0',
   "Minecraft location required",
+  "library-setup-state",
 ]) {
   if (!library.includes(needle)) errors.push(`Library UX contract is missing: ${needle}`);
 }
@@ -108,6 +109,10 @@ const responsiveWidths = [...workspace.matchAll(/@media \(max-width: (\d+)px\)/g
   .map((match) => Number(match[1]));
 if (!responsiveWidths.some((width) => width >= minWidth)) {
   errors.push(`Desktop responsive rules are unreachable at configured minWidth ${minWidth}px`);
+}
+
+if (!workspace.includes(".library-setup-state .empty-panel")) {
+  errors.push("Library Minecraft recovery must use the focused setup-state layout");
 }
 
 if (!workspace.includes(".toolbar--library-multi-root")) {
