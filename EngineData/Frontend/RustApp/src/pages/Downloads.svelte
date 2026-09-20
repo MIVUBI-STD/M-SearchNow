@@ -376,7 +376,7 @@
       onAction={controlsChanged ? resetControls : null}
     />
   {:else if snapshot}
-    <div class="download-queue" aria-live="polite">
+    <div class="download-queue">
       {#each visibleJobs as job (job.id)}
         {@const percent = progressPercent(job.progress.downloadedBytes, job.progress.totalBytes)}
         {@const rate = transferEstimator.rate(job)}
