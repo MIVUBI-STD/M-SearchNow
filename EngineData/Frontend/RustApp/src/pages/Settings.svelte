@@ -286,7 +286,7 @@
     <div>
       <span class="eyebrow">Application</span>
       <h1>Settings</h1>
-      <p>Configure Minecraft locations and download behavior.</p>
+      <p>Configure Minecraft storage, downloads, backups, and advanced behavior.</p>
     </div>
     <button class="button button--primary" type="button" onclick={save} disabled={!active || !snapshot?.ready || loading || saving || scanning || exportDirectoryBusy || !dirty || bandwidthLimitInvalid}>
       {#if saved && !saving}<Check size={15} aria-hidden="true" />{:else}<Save size={15} aria-hidden="true" />{/if}
@@ -322,7 +322,7 @@
     <nav class="settings-nav" aria-label="Settings sections">
       <a href="#settings-minecraft">Minecraft</a>
       <a href="#settings-downloads">Downloads</a>
-      <a href="#settings-storage">Detected storage</a>
+      <a href="#settings-storage">Minecraft storage</a>
       <a href="#settings-privacy">Privacy</a>
       <a href="#settings-advanced">Advanced</a>
     </nav>
@@ -414,9 +414,11 @@
             max="1024"
             step="0.25"
             placeholder="Unlimited"
+            aria-invalid={bandwidthLimitInvalid}
+            aria-describedby="bandwidth-limit-help"
             disabled={!active || !snapshot?.ready || loading || saving || scanning}
           />
-          <small>Leave empty for unlimited speed. One global limit is shared fairly by concurrent downloads.</small>
+          <small id="bandwidth-limit-help">{bandwidthLimitInvalid ? "Enter a value from 0.0625 to 1024 MiB/s, or leave it empty." : "Leave empty for unlimited speed. One global limit is shared fairly by concurrent downloads."}</small>
         </label>
 
         <div class="settings-subsection">
@@ -462,7 +464,7 @@
 
       <section class="settings-section" id="settings-storage">
         <div class="settings-section__heading">
-          <div><h2>Detected storage</h2><p>Locations found by SearchNow on this device.</p></div>
+          <div><h2>Minecraft storage</h2><p>Locations SearchNow found on this device.</p></div>
           <StatePill state={discoveryTone} label={discoveryLabel} />
         </div>
         <p class="section-copy">{discovery?.message ?? "Minecraft locations have not been checked yet."}</p>
