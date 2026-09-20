@@ -58,6 +58,8 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
   settings_save_failed: "SearchNow could not save your settings.",
   settings_download_directory_invalid: "The default download folder is not valid. Choose another folder or use Ask every time.",
   settings_export_directory_invalid: "The default export folder is not valid. Choose another folder or use Ask every time.",
+  package_path_invalid: "Drop a supported .mcpack, .mcaddon, .mcworld, or unpacked Minecraft content folder.",
+  package_inspection_task_failed: "SearchNow could not inspect the dropped Minecraft package.",
   package_import_conflict: "This package is already installed in the selected Minecraft storage.",
   package_import_not_ready: "This package must pass inspection before it can be imported.",
   package_import_root_unavailable: "The selected Minecraft storage is no longer available.",

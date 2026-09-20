@@ -83,6 +83,7 @@ for (const path of await collect(resolve(appRoot, "src"))) {
   const rel = relative(appRoot, path).replaceAll("\\", "/");
   const text = await readFile(path, "utf8");
   if (text.includes("@tauri-apps/api/core") && rel !== "src/app/bridge/runtimeApi.ts") errors.push(`${rel}: direct Tauri invoke import is reserved for runtimeApi.ts`);
+  if (text.includes("@tauri-apps/api/webview") && rel !== "src/app/bridge/runtimeApi.ts") errors.push(`${rel}: direct Tauri webview import is reserved for runtimeApi.ts`);
   if (rel.startsWith("src/pages/") && text.includes("runtimeApi")) errors.push(`${rel}: pages must not call runtimeApi directly`);
 }
 
@@ -110,6 +111,7 @@ const commandPaths = [
   "settings.rs",
   "minecraft.rs",
   "library.rs",
+  "package.rs",
   "catalog.rs",
   "download.rs",
 ];
@@ -151,8 +153,12 @@ if (!catalogCommand.includes("CatalogRequest") || !catalogCommand.includes("quer
 const registry = await readFile(resolve(appRoot, "src-tauri/src/commands/registry.rs"), "utf8");
 if (!registry.includes("queue_catalog_download")) errors.push("Tauri registry must expose queue_catalog_download instead of raw transport queuing");
 if (!registry.includes("query_catalog")) errors.push("Tauri registry must expose the provider-neutral catalog query command");
+if (!registry.includes("inspect_package_path")) errors.push("Tauri registry must expose inspect_package_path for OS drag/drop inspection");
 
 const runtimeApiSource = await readFile(resolve(appRoot, "src/app/bridge/runtimeApi.ts"), "utf8");
+if (!runtimeApiSource.includes("getCurrentWebview") || !runtimeApiSource.includes("onDragDropEvent")) {
+  errors.push("runtimeApi.ts must own the Tauri webview drag/drop event boundary");
+}
 const registeredCommands = new Set(
   [...registry.matchAll(/crate::commands::[a-z_]+::([a-z_]+)/g)].map((match) => match[1]),
 );

@@ -6,6 +6,7 @@ use searchnow_core::{
         PackageReplaceRequest,
     },
 };
+use std::path::PathBuf;
 use tauri::{AppHandle, Runtime, State};
 use tauri_plugin_dialog::DialogExt;
 
@@ -38,6 +39,66 @@ pub async fn choose_and_inspect_package<R: Runtime>(
             )
         })?
         .map(Some)
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn inspect_package_path(
+    state: State<'_, SearchNowBackendRuntime>,
+    path: String,
+) -> Result<PackageInspection, CommandError> {
+    let path = PathBuf::from(path);
+    if !path.is_absolute() {
+        return Err(CommandError::new(
+            "package_path_invalid",
+            "Dropped package path must be absolute.",
+        ));
+    }
+
+    let metadata = std::fs::symlink_metadata(&path).map_err(|_| {
+        CommandError::new(
+            "package_path_invalid",
+            "The dropped package or folder is no longer available.",
+        )
+    })?;
+    if metadata.file_type().is_symlink() {
+        return Err(CommandError::new(
+            "package_path_invalid",
+            "Symbolic-link package drops are not supported.",
+        ));
+    }
+    if metadata.is_file() {
+        let supported = path
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .is_some_and(|extension| {
+                matches!(
+                    extension.to_ascii_lowercase().as_str(),
+                    "mcpack" | "mcaddon" | "mcworld"
+                )
+            });
+        if !supported {
+            return Err(CommandError::new(
+                "package_path_invalid",
+                "Drop a .mcpack, .mcaddon, .mcworld, or an unpacked Minecraft content folder.",
+            ));
+        }
+    } else if !metadata.is_dir() {
+        return Err(CommandError::new(
+            "package_path_invalid",
+            "The dropped path is not a supported file or folder.",
+        ));
+    }
+
+    let runtime = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || runtime.inspect_package(&path))
+        .await
+        .map_err(|error| {
+            CommandError::new(
+                "package_inspection_task_failed",
+                format!("Dropped package inspection task failed: {error}"),
+            )
+        })?
         .map_err(CommandError::from)
 }
 

@@ -9,6 +9,11 @@ export type ProductResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: ProductError };
 
+export type DesktopDropEvent =
+  | { type: "over" }
+  | { type: "drop"; paths: string[] }
+  | { type: "cancel" };
+
 export type RuntimeStatus = {
   appReady: boolean;
   appVersion: string;

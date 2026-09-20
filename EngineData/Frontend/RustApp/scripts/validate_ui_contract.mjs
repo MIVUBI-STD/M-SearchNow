@@ -43,6 +43,9 @@ for (const needle of [
   "Locate Minecraft",
   "locateMinecraftRoot",
   "library-workspace--selection",
+  "Drop to inspect",
+  "subscribeDesktopDrops",
+  "inspectDroppedPackage",
 ]) {
   if (!library.includes(needle)) errors.push(`Library UX contract is missing: ${needle}`);
 }
@@ -66,17 +69,26 @@ if (!runtimeApi.includes("choose_minecraft_directory")) {
 if (!runtimeApi.includes("choose_export_directory")) {
   errors.push("runtimeApi is missing choose_export_directory");
 }
+if (!runtimeApi.includes("inspect_package_path") || !runtimeApi.includes("onDragDropEvent")) {
+  errors.push("runtimeApi is missing the package drag/drop boundary");
+}
 if (!registry.includes("choose_minecraft_directory")) {
   errors.push("Tauri registry is missing choose_minecraft_directory");
 }
 if (!registry.includes("choose_export_directory")) {
   errors.push("Tauri registry is missing choose_export_directory");
 }
+if (!registry.includes("inspect_package_path")) {
+  errors.push("Tauri registry is missing inspect_package_path");
+}
 if (!facade.includes("chooseMinecraftDirectory")) {
   errors.push("runtimeProductFacade is missing Minecraft directory picker");
 }
 if (!facade.includes("chooseExportDirectory")) {
   errors.push("runtimeProductFacade is missing export directory picker");
+}
+if (!facade.includes("inspectPackagePath") || !facade.includes("subscribeDesktopDrops")) {
+  errors.push("runtimeProductFacade is missing package drag/drop support");
 }
 
 const minWidth = Number(tauriConfig?.app?.windows?.[0]?.minWidth ?? 0);

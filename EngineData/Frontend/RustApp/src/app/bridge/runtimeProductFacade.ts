@@ -4,6 +4,7 @@ import type {
   BackendDiagnosticsSnapshot,
   CatalogPage,
   CatalogRequest,
+  DesktopDropEvent,
   DownloadJob,
   DownloadManagerSnapshot,
   LocalBackendSnapshot,
@@ -117,6 +118,22 @@ export const runtimeProductFacade = {
     return productCall(
       () => runtimeApi.chooseAndInspectPackageFolder(),
       "SearchNow could not inspect this Minecraft package folder.",
+    );
+  },
+
+  inspectPackagePath(path: string): Promise<ProductResult<PackageInspection>> {
+    return productCall(
+      () => runtimeApi.inspectPackagePath(path),
+      "SearchNow could not inspect the dropped Minecraft package.",
+    );
+  },
+
+  subscribeDesktopDrops(
+    handler: (event: DesktopDropEvent) => void,
+  ): Promise<ProductResult<() => void>> {
+    return productCall(
+      () => runtimeApi.subscribeDesktopDrops(handler),
+      "SearchNow could not listen for dropped Minecraft packages.",
     );
   },
 

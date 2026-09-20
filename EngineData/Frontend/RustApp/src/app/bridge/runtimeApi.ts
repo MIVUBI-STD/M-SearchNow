@@ -1,10 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import type {
   AppSettings,
   BackendDiagnosticsSnapshot,
   BackendRuntimeSnapshot,
   CatalogPage,
   CatalogRequest,
+  DesktopDropEvent,
   DownloadJob,
   DownloadManagerSnapshot,
   LocalBackendSnapshot,
@@ -65,6 +67,23 @@ export const runtimeApi = {
 
   chooseAndInspectPackageFolder(): Promise<PackageInspection | null> {
     return invoke<PackageInspection | null>("choose_and_inspect_package_folder");
+  },
+
+  inspectPackagePath(path: string): Promise<PackageInspection> {
+    return invoke<PackageInspection>("inspect_package_path", { path });
+  },
+
+  subscribeDesktopDrops(handler: (event: DesktopDropEvent) => void): Promise<() => void> {
+    return getCurrentWebview().onDragDropEvent((event) => {
+      const payload = event.payload;
+      if (payload.type === "drop") {
+        handler({ type: "drop", paths: payload.paths });
+      } else if (payload.type === "over") {
+        handler({ type: "over" });
+      } else {
+        handler({ type: "cancel" });
+      }
+    });
   },
 
   importPackage(request: PackageImportRequest): Promise<PackageImportResult> {

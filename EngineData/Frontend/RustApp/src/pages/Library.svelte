@@ -41,6 +41,7 @@
   let selectedIds = $state<string[]>([]);
   let batchBusy = $state(false);
   let locationBusy = $state(false);
+  let dropActive = $state(false);
   let feedback = $state<LibraryFeedback | null>(null);
   let query = $state("");
   let filter = $state<LibraryFilter>("all");
@@ -320,6 +321,25 @@
     importBusy = false;
   }
 
+  async function inspectDroppedPackage(path: string): Promise<void> {
+    if (!runtimeReady || inspectionBusy || importBusy || packageInspection !== null) return;
+    inspectionBusy = true;
+    dropActive = false;
+    feedback = null;
+
+    const result = await runtimeProductFacade.inspectPackagePath(path);
+    if (result.ok) {
+      packageInspection = result.data;
+    } else {
+      feedback = {
+        tone: "error",
+        title: "Dropped item could not be inspected",
+        message: result.error.message,
+      };
+    }
+    inspectionBusy = false;
+  }
+
   async function refresh(): Promise<boolean> {
     if (!runtimeReady || loading) return false;
     loading = true;
@@ -424,6 +444,62 @@
     selectedIds = [];
     batchBusy = false;
     locationBusy = false;
+    dropActive = false;
+  });
+
+  $effect(() => {
+    if (!active || !runtimeReady) {
+      dropActive = false;
+      return;
+    }
+
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+
+    void runtimeProductFacade
+      .subscribeDesktopDrops((event) => {
+        if (disposed) return;
+
+        if (event.type === "over") {
+          dropActive = packageInspection === null && !inspectionBusy && !importBusy;
+          return;
+        }
+
+        dropActive = false;
+        if (event.type !== "drop" || packageInspection !== null || inspectionBusy || importBusy) return;
+
+        if (event.paths.length !== 1) {
+          feedback = {
+            tone: "warning",
+            title: "Drop one item at a time",
+            message: "Drop one Minecraft package or unpacked content folder so SearchNow can inspect it safely.",
+          };
+          return;
+        }
+
+        void inspectDroppedPackage(event.paths[0]);
+      })
+      .then((result) => {
+        if (disposed) {
+          if (result.ok) result.data();
+          return;
+        }
+        if (result.ok) {
+          unlisten = result.data;
+        } else {
+          feedback = {
+            tone: "warning",
+            title: "Drag-and-drop unavailable",
+            message: "Use Import file or Import folder instead.",
+          };
+        }
+      });
+
+    return () => {
+      disposed = true;
+      dropActive = false;
+      unlisten?.();
+    };
   });
 
   $effect(() => {
@@ -433,6 +509,15 @@
 </script>
 
 <section class="page" hidden={!active}>
+  {#if dropActive}
+    <div class="library-drop-overlay" role="status" aria-live="polite">
+      <div class="library-drop-overlay__panel">
+        <Archive size={24} aria-hidden="true" />
+        <strong>Drop to inspect</strong>
+        <span>.mcpack, .mcaddon, .mcworld, or one unpacked Minecraft content folder</span>
+      </div>
+    </div>
+  {/if}
   <div class="page-heading page-heading--actions">
     <div>
       <h1>Library</h1>
