@@ -316,7 +316,7 @@
     <div class="downloads-controls">
       <label class="search-field search-field--downloads">
         <Search size={15} aria-hidden="true" />
-        <input bind:value={query} type="search" placeholder="Search downloads" aria-label="Search downloads" />
+        <input data-page-search aria-keyshortcuts="Control+F" bind:value={query} type="search" placeholder="Search downloads" aria-label="Search downloads" />
       </label>
       <div class="downloads-tabs" role="group" aria-label="Download status">
         <button class:downloads-tab--active={filter === "all"} class="downloads-tab" type="button" onclick={() => (filter = "all")}>All</button>
