@@ -641,9 +641,7 @@
       <div class="library-summary">
         {#if snapshot?.minecraft.state === "found"}
           <span>{snapshot.library.summary.total} items</span>
-          <span>{snapshot.library.summary.worlds} worlds</span>
-          <span>{snapshot.library.summary.behaviorPacks + snapshot.library.summary.resourcePacks + snapshot.library.summary.skinPacks} packs</span>
-          <span>{Math.max(0, snapshot.library.summary.total - attentionIds.size)} healthy</span>
+          <span>{snapshot.library.summary.worlds} worlds · {snapshot.library.summary.behaviorPacks + snapshot.library.summary.resourcePacks + snapshot.library.summary.skinPacks} packs</span>
           {#if attentionIds.size > 0}
             <span class="library-summary__warning">{attentionIds.size} need review</span>
           {/if}
@@ -806,9 +804,9 @@
           </div>
 
           <div class="library-row__status">
-            <span class:state-text--warning={attentionIds.has(item.id)} class="state-text">
-              {attentionIds.has(item.id) ? "Needs review" : "Healthy"}
-            </span>
+            {#if attentionIds.has(item.id)}
+              <span class="state-text state-text--warning">Needs review</span>
+            {/if}
             {#if item.version.length}<span class="library-row__version">v{item.version.join(".")}</span>{/if}
           </div>
         </button>
