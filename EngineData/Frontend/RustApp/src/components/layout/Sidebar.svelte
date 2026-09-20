@@ -39,7 +39,7 @@
         class="nav-item"
         type="button"
         aria-current={route === item.id ? "page" : undefined}
-        title={item.label}
+        title={`${item.label} · Alt+${primaryRoutes.findIndex((routeItem) => routeItem.id === item.id) + 1}`}
         onclick={() => onNavigate(item.id)}
       >
         <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
@@ -58,7 +58,7 @@
         class="nav-item"
         type="button"
         aria-current={route === settingsRoute.id ? "page" : undefined}
-        title={settingsRoute.label}
+        title={`${settingsRoute.label} · Alt+4`}
         onclick={() => onNavigate(settingsRoute.id)}
       >
         <SettingsIcon size={18} strokeWidth={1.8} aria-hidden="true" />
