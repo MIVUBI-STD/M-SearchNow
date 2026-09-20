@@ -199,6 +199,30 @@ jobs:
 
           Stop-Process -Id $process.Id -Force
 
+      - name: Verify Windows UI evidence
+        shell: pwsh
+        run: |
+          $required = @(
+            "searchnow-windows-library-compact-*.png",
+            "searchnow-windows-library-standard-*.png",
+            "searchnow-windows-library-default-*.png",
+            "searchnow-windows-discover-compact-*.png",
+            "searchnow-windows-downloads-compact-*.png",
+            "searchnow-windows-settings-compact-*.png"
+          )
+
+          foreach ($pattern in $required) {
+            $matches = Get-ChildItem "artifacts/runtime/$pattern" -ErrorAction SilentlyContinue
+            if ($matches.Count -ne 1) {
+              throw "Expected exactly one Windows UI screenshot matching $pattern, found $($matches.Count)."
+            }
+            if ($matches[0].Length -le 0) {
+              throw "Windows UI screenshot $($matches[0].Name) is empty."
+            }
+          }
+
+          Write-Host "Windows UI evidence: PASS ($($required.Count) screenshots)"
+
       - name: Upload Windows runtime screenshot
         if: always()
         uses: actions/upload-artifact@v4.6.2
