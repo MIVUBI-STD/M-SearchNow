@@ -10,8 +10,9 @@
   text-align: left;
   cursor: pointer;
   transition:
-    border-color 130ms ease,
-    background-color 130ms ease;
+    border-color var(--sn-motion-fast) var(--sn-ease-out),
+    background-color var(--sn-motion-fast) var(--sn-ease-out),
+    transform var(--sn-motion-fast) var(--sn-ease-out);
 }
 
 .catalog-card:hover {
@@ -125,13 +126,6 @@
   content: "·";
 }
 
-.catalog-card__source {
-  overflow: hidden;
-  color: var(--sn-text-soft);
-  font-size: var(--sn-font-caption);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .catalog-card__availability--unavailable {
   color: var(--sn-text-soft);
