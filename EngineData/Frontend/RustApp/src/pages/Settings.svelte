@@ -288,9 +288,16 @@
       <h1>Settings</h1>
       <p>Configure Minecraft storage, downloads, backups, and advanced behavior.</p>
     </div>
-    <button class="button button--primary" type="button" onclick={save} disabled={!active || !snapshot?.ready || loading || saving || scanning || exportDirectoryBusy || !dirty || bandwidthLimitInvalid}>
-      {#if saved && !saving}<Check size={15} aria-hidden="true" />{:else}<Save size={15} aria-hidden="true" />{/if}
-      {saving ? "Saving" : saved ? "Saved" : "Save changes"}
+    <button
+      class:button--primary={dirty || saving}
+      class:button--secondary={!dirty && !saving}
+      class="button"
+      type="button"
+      onclick={save}
+      disabled={!active || !snapshot?.ready || loading || saving || scanning || exportDirectoryBusy || !dirty || bandwidthLimitInvalid}
+    >
+      {#if loaded && !dirty && !saving}<Check size={15} aria-hidden="true" />{:else}<Save size={15} aria-hidden="true" />{/if}
+      {saving ? "Saving" : loaded && !dirty ? "Saved" : "Save changes"}
     </button>
   </div>
 
