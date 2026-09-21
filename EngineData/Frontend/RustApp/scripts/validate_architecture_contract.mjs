@@ -29,6 +29,7 @@ const backendRequired = [
   "src/lib.rs",
   "src/app_runtime.rs",
   "src/application_content.rs",
+  "src/application_download.rs",
   "src/identity.rs",
   "src/settings.rs",
   "src/minecraft.rs",
@@ -224,6 +225,7 @@ if (!lib.includes("mod storage;") || lib.includes("pub mod storage;")) errors.pu
 
 const appRuntime = await readFile(resolve(backendRoot, "src/app_runtime.rs"), "utf8");
 const applicationContent = await readFile(resolve(backendRoot, "src/application_content.rs"), "utf8");
+const applicationDownload = await readFile(resolve(backendRoot, "src/application_download.rs"), "utf8");
 const frontendTypes = await readFile(resolve(appRoot, "src/app/shared/types.ts"), "utf8");
 const settingsModel = await readFile(resolve(backendRoot, "src/settings.rs"), "utf8");
 const catalogModel = await readFile(resolve(backendRoot, "src/catalog/model.rs"), "utf8");
@@ -253,6 +255,28 @@ for (const forbidden of [
     errors.push(`app_runtime.rs must delegate content/package implementation instead of owning ${forbidden}`);
   }
 }
+for (const forbiddenDownload of [
+  "self.downloads.pause(",
+  "self.downloads.resume(",
+  "self.downloads.queue_to(",
+  "DownloadRequest {",
+]) {
+  if (appRuntime.includes(forbiddenDownload)) {
+    errors.push(`app_runtime.rs must delegate download implementation instead of owning ${forbiddenDownload}`);
+  }
+}
+for (const requiredDownload of [
+  "DownloadApplicationService",
+  "queue_catalog_download",
+  "completed_download_directory",
+  "pause_download",
+  "retry_download",
+]) {
+  if (!applicationDownload.includes(requiredDownload)) {
+    errors.push(`application_download.rs is missing download ownership contract ${requiredDownload}`);
+  }
+}
+
 for (const requiredContent of [
   "ContentApplicationService",
   "replace_single_pack(",
