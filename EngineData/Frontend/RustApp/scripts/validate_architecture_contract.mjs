@@ -372,6 +372,7 @@ const frontendTypes = await readFile(resolve(appRoot, "src/app/shared/types.ts")
 const settingsModel = await readFile(resolve(backendRoot, "src/settings.rs"), "utf8");
 const catalogModel = await readFile(resolve(backendRoot, "src/catalog/model.rs"), "utf8");
 const downloadModule = await readFile(resolve(backendRoot, "src/download/mod.rs"), "utf8");
+const diagnosticsModel = await readFile(resolve(backendRoot, "src/diagnostics.rs"), "utf8");
 for (const needle of [
   "SearchNowBackendRuntime",
   "SettingsStore::new",
@@ -491,7 +492,6 @@ if (frontendTypes.includes("diagnostics: BackendDiagnosticsSnapshot;\n};\n\nexpo
 if (!frontendTypes.includes('| "package"')) {
   errors.push("frontend DiagnosticComponent must include active package runtime diagnostics");
 }
-const diagnosticsModel = await readFile(resolve(backendRoot, "src/diagnostics.rs"), "utf8");
 if (!diagnosticsModel.includes("Package,")) {
   errors.push("backend DiagnosticComponent must retain Package while package operations are recorded");
 }
