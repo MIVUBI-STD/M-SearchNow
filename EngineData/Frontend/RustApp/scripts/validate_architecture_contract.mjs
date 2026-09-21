@@ -118,10 +118,35 @@ for (const needle of [
     errors.push(`application change contract is missing: ${needle}`);
   }
 }
+for (const needle of [
+  "previous.minecraft.rootOverride !== next.minecraft.rootOverride",
+  "previous.minecraft.includeDevelopmentContent !== next.minecraft.includeDevelopmentContent",
+  "previous.download.bandwidthLimitBytesPerSecond !== next.download.bandwidthLimitBytesPerSecond",
+  "library: minecraftChanged",
+  "downloads: downloadChanged",
+]) {
+  if (!applicationChanges.includes(needle)) {
+    errors.push(`settings ChangeSet semantics are missing: ${needle}`);
+  }
+}
+
 const productFacade = await readFile(resolve(appRoot, "src/app/bridge/runtimeProductFacade.ts"), "utf8");
 if (!productFacade.includes("productMutationCall")) {
   errors.push("runtimeProductFacade must publish typed changes through productMutationCall");
 }
+const libraryPage = await readFile(resolve(appRoot, "src/pages/Library.svelte"), "utf8");
+for (const needle of ["settings.data,", "settingsResult.data,", "!changes.minecraft || locationBusy"]) {
+  if (!libraryPage.includes(needle)) {
+    errors.push(`Library selective invalidation contract is missing: ${needle}`);
+  }
+}
+const settingsPage = await readFile(resolve(appRoot, "src/pages/Settings.svelte"), "utf8");
+for (const needle of ["previousSettings", "saveSettings({", "}, previousSettings)", "changes.settings"]) {
+  if (!settingsPage.includes(needle)) {
+    errors.push(`Settings selective invalidation contract is missing: ${needle}`);
+  }
+}
+
 for (const page of ["Library.svelte", "Settings.svelte"]) {
   const pageSource = await readFile(resolve(appRoot, `src/pages/${page}`), "utf8");
   if (!pageSource.includes("subscribeApplicationChanges")) {
