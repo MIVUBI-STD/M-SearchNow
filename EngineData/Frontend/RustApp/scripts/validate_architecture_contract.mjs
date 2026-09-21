@@ -126,6 +126,11 @@ for (const needle of [
 if (applicationEvents.includes("Record<string")) {
   errors.push("application events must remain a closed union instead of a free-form event map");
 }
+for (const forbidden of ["eventName: string", "kind: string", "Map<string", "Record<string"]) {
+  if (applicationEvents.includes(forbidden)) {
+    errors.push(`application events must not become a free-form bus: ${forbidden}`);
+  }
+}
 
 const applicationChanges = await readFile(resolve(appRoot, "src/app/state/applicationChanges.ts"), "utf8");
 for (const needle of [
