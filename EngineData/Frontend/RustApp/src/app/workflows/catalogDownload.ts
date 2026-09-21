@@ -90,13 +90,16 @@ export async function startCatalogDownloadWorkflow(
 
   let preferenceWarning: string | null = null;
   if (recoveredDefaultDirectory && settings.ok) {
-    const save = await runtimeProductFacade.saveSettings({
-      ...settings.data,
-      download: {
-        ...settings.data.download,
-        defaultDirectory: recoveredDefaultDirectory,
+    const save = await runtimeProductFacade.saveSettings(
+      {
+        ...settings.data,
+        download: {
+          ...settings.data.download,
+          defaultDirectory: recoveredDefaultDirectory,
+        },
       },
-    });
+      settings.data,
+    );
     if (!save.ok) preferenceWarning = save.error.message;
   }
 
