@@ -281,7 +281,7 @@ impl SearchNowBackendRuntime {
         })
     }
 
-    pub fn snapshot(&self) -> BackendResult<BackendRuntimeSnapshot> {
+    pub fn snapshot(&self) -> BackendRuntimeSnapshot {
         let started = Instant::now();
         let providers = self.provider_status();
         let diagnostics = self.diagnostics_snapshot();
@@ -303,7 +303,7 @@ impl SearchNowBackendRuntime {
             "Backend runtime snapshot could not complete.",
             DiagnosticSeverity::Error,
         );
-        Ok(snapshot)
+        snapshot
     }
 
     pub fn download_snapshot(&self) -> BackendResult<DownloadManagerSnapshot> {
