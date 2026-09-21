@@ -10,6 +10,7 @@ const required = [
   "src/app/bridge/runtimeProductFacade.ts",
   "src/app/workflows/catalogDownload.ts",
   "src/app/state/applicationChanges.ts",
+  "src/app/state/applicationEvents.ts",
   "src/app/shared/format.ts",
   "src/pages/Library.svelte",
   "src/pages/Discover.svelte",
@@ -107,6 +108,25 @@ for (const path of await collect(resolve(appRoot, "src"))) {
   }
 }
 
+const applicationEvents = await readFile(resolve(appRoot, "src/app/state/applicationEvents.ts"), "utf8");
+for (const needle of [
+  "ApplicationEvent",
+  "settingsChanged",
+  "packageImported",
+  "packageReplaced",
+  "contentRemoved",
+  "downloadChanged",
+  "providerStateChanged",
+  "changesForApplicationEvent",
+]) {
+  if (!applicationEvents.includes(needle)) {
+    errors.push(`bounded application event contract is missing: ${needle}`);
+  }
+}
+if (applicationEvents.includes("Record<string")) {
+  errors.push("application events must remain a closed union instead of a free-form event map");
+}
+
 const applicationChanges = await readFile(resolve(appRoot, "src/app/state/applicationChanges.ts"), "utf8");
 for (const needle of [
   "ApplicationChangeSet",
@@ -131,8 +151,16 @@ for (const needle of [
 }
 
 const productFacade = await readFile(resolve(appRoot, "src/app/bridge/runtimeProductFacade.ts"), "utf8");
-if (!productFacade.includes("productMutationCall")) {
-  errors.push("runtimeProductFacade must publish typed changes through productMutationCall");
+for (const needle of ["productQueryCall", "productActionCall", "productCommandCall"]) {
+  if (!productFacade.includes(needle)) {
+    errors.push(`runtimeProductFacade operation semantics are missing: ${needle}`);
+  }
+}
+if (productFacade.includes("productMutationCall")) {
+  errors.push("runtimeProductFacade must use command semantics instead of the legacy mutation helper");
+}
+if (!productFacade.includes("publishApplicationEvent")) {
+  errors.push("state-changing product commands must publish bounded application events");
 }
 const libraryPage = await readFile(resolve(appRoot, "src/pages/Library.svelte"), "utf8");
 for (const needle of ["settings.data,", "settingsResult.data,", "!changes.minecraft || locationBusy"]) {
