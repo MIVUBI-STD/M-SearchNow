@@ -8,11 +8,7 @@ use crate::{
     error::{BackendError, BackendResult},
 };
 use serde::Deserialize;
-use std::{
-    path::PathBuf,
-    sync::Arc,
-    time::Instant,
-};
+use std::{path::PathBuf, sync::Arc, time::Instant};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -33,7 +29,10 @@ pub(crate) struct DownloadApplicationService {
 
 impl DownloadApplicationService {
     pub(crate) fn new(runtime: DownloadExecutionRuntime, diagnostics: DiagnosticsBuffer) -> Self {
-        Self { runtime, diagnostics }
+        Self {
+            runtime,
+            diagnostics,
+        }
     }
 
     pub(crate) fn set_bandwidth_limit(&self, limit: Option<u64>) {
