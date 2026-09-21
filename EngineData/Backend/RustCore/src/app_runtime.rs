@@ -58,7 +58,7 @@ impl SearchNowBackendPaths {
 pub struct DiagnosticsSupportReport {
     pub schema_version: u32,
     pub runtime: RuntimeStatus,
-    pub health: BackendHealthSnapshot,
+    pub diagnostics: BackendDiagnosticsSnapshot,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -68,7 +68,7 @@ pub struct BackendRuntimeSnapshot {
     pub lifecycle: ApplicationLifecycleState,
     pub capabilities: ApplicationCapabilities,
     pub providers: Vec<ProviderRuntimeStatus>,
-    pub diagnostics: BackendDiagnosticsSnapshot,
+    pub health: BackendHealthSnapshot,
 }
 
 pub use crate::application_download::QueueCatalogDownloadRequest;
