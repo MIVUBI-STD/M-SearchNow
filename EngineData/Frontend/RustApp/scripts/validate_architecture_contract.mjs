@@ -159,6 +159,11 @@ for (const needle of [
     errors.push(`application change contract is missing: ${needle}`);
   }
 }
+for (const forbiddenChangeDomain of ["catalog?: boolean", "providers?: boolean"]) {
+  if (applicationChanges.includes(forbiddenChangeDomain)) {
+    errors.push(`application ChangeSet must not retain unused domain: ${forbiddenChangeDomain}`);
+  }
+}
 for (const needle of [
   "previous.minecraft.rootOverride !== next.minecraft.rootOverride",
   "previous.minecraft.includeDevelopmentContent !== next.minecraft.includeDevelopmentContent",
