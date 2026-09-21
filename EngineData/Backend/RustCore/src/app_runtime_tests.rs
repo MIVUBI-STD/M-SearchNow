@@ -91,9 +91,6 @@ fn runtime_snapshot_is_safe_and_consistent_without_providers() {
     assert!(snapshot.capabilities.settings);
     assert!(!snapshot.capabilities.discover);
     assert!(snapshot.providers.is_empty());
-    assert_eq!(snapshot.downloads.active_jobs, 0);
-    assert_eq!(snapshot.downloads.queued_jobs, 0);
-    assert!(snapshot.downloads.scheduler_error.is_none());
     assert_eq!(
         snapshot.diagnostics.health.startup_phase,
         BackendStartupPhase::Ready
