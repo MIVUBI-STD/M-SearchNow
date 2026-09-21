@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Archive, CheckSquare, FileSearch, FolderOpen, RefreshCw, Search, X } from "@lucide/svelte";
   import { runtimeProductFacade } from "../app/bridge/runtimeProductFacade";
+  import { subscribeApplicationChanges } from "../app/state/applicationChanges";
   import { localContentTypeLabel } from "../app/shared/format";
   import {
     compareLibraryItems,
@@ -655,6 +656,15 @@
       query = value;
     }, 160);
     return () => clearTimeout(timer);
+  });
+
+  $effect(() => {
+    if (!runtimeReady) return;
+    return subscribeApplicationChanges((changes) => {
+      if (!changes.minecraft) return;
+      loaded = false;
+      if (active && !loading) void refresh();
+    });
   });
 
   $effect(() => {
