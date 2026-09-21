@@ -283,29 +283,27 @@ impl SearchNowBackendRuntime {
 
     pub fn snapshot(&self) -> BackendResult<BackendRuntimeSnapshot> {
         let started = Instant::now();
-        let result = (|| {
-            let providers = self.provider_status();
-            let diagnostics = self.diagnostics_snapshot();
-            let application = ApplicationState::from_runtime(&diagnostics, &providers);
-            Ok(BackendRuntimeSnapshot {
-                runtime: self.runtime_status(),
-                lifecycle: application.lifecycle,
-                capabilities: application.capabilities,
-                providers,
-                diagnostics,
-            })
-        })();
+        let providers = self.provider_status();
+        let diagnostics = self.diagnostics_snapshot();
+        let application = ApplicationState::from_runtime(&diagnostics, &providers);
+        let snapshot = BackendRuntimeSnapshot {
+            runtime: self.runtime_status(),
+            lifecycle: application.lifecycle,
+            capabilities: application.capabilities,
+            providers,
+            diagnostics,
+        };
         self.diagnostics.record_outcome(
             DiagnosticComponent::Runtime,
             started,
-            result.is_ok(),
+            true,
             "backend_snapshot_ok",
             "Backend runtime snapshot completed.",
             "backend_snapshot_failed",
             "Backend runtime snapshot could not complete.",
             DiagnosticSeverity::Error,
         );
-        result
+        Ok(snapshot)
     }
 
     pub fn download_snapshot(&self) -> BackendResult<DownloadManagerSnapshot> {
