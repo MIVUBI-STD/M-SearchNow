@@ -204,7 +204,7 @@ The source-size gate keeps advisory thresholds for broad visibility and adds har
 
 ## Application events and invalidation
 
-SearchNow keeps application events bounded and semantic. Events describe what happened; change sets describe which cached product surfaces may be stale.
+SearchNow keeps application events bounded and semantic. Events describe what happened; change sets describe only cached product surfaces that currently have real invalidation consumers.
 
 ```text
 command
