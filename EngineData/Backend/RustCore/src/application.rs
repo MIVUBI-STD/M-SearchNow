@@ -34,13 +34,14 @@ impl ApplicationState {
         diagnostics: &BackendDiagnosticsSnapshot,
         providers: &[ProviderRuntimeStatus],
     ) -> Self {
-        let lifecycle = match (
-            diagnostics.health.startup_phase,
-            diagnostics.health.state,
-        ) {
+        let lifecycle = match (diagnostics.health.startup_phase, diagnostics.health.state) {
             (BackendStartupPhase::Starting, _) => ApplicationLifecycleState::Starting,
-            (BackendStartupPhase::Ready, BackendHealthState::Healthy) => ApplicationLifecycleState::Ready,
-            (BackendStartupPhase::Ready, BackendHealthState::Degraded) => ApplicationLifecycleState::Degraded,
+            (BackendStartupPhase::Ready, BackendHealthState::Healthy) => {
+                ApplicationLifecycleState::Ready
+            }
+            (BackendStartupPhase::Ready, BackendHealthState::Degraded) => {
+                ApplicationLifecycleState::Degraded
+            }
             _ => ApplicationLifecycleState::Unknown,
         };
         let core_available = matches!(
@@ -48,7 +49,9 @@ impl ApplicationState {
             ApplicationLifecycleState::Ready | ApplicationLifecycleState::Degraded
         );
         let discover = core_available
-            && providers.iter().any(|provider| provider.capabilities.catalog);
+            && providers
+                .iter()
+                .any(|provider| provider.capabilities.catalog);
 
         Self {
             lifecycle,
