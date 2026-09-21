@@ -83,7 +83,7 @@ fn runtime_snapshot_is_safe_and_consistent_without_providers() {
     )
     .expect("runtime");
 
-    let snapshot = runtime.snapshot().expect("snapshot");
+    let snapshot = runtime.snapshot();
     assert!(snapshot.runtime.app_ready);
     assert_eq!(snapshot.lifecycle, ApplicationLifecycleState::Ready);
     assert!(snapshot.capabilities.library);
