@@ -19,6 +19,7 @@ const hardCeilings = new Map([
   ["src/app/bridge/runtimeProductFacade.ts", 12_000],
   ["src/app/workflows/catalogDownload.ts", 12_000],
   ["src/app/state/applicationChanges.ts", 8_000],
+  ["src/app/state/applicationEvents.ts", 8_000],
 ]);
 
 async function collect(directory) {
