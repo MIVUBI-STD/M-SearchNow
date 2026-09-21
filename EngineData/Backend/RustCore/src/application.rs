@@ -68,9 +68,7 @@ impl ApplicationState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostics::{
-        BackendHealthSnapshot, BackendHealthState, BackendStartupPhase,
-    };
+    use crate::diagnostics::{BackendHealthSnapshot, BackendHealthState, BackendStartupPhase};
 
     fn health(
         startup_phase: BackendStartupPhase,
