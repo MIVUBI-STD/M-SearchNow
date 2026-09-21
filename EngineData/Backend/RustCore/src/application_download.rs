@@ -32,10 +32,7 @@ pub(crate) struct DownloadApplicationService {
 }
 
 impl DownloadApplicationService {
-    pub(crate) fn new(
-        runtime: DownloadExecutionRuntime,
-        diagnostics: DiagnosticsBuffer,
-    ) -> Self {
+    pub(crate) fn new(runtime: DownloadExecutionRuntime, diagnostics: DiagnosticsBuffer) -> Self {
         Self { runtime, diagnostics }
     }
 
@@ -223,6 +220,4 @@ impl DownloadApplicationService {
         );
         result
     }
-
-
 }
