@@ -184,6 +184,11 @@ if (productFacade.includes("productMutationCall")) {
 if (!productFacade.includes("publishApplicationEvent")) {
   errors.push("state-changing product commands must publish bounded application events");
 }
+for (const unusedEvent of ["packageImported", "packageReplaced", "contentRemoved", "downloadChanged", "providerStateChanged"]) {
+  if (productFacade.includes(unusedEvent)) {
+    errors.push(`runtimeProductFacade must not publish command events without cross-surface consumers: ${unusedEvent}`);
+  }
+}
 if (productFacade.includes("publishApplicationChanges")) {
   errors.push("runtimeProductFacade must publish semantic events instead of raw ChangeSets");
 }
