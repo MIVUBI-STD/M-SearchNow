@@ -106,6 +106,20 @@ mod tests {
     }
 
     #[test]
+    fn degraded_runtime_keeps_core_capabilities_available() {
+        let state = ApplicationState::from_runtime(
+            &diagnostics(BackendStartupPhase::Ready, BackendHealthState::Degraded),
+            &[],
+        );
+
+        assert_eq!(state.lifecycle, ApplicationLifecycleState::Degraded);
+        assert!(state.capabilities.library);
+        assert!(state.capabilities.downloads);
+        assert!(state.capabilities.settings);
+        assert!(!state.capabilities.discover);
+    }
+
+    #[test]
     fn starting_runtime_does_not_expose_product_capabilities() {
         let state = ApplicationState::from_runtime(
             &diagnostics(BackendStartupPhase::Starting, BackendHealthState::Unknown),
