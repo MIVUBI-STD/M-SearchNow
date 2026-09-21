@@ -130,7 +130,10 @@
     } else if (!result.ok) {
       downloadFeedback = {
         tone: "error",
-        title: "Download could not start",
+        title:
+          result.error.code === "catalog_download_directory_choice_failed"
+            ? "Download folder could not be chosen"
+            : "Download could not start",
         message: result.error.message,
       };
     }
