@@ -14,9 +14,7 @@ pub fn get_runtime_status(state: State<'_, SearchNowBackendRuntime>) -> RuntimeS
 }
 
 #[tauri::command]
-pub fn get_backend_snapshot(
-    state: State<'_, SearchNowBackendRuntime>,
-) -> BackendRuntimeSnapshot {
+pub fn get_backend_snapshot(state: State<'_, SearchNowBackendRuntime>) -> BackendRuntimeSnapshot {
     state.snapshot()
 }
 
