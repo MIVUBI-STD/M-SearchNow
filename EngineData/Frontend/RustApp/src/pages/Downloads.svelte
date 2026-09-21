@@ -111,7 +111,6 @@
         action: () => void moveInQueue(job, direction),
       };
     }
-    await refresh(false, false);
     actionJobId = null;
   }
 
@@ -128,7 +127,6 @@
         action: () => void pause(job),
       };
     }
-    await refresh(false, false);
     actionJobId = null;
   }
 
@@ -145,7 +143,6 @@
         action: () => void resume(job),
       };
     }
-    await refresh(false, false);
     actionJobId = null;
   }
 
@@ -162,7 +159,6 @@
         action: () => void cancel(job),
       };
     }
-    await refresh(false, false);
     actionJobId = null;
   }
 
@@ -179,7 +175,6 @@
         action: () => void retry(job),
       };
     }
-    await refresh(false, false);
     actionJobId = null;
   }
 
