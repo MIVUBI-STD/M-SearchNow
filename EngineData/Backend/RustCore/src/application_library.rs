@@ -417,4 +417,3 @@ fn next_batch_export_destination(
         "SearchNow could not allocate a unique backup filename.",
     ))
 }
-
