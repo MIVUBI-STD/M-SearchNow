@@ -64,3 +64,59 @@ impl ApplicationState {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::diagnostics::{
+        BackendDiagnosticsSnapshot, BackendHealthSnapshot, BackendHealthState,
+        BackendStartupPhase,
+    };
+
+    fn diagnostics(
+        startup_phase: BackendStartupPhase,
+        state: BackendHealthState,
+    ) -> BackendDiagnosticsSnapshot {
+        BackendDiagnosticsSnapshot {
+            health: BackendHealthSnapshot {
+                startup_phase,
+                state,
+                diagnostics_available: true,
+                retained_events: 0,
+                dropped_events: 0,
+                warning_events: 0,
+                error_events: 0,
+                last_code: None,
+            },
+            events: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn ready_runtime_exposes_core_capabilities_without_discover_provider() {
+        let state = ApplicationState::from_runtime(
+            &diagnostics(BackendStartupPhase::Ready, BackendHealthState::Healthy),
+            &[],
+        );
+
+        assert_eq!(state.lifecycle, ApplicationLifecycleState::Ready);
+        assert!(state.capabilities.library);
+        assert!(state.capabilities.downloads);
+        assert!(state.capabilities.settings);
+        assert!(!state.capabilities.discover);
+    }
+
+    #[test]
+    fn starting_runtime_does_not_expose_product_capabilities() {
+        let state = ApplicationState::from_runtime(
+            &diagnostics(BackendStartupPhase::Starting, BackendHealthState::Unknown),
+            &[],
+        );
+
+        assert_eq!(state.lifecycle, ApplicationLifecycleState::Starting);
+        assert!(!state.capabilities.library);
+        assert!(!state.capabilities.discover);
+        assert!(!state.capabilities.downloads);
+        assert!(!state.capabilities.settings);
+    }
+}
