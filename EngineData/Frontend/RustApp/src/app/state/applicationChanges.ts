@@ -51,7 +51,3 @@ export function settingsChangeSet(
     diagnostics: true,
   };
 }
-
-export function hasApplicationChanges(changes: ApplicationChangeSet): boolean {
-  return Object.values(changes).some(Boolean);
-}
