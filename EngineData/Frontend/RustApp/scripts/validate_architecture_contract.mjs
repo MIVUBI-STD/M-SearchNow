@@ -28,6 +28,7 @@ const backendRequired = [
   "Cargo.toml",
   "src/lib.rs",
   "src/app_runtime.rs",
+  "src/application_content.rs",
   "src/identity.rs",
   "src/settings.rs",
   "src/minecraft.rs",
@@ -222,6 +223,7 @@ if (!lib.includes("pub mod provider_adapter")) errors.push("RustCore must expose
 if (!lib.includes("mod storage;") || lib.includes("pub mod storage;")) errors.push("RustCore atomic storage helper must remain crate-private");
 
 const appRuntime = await readFile(resolve(backendRoot, "src/app_runtime.rs"), "utf8");
+const applicationContent = await readFile(resolve(backendRoot, "src/application_content.rs"), "utf8");
 const frontendTypes = await readFile(resolve(appRoot, "src/app/shared/types.ts"), "utf8");
 const settingsModel = await readFile(resolve(backendRoot, "src/settings.rs"), "utf8");
 const catalogModel = await readFile(resolve(backendRoot, "src/catalog/model.rs"), "utf8");
@@ -240,6 +242,28 @@ for (const needle of [
   if (!appRuntime.includes(needle)) errors.push(`application backend runtime is missing composition contract ${needle}`);
 }
 if (appRuntime.includes("DownloadTransportRegistry::with_local_file")) errors.push("production application runtime must not register local-file fixture transport");
+for (const forbidden of [
+  "scan_library(",
+  "replace_single_pack(",
+  "replace_bundle(",
+  "export_directory(",
+  "validate_bundle_dependencies(",
+]) {
+  if (appRuntime.includes(forbidden)) {
+    errors.push(`app_runtime.rs must delegate content/package implementation instead of owning ${forbidden}`);
+  }
+}
+for (const requiredContent of [
+  "ContentApplicationService",
+  "replace_single_pack(",
+  "replace_bundle(",
+  "export_directory(",
+  "validate_bundle_dependencies(",
+]) {
+  if (!applicationContent.includes(requiredContent)) {
+    errors.push(`application_content.rs is missing content ownership contract ${requiredContent}`);
+  }
+}
 
 for (const needle of [
   'pub destination_directory: Option<PathBuf>',
