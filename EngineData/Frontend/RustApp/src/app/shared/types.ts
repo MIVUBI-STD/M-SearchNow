@@ -255,7 +255,7 @@ export type BackendRuntimeSnapshot = {
   lifecycle: ApplicationLifecycleState;
   capabilities: ApplicationCapabilities;
   providers: ProviderRuntimeStatus[];
-  diagnostics: BackendDiagnosticsSnapshot;
+  health: BackendHealthSnapshot;
 };
 
 export type ProductRuntimeSnapshot = {
