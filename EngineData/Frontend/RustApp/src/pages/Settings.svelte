@@ -106,18 +106,36 @@
     if (!active || !snapshot?.ready || loading) return;
     loading = true;
     feedback = null;
-    const result = await runtimeProductFacade.loadSettings();
-    if (result.ok) {
-      applySettings(result.data);
+
+    const [settingsResult, discoveryResult] = await Promise.all([
+      runtimeProductFacade.loadSettings(),
+      runtimeProductFacade.discoverMinecraft(),
+    ]);
+
+    if (settingsResult.ok) {
+      applySettings(settingsResult.data);
     } else {
       feedback = {
         tone: "error",
         title: "Settings could not be loaded",
-        message: result.error.message,
+        message: settingsResult.error.message,
         actionLabel: "Try again",
         action: () => void load(),
       };
     }
+
+    if (discoveryResult.ok) {
+      discovery = discoveryResult.data;
+    } else if (settingsResult.ok) {
+      feedback = {
+        tone: "error",
+        title: "Minecraft scan failed",
+        message: discoveryResult.error.message,
+        actionLabel: "Scan again",
+        action: () => void rescan(),
+      };
+    }
+
     loaded = true;
     loading = false;
   }
@@ -258,10 +276,6 @@
       baselineSettings = null;
       discovery = null;
     }
-  });
-
-  $effect(() => {
-    if (!discovery && snapshot?.backend?.minecraft) discovery = snapshot.backend.minecraft;
   });
 
   $effect(() => {
