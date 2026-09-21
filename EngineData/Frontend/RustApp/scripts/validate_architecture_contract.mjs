@@ -9,6 +9,7 @@ const required = [
   "src/app/bridge/runtimeApi.ts",
   "src/app/bridge/runtimeProductFacade.ts",
   "src/app/workflows/catalogDownload.ts",
+  "src/app/state/applicationChanges.ts",
   "src/app/shared/format.ts",
   "src/pages/Library.svelte",
   "src/pages/Discover.svelte",
@@ -103,6 +104,28 @@ for (const path of await collect(resolve(appRoot, "src"))) {
       text.includes("download_destination_create_failed"))
   ) {
     errors.push(`${rel}: pages must not branch on low-level download recovery codes`);
+  }
+}
+
+const applicationChanges = await readFile(resolve(appRoot, "src/app/state/applicationChanges.ts"), "utf8");
+for (const needle of [
+  "ApplicationChangeSet",
+  "publishApplicationChanges",
+  "subscribeApplicationChanges",
+  "settingsChangeSet",
+]) {
+  if (!applicationChanges.includes(needle)) {
+    errors.push(`application change contract is missing: ${needle}`);
+  }
+}
+const productFacade = await readFile(resolve(appRoot, "src/app/bridge/runtimeProductFacade.ts"), "utf8");
+if (!productFacade.includes("productMutationCall")) {
+  errors.push("runtimeProductFacade must publish typed changes through productMutationCall");
+}
+for (const page of ["Library.svelte", "Settings.svelte"]) {
+  const pageSource = await readFile(resolve(appRoot, `src/pages/${page}`), "utf8");
+  if (!pageSource.includes("subscribeApplicationChanges")) {
+    errors.push(`${page}: selective invalidation subscription is missing`);
   }
 }
 
