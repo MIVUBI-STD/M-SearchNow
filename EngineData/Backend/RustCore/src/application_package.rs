@@ -11,7 +11,10 @@ use crate::{
     platform::PlatformContext,
     settings::SettingsStore,
 };
-use std::{path::Path, time::Instant};
+use std::{
+    path::{Path, PathBuf},
+    time::Instant,
+};
 
 #[derive(Clone)]
 pub(crate) struct PackageApplicationService {
