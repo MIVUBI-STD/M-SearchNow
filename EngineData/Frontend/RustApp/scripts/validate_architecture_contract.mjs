@@ -116,7 +116,6 @@ for (const needle of [
   "packageReplaced",
   "contentRemoved",
   "downloadChanged",
-  "providerStateChanged",
   "changesForApplicationEvent",
 ]) {
   if (!applicationEvents.includes(needle)) {
@@ -125,6 +124,9 @@ for (const needle of [
 }
 if (applicationEvents.includes("Record<string")) {
   errors.push("application events must remain a closed union instead of a free-form event map");
+}
+if (applicationEvents.includes("providerStateChanged")) {
+  errors.push("application events must not retain reserved provider state events without a publisher");
 }
 for (const needle of [
   'case "settingsChanged":',
@@ -135,8 +137,6 @@ for (const needle of [
   'return { library: true, diagnostics: true }',
   'case "downloadChanged":',
   'return { downloads: true, diagnostics: true }',
-  'case "providerStateChanged":',
-  'return { providers: true, catalog: true, diagnostics: true }',
 ]) {
   if (!applicationEvents.includes(needle)) {
     errors.push(`application event invalidation mapping is missing: ${needle}`);
