@@ -113,6 +113,7 @@ mod tests {
         );
 
         assert_eq!(state.lifecycle, ApplicationLifecycleState::Degraded);
+        assert_ne!(state.lifecycle, ApplicationLifecycleState::Ready);
         assert!(state.capabilities.library);
         assert!(state.capabilities.downloads);
         assert!(state.capabilities.settings);
