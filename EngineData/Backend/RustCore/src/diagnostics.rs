@@ -229,9 +229,7 @@ fn health_snapshot_from_inner(inner: &DiagnosticsInner) -> BackendHealthSnapshot
                 BackendHealthState::Healthy
             }
         }
-        BackendStartupPhase::Starting | BackendStartupPhase::Unknown => {
-            BackendHealthState::Unknown
-        }
+        BackendStartupPhase::Starting | BackendStartupPhase::Unknown => BackendHealthState::Unknown,
     };
 
     BackendHealthSnapshot {
