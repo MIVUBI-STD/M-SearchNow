@@ -1,5 +1,5 @@
 use crate::{
-    diagnostics::{BackendDiagnosticsSnapshot, BackendHealthState, BackendStartupPhase},
+    diagnostics::{BackendHealthSnapshot, BackendHealthState, BackendStartupPhase},
     provider_adapter::ProviderRuntimeStatus,
 };
 use serde::Serialize;
@@ -31,10 +31,10 @@ pub struct ApplicationState {
 
 impl ApplicationState {
     pub fn from_runtime(
-        diagnostics: &BackendDiagnosticsSnapshot,
+        health: &BackendHealthSnapshot,
         providers: &[ProviderRuntimeStatus],
     ) -> Self {
-        let lifecycle = match (diagnostics.health.startup_phase, diagnostics.health.state) {
+        let lifecycle = match (health.startup_phase, health.state) {
             (BackendStartupPhase::Starting, _) => ApplicationLifecycleState::Starting,
             (BackendStartupPhase::Ready, BackendHealthState::Healthy) => {
                 ApplicationLifecycleState::Ready
@@ -69,32 +69,29 @@ impl ApplicationState {
 mod tests {
     use super::*;
     use crate::diagnostics::{
-        BackendDiagnosticsSnapshot, BackendHealthSnapshot, BackendHealthState, BackendStartupPhase,
+        BackendHealthSnapshot, BackendHealthState, BackendStartupPhase,
     };
 
-    fn diagnostics(
+    fn health(
         startup_phase: BackendStartupPhase,
         state: BackendHealthState,
-    ) -> BackendDiagnosticsSnapshot {
-        BackendDiagnosticsSnapshot {
-            health: BackendHealthSnapshot {
-                startup_phase,
-                state,
-                diagnostics_available: true,
-                retained_events: 0,
-                dropped_events: 0,
-                warning_events: 0,
-                error_events: 0,
-                last_code: None,
-            },
-            events: Vec::new(),
+    ) -> BackendHealthSnapshot {
+        BackendHealthSnapshot {
+            startup_phase,
+            state,
+            diagnostics_available: true,
+            retained_events: 0,
+            dropped_events: 0,
+            warning_events: 0,
+            error_events: 0,
+            last_code: None,
         }
     }
 
     #[test]
     fn ready_runtime_exposes_core_capabilities_without_discover_provider() {
         let state = ApplicationState::from_runtime(
-            &diagnostics(BackendStartupPhase::Ready, BackendHealthState::Healthy),
+            &health(BackendStartupPhase::Ready, BackendHealthState::Healthy),
             &[],
         );
 
@@ -108,7 +105,7 @@ mod tests {
     #[test]
     fn degraded_runtime_keeps_core_capabilities_available() {
         let state = ApplicationState::from_runtime(
-            &diagnostics(BackendStartupPhase::Ready, BackendHealthState::Degraded),
+            &health(BackendStartupPhase::Ready, BackendHealthState::Degraded),
             &[],
         );
 
@@ -123,7 +120,7 @@ mod tests {
     #[test]
     fn starting_runtime_does_not_expose_product_capabilities() {
         let state = ApplicationState::from_runtime(
-            &diagnostics(BackendStartupPhase::Starting, BackendHealthState::Unknown),
+            &health(BackendStartupPhase::Starting, BackendHealthState::Unknown),
             &[],
         );
 
