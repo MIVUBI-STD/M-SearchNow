@@ -68,8 +68,8 @@ export async function loadProductRuntimeSnapshot(): Promise<ProductRuntimeSnapsh
   );
 
   if (backendResult.ok) {
-    const { runtime, diagnostics } = backendResult.data;
-    const degraded = diagnostics.health.state === "degraded";
+    const { runtime, health } = backendResult.data;
+    const degraded = health.state === "degraded";
     return {
       ready: runtime.appReady,
       summary: !runtime.appReady
