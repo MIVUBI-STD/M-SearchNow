@@ -174,3 +174,29 @@ Hosted CI still does **not** prove installed Windows Tauri execution, real AppDa
 ## Desktop path authority
 
 The desktop open-folder command accepts a completed download job id, not an arbitrary frontend path. `SearchNowBackendRuntime` resolves the user-selected destination from current download state, and the Tauri adapter only verifies the resolved directory still exists before asking the operating system to open it.
+
+
+## Application coordination model
+
+The consolidated runtime is an ownership boundary, not permission for a new god object.
+
+SearchNow now exposes explicit application-level state alongside domain snapshots:
+
+```text
+BackendRuntimeSnapshot
+├── lifecycle
+├── capabilities
+├── runtime
+├── minecraft
+├── providers
+├── downloads
+└── diagnostics
+```
+
+`ApplicationLifecycleState` distinguishes `starting`, `ready`, `degraded`, and `unknown`.
+`ApplicationCapabilities` exposes product availability without requiring pages to reconstruct capability rules from provider internals.
+
+Cross-domain product workflows belong outside pages. Catalog-download destination recovery is owned by
+`src/app/workflows/catalogDownload.ts`; Discover requests the workflow and renders its product result. Pages must not branch on backend recovery codes or manually coordinate settings + picker + download retry chains.
+
+The source-size gate keeps advisory thresholds for broad visibility and adds hard no-growth ceilings around current orchestration hotspots. Exceeding a hard ceiling requires responsibility extraction rather than raising the ceiling by default.
