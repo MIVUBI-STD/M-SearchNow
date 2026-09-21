@@ -355,8 +355,11 @@ impl SearchNowBackendRuntime {
         destination_directory: &Path,
         duplicate_policy: ExportDuplicatePolicy,
     ) -> BackendResult<String> {
-        self.content
-            .export_local_content_to_directory(item_id, destination_directory, duplicate_policy)
+        self.content.export_local_content_to_directory(
+            item_id,
+            destination_directory,
+            duplicate_policy,
+        )
     }
 
     pub fn replace_package(
@@ -452,4 +455,3 @@ impl SearchNowBackendRuntime {
         Ok(build_local_backend_snapshot(&settings, &self.platform))
     }
 }
-
