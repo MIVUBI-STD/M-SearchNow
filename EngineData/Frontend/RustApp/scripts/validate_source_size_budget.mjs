@@ -11,7 +11,8 @@ const roots = [
 const tracked = new Set([".rs", ".svelte", ".ts"]);
 const advisoryThresholds = { ".rs": 20_000, ".svelte": 18_000, ".ts": 16_000 };
 const hardCeilings = new Map([
-  ["../../Backend/RustCore/src/app_runtime.rs", 24_000],
+  ["../../Backend/RustCore/src/app_runtime.rs", 16_000],
+  ["../../Backend/RustCore/src/application_download.rs", 14_000],
   ["../../Backend/RustCore/src/application_content.rs", 36_000],
   ["src/app/bridge/runtimeProductFacade.ts", 12_000],
   ["src/app/workflows/catalogDownload.ts", 12_000],
