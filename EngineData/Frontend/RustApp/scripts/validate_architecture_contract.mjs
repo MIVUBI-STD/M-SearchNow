@@ -112,10 +112,6 @@ const applicationEvents = await readFile(resolve(appRoot, "src/app/state/applica
 for (const needle of [
   "ApplicationEvent",
   "settingsChanged",
-  "packageImported",
-  "packageReplaced",
-  "contentRemoved",
-  "downloadChanged",
   "changesForApplicationEvent",
 ]) {
   if (!applicationEvents.includes(needle)) {
@@ -125,18 +121,14 @@ for (const needle of [
 if (applicationEvents.includes("Record<string")) {
   errors.push("application events must remain a closed union instead of a free-form event map");
 }
-if (applicationEvents.includes("providerStateChanged")) {
-  errors.push("application events must not retain reserved provider state events without a publisher");
+for (const unusedEvent of ["providerStateChanged", "packageImported", "packageReplaced", "contentRemoved", "downloadChanged"]) {
+  if (applicationEvents.includes(unusedEvent)) {
+    errors.push(`application events must not retain events without cross-surface consumers: ${unusedEvent}`);
+  }
 }
 for (const needle of [
-  'case "settingsChanged":',
+  'kind: "settingsChanged"',
   'return settingsChangeSet(event.previous, event.next)',
-  'case "packageImported":',
-  'case "packageReplaced":',
-  'case "contentRemoved":',
-  'return { library: true, diagnostics: true }',
-  'case "downloadChanged":',
-  'return { downloads: true, diagnostics: true }',
 ]) {
   if (!applicationEvents.includes(needle)) {
     errors.push(`application event invalidation mapping is missing: ${needle}`);
@@ -159,7 +151,13 @@ for (const needle of [
     errors.push(`application change contract is missing: ${needle}`);
   }
 }
-for (const forbiddenChangeDomain of ["catalog?: boolean", "providers?: boolean"]) {
+for (const forbiddenChangeDomain of [
+  "catalog?: boolean",
+  "providers?: boolean",
+  "library?: boolean",
+  "downloads?: boolean",
+  "diagnostics?: boolean",
+]) {
   if (applicationChanges.includes(forbiddenChangeDomain)) {
     errors.push(`application ChangeSet must not retain unused domain: ${forbiddenChangeDomain}`);
   }
@@ -167,9 +165,7 @@ for (const forbiddenChangeDomain of ["catalog?: boolean", "providers?: boolean"]
 for (const needle of [
   "previous.minecraft.rootOverride !== next.minecraft.rootOverride",
   "previous.minecraft.includeDevelopmentContent !== next.minecraft.includeDevelopmentContent",
-  "previous.download.bandwidthLimitBytesPerSecond !== next.download.bandwidthLimitBytesPerSecond",
-  "library: minecraftChanged",
-  "downloads: downloadChanged",
+  "minecraft: minecraftChanged",
 ]) {
   if (!applicationChanges.includes(needle)) {
     errors.push(`settings ChangeSet semantics are missing: ${needle}`);
