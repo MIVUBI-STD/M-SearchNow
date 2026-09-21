@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Check, FolderOpen, RefreshCw, Save, X } from "@lucide/svelte";
   import { runtimeProductFacade } from "../app/bridge/runtimeProductFacade";
+  import { subscribeApplicationChanges } from "../app/state/applicationChanges";
   import { minecraftChannelLabel, minecraftStorageKindLabel } from "../app/shared/format";
   import type {
     AppSettings,
@@ -126,6 +127,7 @@
     const requiresMinecraftRescan = minecraftDirty;
     saving = true;
     feedback = null;
+    const previousSettings = baselineSettings;
     const result = await runtimeProductFacade.saveSettings({
       schemaVersion,
       minecraft: {
@@ -142,7 +144,7 @@
         defaultDirectory: defaultExportDirectory || null,
         duplicatePolicy: exportDuplicatePolicy,
       },
-    });
+    }, previousSettings);
     if (result.ok) {
       applySettings(result.data);
       feedback = {
@@ -260,6 +262,21 @@
 
   $effect(() => {
     if (!discovery && snapshot?.backend?.minecraft) discovery = snapshot.backend.minecraft;
+  });
+
+  $effect(() => {
+    if (!snapshot?.ready) return;
+    return subscribeApplicationChanges((changes) => {
+      if (!changes.settings || saving) return;
+      if (!active) {
+        loaded = false;
+        return;
+      }
+      if (!dirty && !loading) {
+        loaded = false;
+        void load();
+      }
+    });
   });
 
   $effect(() => {
