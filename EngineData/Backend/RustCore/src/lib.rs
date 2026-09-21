@@ -1,5 +1,6 @@
 pub mod app_runtime;
 pub mod application;
+mod application_content;
 pub mod catalog;
 pub mod diagnostics;
 pub mod download;
