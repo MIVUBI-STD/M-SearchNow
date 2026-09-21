@@ -293,7 +293,7 @@ for (const needle of [
   'pub destination_directory: Option<PathBuf>',
   '#[serde(rename_all = "camelCase", deny_unknown_fields)]',
 ]) {
-  if (!appRuntime.includes(needle)) errors.push(`QueueCatalogDownloadRequest Rust contract is missing ${needle}`);
+  if (!applicationDownload.includes(needle)) errors.push(`QueueCatalogDownloadRequest Rust contract is missing ${needle}`);
 }
 for (const needle of [
   'destinationDirectory: string | null',
