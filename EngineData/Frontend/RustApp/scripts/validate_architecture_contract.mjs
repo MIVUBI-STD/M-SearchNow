@@ -209,6 +209,15 @@ for (const functionName of ["moveInQueue", "pause", "resume", "cancel", "retry"]
 }
 
 const settingsPage = await readFile(resolve(appRoot, "src/pages/Settings.svelte"), "utf8");
+for (const needle of ["Promise.all([", "runtimeProductFacade.loadSettings()", "runtimeProductFacade.discoverMinecraft()"]) {
+  if (!settingsPage.includes(needle)) {
+    errors.push(`Settings lazy bootstrap contract is missing: ${needle}`);
+  }
+}
+if (settingsPage.includes("snapshot?.backend?.minecraft") || settingsPage.includes("snapshot.backend.minecraft")) {
+  errors.push("Settings must not depend on eager Minecraft discovery from the global runtime snapshot");
+}
+
 for (const needle of ["previousSettings", "saveSettings({", "}, previousSettings)", "changes.settings"]) {
   if (!settingsPage.includes(needle)) {
     errors.push(`Settings selective invalidation contract is missing: ${needle}`);
@@ -364,6 +373,17 @@ for (const needle of [
   if (!appRuntime.includes(needle)) errors.push(`application backend runtime is missing composition contract ${needle}`);
 }
 if (appRuntime.includes("DownloadTransportRegistry::with_local_file")) errors.push("production application runtime must not register local-file fixture transport");
+for (const forbiddenBootstrapField of ["pub minecraft: MinecraftDiscoverySnapshot", "pub downloads: DownloadManagerSnapshot"]) {
+  if (appRuntime.includes(forbiddenBootstrapField)) {
+    errors.push(`BackendRuntimeSnapshot must remain lightweight; move ${forbiddenBootstrapField} to its feature query`);
+  }
+}
+if (appRuntime.includes("minecraft: self.discover_minecraft_raw()?")) {
+  errors.push("backend runtime snapshot must not perform Minecraft discovery during bootstrap");
+}
+if (appRuntime.includes("downloads: self.downloads.download_snapshot()?")) {
+  errors.push("backend runtime snapshot must not load the download snapshot during bootstrap");
+}
 for (const forbidden of [
   "scan_library(",
   "replace_single_pack(",
