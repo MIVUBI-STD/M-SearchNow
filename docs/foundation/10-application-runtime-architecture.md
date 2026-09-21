@@ -220,7 +220,6 @@ Current event vocabulary is intentionally closed:
 - `packageReplaced`
 - `contentRemoved`
 - `downloadChanged`
-- `providerStateChanged`
 
 Queries read application state and do not publish events. Actions may perform external side effects such as opening a picker, exporting a file, or opening a folder, but do not invalidate application state. Commands mutate application-owned state and publish exactly one semantic event after success.
 
