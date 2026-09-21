@@ -313,6 +313,19 @@ for (const needle of [
   }
 }
 
+const runtimeCommand = await readFile(resolve(appRoot, "src-tauri/src/commands/runtime.rs"), "utf8");
+const backendSnapshotStart = runtimeCommand.indexOf("pub fn get_backend_snapshot");
+const backendSnapshotEnd = runtimeCommand.indexOf("#[tauri::command]", backendSnapshotStart + 1);
+const backendSnapshotBlock = backendSnapshotStart >= 0
+  ? runtimeCommand.slice(backendSnapshotStart, backendSnapshotEnd >= 0 ? backendSnapshotEnd : runtimeCommand.length)
+  : "";
+if (!backendSnapshotBlock.includes("state.snapshot()")) {
+  errors.push("get_backend_snapshot must directly read the lightweight in-memory runtime snapshot");
+}
+if (backendSnapshotBlock.includes("spawn_blocking")) {
+  errors.push("get_backend_snapshot must not use spawn_blocking for the lightweight in-memory snapshot");
+}
+
 const runtimeApiSource = await readFile(resolve(appRoot, "src/app/bridge/runtimeApi.ts"), "utf8");
 if (!runtimeApiSource.includes("getCurrentWebview") || !runtimeApiSource.includes("onDragDropEvent")) {
   errors.push("runtimeApi.ts must own the Tauri webview drag/drop event boundary");
