@@ -18,6 +18,7 @@ const hardCeilings = new Map([
   ["../../Backend/RustCore/src/application_package.rs", 24_000],
   ["src/app/bridge/runtimeProductFacade.ts", 12_000],
   ["src/app/workflows/catalogDownload.ts", 12_000],
+  ["src/app/state/applicationChanges.ts", 8_000],
 ]);
 
 async function collect(directory) {
