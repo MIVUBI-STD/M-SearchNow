@@ -213,15 +213,11 @@ command
   -> selective invalidation
 ```
 
-Current event vocabulary is intentionally closed:
+Current event vocabulary is intentionally closed and only contains cross-surface invalidation that exists today:
 
 - `settingsChanged`
-- `packageImported`
-- `packageReplaced`
-- `contentRemoved`
-- `downloadChanged`
 
-Queries read application state and do not publish events. Actions may perform external side effects such as opening a picker, exporting a file, or opening a folder, but do not invalidate application state. Commands mutate application-owned state and publish exactly one semantic event after success.
+Queries read application state and do not publish events. Actions may perform external side effects such as opening a picker, exporting a file, or opening a folder, but do not invalidate application state. Commands mutate application-owned state. They publish a semantic event only when another mounted surface has a real cache invalidation consumer.
 
 Do not replace this with a free-form string event bus or make pages infer invalidation from backend error codes. When a new cross-domain mutation is introduced, add one bounded event only if an existing event cannot describe the product-level change.
 
