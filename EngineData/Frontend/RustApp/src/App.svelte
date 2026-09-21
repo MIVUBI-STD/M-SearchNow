@@ -21,7 +21,7 @@
   let snapshot = $state<ProductRuntimeSnapshot | null>(null);
   let activityOpen = $state(false);
 
-  let health = $derived(snapshot?.backend?.diagnostics.health.state ?? "unknown");
+  let health = $derived(snapshot?.backend?.health.state ?? "unknown");
   let runtimeLabel = $derived(
     booting
       ? "Checking"
