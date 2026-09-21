@@ -365,24 +365,6 @@ impl SearchNowBackendRuntime {
     }
 
     pub fn inspect_package(&self, path: &Path) -> BackendResult<PackageInspection> {
-        let started = Instant::now();
-        let result = inspect_package(path);
-        self.diagnostics.record_outcome(
-            DiagnosticComponent::Package,
-            started,
-            result.is_ok(),
-            "package_inspection_ok",
-            "Minecraft package inspection completed.",
-            "package_inspection_failed",
-            "Minecraft package inspection could not complete.",
-            DiagnosticSeverity::Warning,
-        );
-        result
-    }
-
-    pub fn import_package(
-        &self,
-        request: PackageImport    pub fn inspect_package(&self, path: &Path) -> BackendResult<PackageInspection> {
         self.content.inspect_package(path)
     }
 
@@ -407,11 +389,8 @@ impl SearchNowBackendRuntime {
         destination_directory: &Path,
         duplicate_policy: ExportDuplicatePolicy,
     ) -> BackendResult<String> {
-        self.content.export_local_content_to_directory(
-            item_id,
-            destination_directory,
-            duplicate_policy,
-        )
+        self.content
+            .export_local_content_to_directory(item_id, destination_directory, duplicate_policy)
     }
 
     pub fn replace_package(
@@ -458,7 +437,22 @@ impl SearchNowBackendRuntime {
         self.content.local_content_directory(item_id)
     }
 
-       job.destination_directory.clone().ok_or_else(|| {
+    pub fn completed_download_directory(&self, job_id: &str) -> BackendResult<PathBuf> {
+        let snapshot = self.downloads.snapshot()?;
+        let job = snapshot
+            .jobs
+            .iter()
+            .find(|job| job.id == job_id)
+            .ok_or_else(|| {
+                BackendError::new("download_job_not_found", "Download job was not found.")
+            })?;
+        if job.state != DownloadJobState::Completed {
+            return Err(BackendError::new(
+                "download_directory_not_ready",
+                "The download folder is available only after the download completes.",
+            ));
+        }
+        job.destination_directory.clone().ok_or_else(|| {
             BackendError::new(
                 "download_directory_unavailable",
                 "This download does not have a user-selected destination folder.",
