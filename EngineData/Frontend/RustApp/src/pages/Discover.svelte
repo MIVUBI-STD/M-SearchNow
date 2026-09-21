@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Search } from "@lucide/svelte";
   import { runtimeProductFacade } from "../app/bridge/runtimeProductFacade";
+  import { startCatalogDownloadWorkflow } from "../app/workflows/catalogDownload";
   import { catalogContentTypeLabel, formatBytes, formatDate } from "../app/shared/format";
   import type {
     CatalogContentType,
@@ -112,101 +113,28 @@
     downloadBusy = true;
     downloadFeedback = null;
 
-    let destinationDirectory: string | null = null;
-    const settings = await runtimeProductFacade.loadSettings();
-    if (settings.ok) destinationDirectory = settings.data.download.defaultDirectory;
-
-    if (!destinationDirectory) {
-      const picker = await runtimeProductFacade.chooseDownloadDirectory();
-      if (!picker.ok) {
-        downloadFeedback = {
-          tone: "error",
-          title: "Download folder could not be chosen",
-          message: picker.error.message,
-        };
-        downloadBusy = false;
-        return;
-      }
-      if (!picker.data) {
-        downloadBusy = false;
-        return;
-      }
-      destinationDirectory = picker.data;
-    }
-
-    const request = {
-      download: item.download,
-      displayName: item.title,
-      destinationFileName: item.fileName,
-      destinationDirectory,
-      expectedBytes: item.expectedBytes,
-      expectedSha256: item.expectedSha256,
-    };
-    let result = await runtimeProductFacade.queueCatalogDownload(request);
-    let recoveredDefaultDirectory: string | null = null;
-
-    const staleDefaultDirectory =
-      settings.ok &&
-      settings.data.download.defaultDirectory !== null &&
-      !result.ok &&
-      ["download_destination_directory_invalid", "download_destination_create_failed"].includes(result.error.code);
-
-    if (staleDefaultDirectory) {
-      const picker = await runtimeProductFacade.chooseDownloadDirectory();
-      if (!picker.ok) {
-        downloadFeedback = {
-          tone: "error",
-          title: "Replacement download folder could not be chosen",
-          message: picker.error.message,
-        };
-        downloadBusy = false;
-        return;
-      }
-      if (!picker.data) {
-        downloadBusy = false;
-        return;
-      }
-      recoveredDefaultDirectory = picker.data;
-      result = await runtimeProductFacade.queueCatalogDownload({
-        ...request,
-        destinationDirectory: recoveredDefaultDirectory,
-      });
-    }
-
-    let defaultDirectorySaveWarning: string | null = null;
-    if (result.ok && recoveredDefaultDirectory && settings.ok) {
-      const saveResult = await runtimeProductFacade.saveSettings({
-        ...settings.data,
-        download: {
-          ...settings.data.download,
-          defaultDirectory: recoveredDefaultDirectory,
-        },
-      });
-      if (!saveResult.ok) {
-        defaultDirectorySaveWarning = saveResult.error.message;
-      }
-    }
-
-    if (result.ok) {
+    const result = await startCatalogDownloadWorkflow(item);
+    if (result.ok && result.data.kind === "queued") {
       selectedItem = null;
-      downloadFeedback = defaultDirectorySaveWarning
+      downloadFeedback = result.data.preferenceWarning
         ? {
             tone: "warning",
             title: "Download started",
-            message: `${item.title} was added to Downloads, but SearchNow could not update the default download folder: ${defaultDirectorySaveWarning}`,
+            message: `${item.title} was added to Downloads, but SearchNow could not update the default download folder: ${result.data.preferenceWarning}`,
           }
         : {
             tone: "success",
             title: "Download started",
             message: `${item.title} was added to Downloads.`,
           };
-    } else {
+    } else if (!result.ok) {
       downloadFeedback = {
         tone: "error",
         title: "Download could not start",
         message: result.error.message,
       };
     }
+
     downloadBusy = false;
   }
 
