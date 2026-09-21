@@ -14,8 +14,7 @@ export type ApplicationEvent =
   | { kind: "packageImported" }
   | { kind: "packageReplaced" }
   | { kind: "contentRemoved" }
-  | { kind: "downloadChanged" }
-  | { kind: "providerStateChanged" };
+  | { kind: "downloadChanged" };
 
 export function changesForApplicationEvent(event: ApplicationEvent): ApplicationChangeSet {
   switch (event.kind) {
@@ -27,8 +26,6 @@ export function changesForApplicationEvent(event: ApplicationEvent): Application
       return { library: true, diagnostics: true };
     case "downloadChanged":
       return { downloads: true, diagnostics: true };
-    case "providerStateChanged":
-      return { providers: true, catalog: true, diagnostics: true };
   }
 }
 
