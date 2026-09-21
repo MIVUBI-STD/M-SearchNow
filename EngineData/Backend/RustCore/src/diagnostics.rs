@@ -175,58 +175,74 @@ impl DiagnosticsBuffer {
         );
     }
 
+    pub fn health_snapshot(&self) -> BackendHealthSnapshot {
+        let Ok(inner) = self.inner.lock() else {
+            return unavailable_health_snapshot();
+        };
+        health_snapshot_from_inner(&inner)
+    }
+
     pub fn snapshot(&self) -> BackendDiagnosticsSnapshot {
         let Ok(inner) = self.inner.lock() else {
             return BackendDiagnosticsSnapshot {
-                health: BackendHealthSnapshot {
-                    startup_phase: BackendStartupPhase::Unknown,
-                    state: BackendHealthState::Unknown,
-                    diagnostics_available: false,
-                    retained_events: 0,
-                    dropped_events: 0,
-                    warning_events: 0,
-                    error_events: 0,
-                    last_code: None,
-                },
+                health: unavailable_health_snapshot(),
                 events: Vec::new(),
             };
         };
 
-        let warning_events = inner
-            .events
-            .iter()
-            .filter(|event| event.severity == DiagnosticSeverity::Warning)
-            .count();
-        let error_events = inner
-            .events
-            .iter()
-            .filter(|event| event.severity == DiagnosticSeverity::Error)
-            .count();
-        let state = match inner.startup_phase {
-            BackendStartupPhase::Ready => {
-                if inner.component_health.values().any(|healthy| !healthy) {
-                    BackendHealthState::Degraded
-                } else {
-                    BackendHealthState::Healthy
-                }
-            }
-            BackendStartupPhase::Starting | BackendStartupPhase::Unknown => {
-                BackendHealthState::Unknown
-            }
-        };
         BackendDiagnosticsSnapshot {
-            health: BackendHealthSnapshot {
-                startup_phase: inner.startup_phase,
-                state,
-                diagnostics_available: true,
-                retained_events: inner.events.len(),
-                dropped_events: inner.dropped_events,
-                warning_events,
-                error_events,
-                last_code: inner.events.back().map(|event| event.code),
-            },
+            health: health_snapshot_from_inner(&inner),
             events: inner.events.iter().cloned().collect(),
         }
+    }
+}
+
+fn unavailable_health_snapshot() -> BackendHealthSnapshot {
+    BackendHealthSnapshot {
+        startup_phase: BackendStartupPhase::Unknown,
+        state: BackendHealthState::Unknown,
+        diagnostics_available: false,
+        retained_events: 0,
+        dropped_events: 0,
+        warning_events: 0,
+        error_events: 0,
+        last_code: None,
+    }
+}
+
+fn health_snapshot_from_inner(inner: &DiagnosticsInner) -> BackendHealthSnapshot {
+    let warning_events = inner
+        .events
+        .iter()
+        .filter(|event| event.severity == DiagnosticSeverity::Warning)
+        .count();
+    let error_events = inner
+        .events
+        .iter()
+        .filter(|event| event.severity == DiagnosticSeverity::Error)
+        .count();
+    let state = match inner.startup_phase {
+        BackendStartupPhase::Ready => {
+            if inner.component_health.values().any(|healthy| !healthy) {
+                BackendHealthState::Degraded
+            } else {
+                BackendHealthState::Healthy
+            }
+        }
+        BackendStartupPhase::Starting | BackendStartupPhase::Unknown => {
+            BackendHealthState::Unknown
+        }
+    };
+
+    BackendHealthSnapshot {
+        startup_phase: inner.startup_phase,
+        state,
+        diagnostics_available: true,
+        retained_events: inner.events.len(),
+        dropped_events: inner.dropped_events,
+        warning_events,
+        error_events,
+        last_code: inner.events.back().map(|event| event.code),
     }
 }
 
