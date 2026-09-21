@@ -135,7 +135,11 @@ impl ContentApplicationService {
         Ok(format!("{base}.{extension}"))
     }
 
-    pub(crate) fn export_local_content(&self, item_id: &str, destination: &Path) -> BackendResult<()> {
+    pub(crate) fn export_local_content(
+        &self,
+        item_id: &str,
+        destination: &Path,
+    ) -> BackendResult<()> {
         let item = self.resolve_local_content(item_id)?;
         let expected_extension = match item.content_type {
             LocalContentType::World => "mcworld",
@@ -645,7 +649,10 @@ impl ContentApplicationService {
         result
     }
 
-    pub(crate) fn remove_local_content(&self, item_id: &str) -> BackendResult<LocalBackendSnapshot> {
+    pub(crate) fn remove_local_content(
+        &self,
+        item_id: &str,
+    ) -> BackendResult<LocalBackendSnapshot> {
         if !valid_local_content_id(item_id) {
             return Err(BackendError::new(
                 "library_item_not_found",
@@ -750,8 +757,6 @@ impl ContentApplicationService {
                 )
             })
     }
-
-
 
     fn scan_local_library_raw(&self) -> BackendResult<LocalBackendSnapshot> {
         let settings = self.settings.load()?;
@@ -915,4 +920,3 @@ fn validate_bundle_dependencies(
     }
     Ok(())
 }
-
