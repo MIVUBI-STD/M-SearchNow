@@ -95,6 +95,10 @@ fn runtime_snapshot_is_safe_and_consistent_without_providers() {
         snapshot.diagnostics.health.startup_phase,
         BackendStartupPhase::Ready
     );
+
+    let serialized = serde_json::to_value(&snapshot).expect("serialize snapshot");
+    assert!(serialized.get("minecraft").is_none());
+    assert!(serialized.get("downloads").is_none());
 }
 
 #[test]
