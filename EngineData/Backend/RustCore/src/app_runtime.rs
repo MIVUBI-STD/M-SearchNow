@@ -66,9 +66,7 @@ pub struct BackendRuntimeSnapshot {
     pub runtime: RuntimeStatus,
     pub lifecycle: ApplicationLifecycleState,
     pub capabilities: ApplicationCapabilities,
-    pub minecraft: MinecraftDiscoverySnapshot,
     pub providers: Vec<ProviderRuntimeStatus>,
-    pub downloads: DownloadManagerSnapshot,
     pub diagnostics: BackendDiagnosticsSnapshot,
 }
 
@@ -293,9 +291,7 @@ impl SearchNowBackendRuntime {
                 runtime: self.runtime_status(),
                 lifecycle: application.lifecycle,
                 capabilities: application.capabilities,
-                minecraft: self.discover_minecraft_raw()?,
                 providers,
-                downloads: self.downloads.download_snapshot()?,
                 diagnostics,
             })
         })();
