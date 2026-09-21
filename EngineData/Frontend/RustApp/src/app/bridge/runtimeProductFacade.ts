@@ -18,6 +18,7 @@ import type {
   PackageReplaceRequest,
   PackageBundleUpdateRequest,
 } from "../shared/types";
+import { publishApplicationChanges, settingsChangeSet, type ApplicationChangeSet } from "../state/applicationChanges";
 import { toProductError } from "../shared/productErrors";
 import { runtimeApi } from "./runtimeApi";
 
@@ -29,6 +30,18 @@ async function productCall<T>(operation: () => Promise<T>, fallbackMessage: stri
   } catch (error) {
     return { ok: false, error: toProductError(error, fallbackMessage) };
   }
+}
+
+async function productMutationCall<T>(
+  operation: () => Promise<T>,
+  fallbackMessage: string,
+  changes: ApplicationChangeSet | ((data: T) => ApplicationChangeSet),
+): Promise<ProductResult<T>> {
+  const result = await productCall(operation, fallbackMessage);
+  if (result.ok) {
+    publishApplicationChanges(typeof changes === "function" ? changes(result.data) : changes);
+  }
+  return result;
 }
 
 export async function loadProductRuntimeSnapshot(): Promise<ProductRuntimeSnapshot> {
@@ -87,9 +100,10 @@ export const runtimeProductFacade = {
   },
 
   removeLocalContent(itemId: string): Promise<ProductResult<LocalBackendSnapshot>> {
-    return productCall(
+    return productMutationCall(
       () => runtimeApi.removeLocalContent(itemId),
       "SearchNow could not remove this Minecraft content.",
+      { library: true, diagnostics: true },
     );
   },
 
@@ -138,23 +152,26 @@ export const runtimeProductFacade = {
   },
 
   importPackage(request: PackageImportRequest): Promise<ProductResult<PackageImportResult>> {
-    return productCall(
+    return productMutationCall(
       () => runtimeApi.importPackage(request),
       "SearchNow could not import this Minecraft package.",
+      { library: true, diagnostics: true },
     );
   },
 
   replacePackage(request: PackageReplaceRequest): Promise<ProductResult<PackageImportResult>> {
-    return productCall(
+    return productMutationCall(
       () => runtimeApi.replacePackage(request),
       "SearchNow could not update this installed Minecraft pack.",
+      { library: true, diagnostics: true },
     );
   },
 
   replacePackageBundle(request: PackageBundleUpdateRequest): Promise<ProductResult<PackageImportResult>> {
-    return productCall(
+    return productMutationCall(
       () => runtimeApi.replacePackageBundle(request),
       "SearchNow could not update this Minecraft add-on bundle.",
+      { library: true, diagnostics: true },
     );
   },
 
@@ -172,10 +189,14 @@ export const runtimeProductFacade = {
     );
   },
 
-  saveSettings(settings: AppSettings): Promise<ProductResult<AppSettings>> {
-    return productCall(
+  saveSettings(
+    settings: AppSettings,
+    previous: AppSettings | null = null,
+  ): Promise<ProductResult<AppSettings>> {
+    return productMutationCall(
       () => runtimeApi.saveAppSettings(settings),
       "SearchNow could not save your settings.",
+      (saved) => settingsChangeSet(previous, saved),
     );
   },
 
@@ -236,9 +257,10 @@ export const runtimeProductFacade = {
   },
 
   queueCatalogDownload(request: QueueCatalogDownloadRequest): Promise<ProductResult<DownloadJob>> {
-    return productCall(
+    return productMutationCall(
       () => runtimeApi.queueCatalogDownload(request),
       "SearchNow could not start this download.",
+      { downloads: true, diagnostics: true },
     );
   },
 
@@ -246,50 +268,57 @@ export const runtimeProductFacade = {
     jobId: string,
     direction: "earlier" | "later",
   ): Promise<ProductResult<DownloadJob>> {
-    return productCall(
+    return productMutationCall(
       () => runtimeApi.moveDownloadInQueue(jobId, direction),
       "SearchNow could not change this download's queue position.",
+      { downloads: true, diagnostics: true },
     );
   },
 
   pauseDownload(jobId: string): Promise<ProductResult<DownloadJob>> {
-    return productCall(
+    return productMutationCall(
       () => runtimeApi.pauseDownload(jobId),
       "SearchNow could not pause this download.",
+      { downloads: true, diagnostics: true },
     );
   },
 
   resumeDownload(jobId: string): Promise<ProductResult<DownloadJob>> {
-    return productCall(
+    return productMutationCall(
       () => runtimeApi.resumeDownload(jobId),
       "SearchNow could not resume this download.",
+      { downloads: true, diagnostics: true },
     );
   },
 
   cancelDownload(jobId: string): Promise<ProductResult<DownloadJob>> {
-    return productCall(
+    return productMutationCall(
       () => runtimeApi.cancelDownload(jobId),
       "SearchNow could not cancel this download.",
+      { downloads: true, diagnostics: true },
     );
   },
 
   retryDownload(jobId: string): Promise<ProductResult<DownloadJob>> {
-    return productCall(
+    return productMutationCall(
       () => runtimeApi.retryDownload(jobId),
       "SearchNow could not retry this download.",
+      { downloads: true, diagnostics: true },
     );
   },
 
   removeDownload(jobId: string): Promise<ProductResult<DownloadManagerSnapshot>> {
-    return productCall(
+    return productMutationCall(
       () => runtimeApi.removeDownload(jobId),
       "SearchNow could not remove this download from the list.",
+      { downloads: true, diagnostics: true },
     );
   },
   clearCompletedDownloads(): Promise<ProductResult<DownloadManagerSnapshot>> {
-    return productCall(
+    return productMutationCall(
       () => runtimeApi.clearCompletedDownloads(),
       "SearchNow could not clear completed downloads.",
+      { downloads: true, diagnostics: true },
     );
   },
 
