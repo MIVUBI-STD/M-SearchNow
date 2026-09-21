@@ -16,6 +16,16 @@ export type CatalogDownloadWorkflowResult =
       kind: "cancelled";
     };
 
+function directoryChoiceFailed(message: string): ProductResult<CatalogDownloadWorkflowResult> {
+  return {
+    ok: false,
+    error: {
+      code: "catalog_download_directory_choice_failed",
+      message,
+    },
+  };
+}
+
 function unavailable(): ProductResult<CatalogDownloadWorkflowResult> {
   return {
     ok: false,
@@ -38,7 +48,7 @@ export async function startCatalogDownloadWorkflow(
 
   if (!destinationDirectory) {
     const picker = await runtimeProductFacade.chooseDownloadDirectory();
-    if (!picker.ok) return { ok: false, error: picker.error };
+    if (!picker.ok) return directoryChoiceFailed(picker.error.message);
     if (!picker.data) return { ok: true, data: { kind: "cancelled" } };
     destinationDirectory = picker.data;
   }
@@ -66,7 +76,7 @@ export async function startCatalogDownloadWorkflow(
 
   if (staleDefaultDirectory) {
     const picker = await runtimeProductFacade.chooseDownloadDirectory();
-    if (!picker.ok) return { ok: false, error: picker.error };
+    if (!picker.ok) return directoryChoiceFailed(picker.error.message);
     if (!picker.data) return { ok: true, data: { kind: "cancelled" } };
 
     recoveredDefaultDirectory = picker.data;
