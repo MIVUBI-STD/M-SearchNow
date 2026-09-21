@@ -1,4 +1,5 @@
 use crate::{
+    application::{ApplicationCapabilities, ApplicationLifecycleState, ApplicationState},
     build_local_backend_snapshot,
     catalog::{CatalogDownloadRef, CatalogError, CatalogPage, CatalogRequest},
     diagnostics::{
@@ -64,6 +65,8 @@ pub struct DiagnosticsSupportReport {
 #[serde(rename_all = "camelCase")]
 pub struct BackendRuntimeSnapshot {
     pub runtime: RuntimeStatus,
+    pub lifecycle: ApplicationLifecycleState,
+    pub capabilities: ApplicationCapabilities,
     pub minecraft: MinecraftDiscoverySnapshot,
     pub providers: Vec<ProviderRuntimeStatus>,
     pub downloads: DownloadManagerSnapshot,
@@ -311,12 +314,17 @@ impl SearchNowBackendRuntime {
     pub fn snapshot(&self) -> BackendResult<BackendRuntimeSnapshot> {
         let started = Instant::now();
         let result = (|| {
+            let providers = self.provider_status();
+            let diagnostics = self.diagnostics_snapshot();
+            let application = ApplicationState::from_runtime(&diagnostics, &providers);
             Ok(BackendRuntimeSnapshot {
                 runtime: self.runtime_status(),
+                lifecycle: application.lifecycle,
+                capabilities: application.capabilities,
                 minecraft: self.discover_minecraft_raw()?,
-                providers: self.provider_status(),
+                providers,
                 downloads: self.downloads.snapshot()?,
-                diagnostics: self.diagnostics_snapshot(),
+                diagnostics,
             })
         })();
         self.diagnostics.record_outcome(
