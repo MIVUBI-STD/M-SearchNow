@@ -386,7 +386,11 @@ for (const needle of [
   if (!appRuntime.includes(needle)) errors.push(`application backend runtime is missing composition contract ${needle}`);
 }
 if (appRuntime.includes("DownloadTransportRegistry::with_local_file")) errors.push("production application runtime must not register local-file fixture transport");
-for (const forbiddenBootstrapField of ["pub minecraft: MinecraftDiscoverySnapshot", "pub downloads: DownloadManagerSnapshot"]) {
+for (const forbiddenBootstrapField of [
+  "pub minecraft: MinecraftDiscoverySnapshot",
+  "pub downloads: DownloadManagerSnapshot",
+  "pub diagnostics: BackendDiagnosticsSnapshot",
+]) {
   if (appRuntime.includes(forbiddenBootstrapField)) {
     errors.push(`BackendRuntimeSnapshot must remain lightweight; move ${forbiddenBootstrapField} to its feature query`);
   }
@@ -396,6 +400,12 @@ if (appRuntime.includes("minecraft: self.discover_minecraft_raw()?")) {
 }
 if (appRuntime.includes("downloads: self.downloads.download_snapshot()?")) {
   errors.push("backend runtime snapshot must not load the download snapshot during bootstrap");
+}
+if (!appRuntime.includes("pub health: BackendHealthSnapshot")) {
+  errors.push("BackendRuntimeSnapshot must carry health summary instead of full diagnostic events");
+}
+if (!diagnosticsModel.includes("pub fn health_snapshot(&self) -> BackendHealthSnapshot")) {
+  errors.push("diagnostics buffer must expose a health-only snapshot for application bootstrap");
 }
 for (const forbidden of [
   "scan_library(",
@@ -471,6 +481,12 @@ for (const needle of [
   'export type QueueCatalogDownloadRequest',
 ]) {
   if (!frontendTypes.includes(needle)) errors.push(`frontend download request contract is missing ${needle}`);
+}
+if (!frontendTypes.includes("health: BackendHealthSnapshot;")) {
+  errors.push("frontend runtime snapshot must mirror the health-only bootstrap contract");
+}
+if (frontendTypes.includes("diagnostics: BackendDiagnosticsSnapshot;\n};\n\nexport type ProductRuntimeSnapshot")) {
+  errors.push("frontend runtime snapshot must not carry diagnostic event history");
 }
 if (!frontendTypes.includes('| "package"')) {
   errors.push("frontend DiagnosticComponent must include active package runtime diagnostics");
