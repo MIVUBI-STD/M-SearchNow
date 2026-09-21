@@ -8,6 +8,7 @@ const required = [
   "src/App.svelte",
   "src/app/bridge/runtimeApi.ts",
   "src/app/bridge/runtimeProductFacade.ts",
+  "src/app/workflows/catalogDownload.ts",
   "src/app/shared/format.ts",
   "src/pages/Library.svelte",
   "src/pages/Discover.svelte",
@@ -85,6 +86,20 @@ for (const path of await collect(resolve(appRoot, "src"))) {
   if (text.includes("@tauri-apps/api/core") && rel !== "src/app/bridge/runtimeApi.ts") errors.push(`${rel}: direct Tauri invoke import is reserved for runtimeApi.ts`);
   if (text.includes("@tauri-apps/api/webview") && rel !== "src/app/bridge/runtimeApi.ts") errors.push(`${rel}: direct Tauri webview import is reserved for runtimeApi.ts`);
   if (rel.startsWith("src/pages/") && text.includes("runtimeApi")) errors.push(`${rel}: pages must not call runtimeApi directly`);
+  if (
+    rel.startsWith("src/pages/") &&
+    text.includes("loadSettings(") &&
+    text.includes("queueCatalogDownload(")
+  ) {
+    errors.push(`${rel}: cross-domain catalog-download orchestration belongs in an application workflow`);
+  }
+  if (
+    rel.startsWith("src/pages/") &&
+    (text.includes("download_destination_directory_invalid") ||
+      text.includes("download_destination_create_failed"))
+  ) {
+    errors.push(`${rel}: pages must not branch on low-level download recovery codes`);
+  }
 }
 
 const tauriManifest = await readFile(resolve(appRoot, "src-tauri/Cargo.toml"), "utf8");
@@ -155,6 +170,20 @@ if (!registry.includes("queue_catalog_download")) errors.push("Tauri registry mu
 if (!registry.includes("query_catalog")) errors.push("Tauri registry must expose the provider-neutral catalog query command");
 if (!registry.includes("inspect_package_path")) errors.push("Tauri registry must expose inspect_package_path for OS drag/drop inspection");
 
+const catalogDownloadWorkflow = await readFile(resolve(appRoot, "src/app/workflows/catalogDownload.ts"), "utf8");
+for (const needle of [
+  "loadSettings()",
+  "chooseDownloadDirectory()",
+  "queueCatalogDownload(",
+  "saveSettings(",
+  "download_destination_directory_invalid",
+  "download_destination_create_failed",
+]) {
+  if (!catalogDownloadWorkflow.includes(needle)) {
+    errors.push(`catalogDownload workflow is missing orchestration contract: ${needle}`);
+  }
+}
+
 const runtimeApiSource = await readFile(resolve(appRoot, "src/app/bridge/runtimeApi.ts"), "utf8");
 if (!runtimeApiSource.includes("getCurrentWebview") || !runtimeApiSource.includes("onDragDropEvent")) {
   errors.push("runtimeApi.ts must own the Tauri webview drag/drop event boundary");
@@ -185,6 +214,7 @@ for (const forbidden of ["DownloadExecutionRuntime", "DownloadTransportRegistry"
 
 const lib = await readFile(resolve(backendRoot, "src/lib.rs"), "utf8");
 if (!lib.includes("pub mod app_runtime")) errors.push("RustCore must expose the application backend runtime");
+if (!lib.includes("pub mod application")) errors.push("RustCore must expose the application lifecycle/capability model");
 if (!lib.includes("pub mod catalog")) errors.push("RustCore must expose the provider-neutral catalog domain");
 if (!lib.includes("mod identity;") || lib.includes("pub mod identity;")) errors.push("RustCore identity helpers must remain crate-private");
 if (!lib.includes("pub mod provider_session")) errors.push("RustCore must expose the shared provider-session runtime boundary");
@@ -204,6 +234,7 @@ for (const needle of [
   "ProviderResolvedTransport::new",
   "DownloadExecutionRuntime::new",
   "BackendRuntimeSnapshot",
+  "ApplicationState::from_runtime",
   "QueueCatalogDownloadRequest",
 ]) {
   if (!appRuntime.includes(needle)) errors.push(`application backend runtime is missing composition contract ${needle}`);
