@@ -4,9 +4,7 @@ export type ApplicationChangeSet = {
   settings?: boolean;
   minecraft?: boolean;
   library?: boolean;
-  catalog?: boolean;
   downloads?: boolean;
-  providers?: boolean;
   diagnostics?: boolean;
 };
 
