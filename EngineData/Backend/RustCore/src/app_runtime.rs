@@ -5,7 +5,8 @@ use crate::{
     build_local_backend_snapshot,
     catalog::{CatalogError, CatalogPage, CatalogRequest},
     diagnostics::{
-        BackendDiagnosticsSnapshot, DiagnosticComponent, DiagnosticSeverity, DiagnosticsBuffer,
+        BackendDiagnosticsSnapshot, BackendHealthSnapshot, DiagnosticComponent, DiagnosticSeverity,
+        DiagnosticsBuffer,
     },
     download::{
         default_download_paths, DownloadExecutionRuntime, DownloadJob, DownloadManagerSnapshot,
@@ -57,7 +58,7 @@ impl SearchNowBackendPaths {
 pub struct DiagnosticsSupportReport {
     pub schema_version: u32,
     pub runtime: RuntimeStatus,
-    pub diagnostics: BackendDiagnosticsSnapshot,
+    pub health: BackendHealthSnapshot,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -284,14 +285,14 @@ impl SearchNowBackendRuntime {
     pub fn snapshot(&self) -> BackendRuntimeSnapshot {
         let started = Instant::now();
         let providers = self.provider_status();
-        let diagnostics = self.diagnostics_snapshot();
-        let application = ApplicationState::from_runtime(&diagnostics, &providers);
+        let health = self.diagnostics.health_snapshot();
+        let application = ApplicationState::from_runtime(&health, &providers);
         let snapshot = BackendRuntimeSnapshot {
             runtime: self.runtime_status(),
             lifecycle: application.lifecycle,
             capabilities: application.capabilities,
             providers,
-            diagnostics,
+            health,
         };
         self.diagnostics.record_outcome(
             DiagnosticComponent::Runtime,
