@@ -173,6 +173,19 @@ for (const needle of ["settings.data,", "settingsResult.data,", "!changes.minecr
     errors.push(`Library selective invalidation contract is missing: ${needle}`);
   }
 }
+const downloadsPage = await readFile(resolve(appRoot, "src/pages/Downloads.svelte"), "utf8");
+for (const functionName of ["moveInQueue", "pause", "resume", "cancel", "retry"]) {
+  const start = downloadsPage.indexOf(`async function ${functionName}(`);
+  const next = downloadsPage.indexOf("async function ", start + 1);
+  const end = next >= 0 ? next : downloadsPage.indexOf("$effect", start);
+  const block = start >= 0 && end > start ? downloadsPage.slice(start, end) : "";
+  if (!block) {
+    errors.push(`Downloads command handler is missing: ${functionName}`);
+  } else if (block.includes("await refresh(false, false)")) {
+    errors.push(`Downloads command ${functionName} must reconcile through downloads-changed instead of issuing an immediate snapshot query`);
+  }
+}
+
 const settingsPage = await readFile(resolve(appRoot, "src/pages/Settings.svelte"), "utf8");
 for (const needle of ["previousSettings", "saveSettings({", "}, previousSettings)", "changes.settings"]) {
   if (!settingsPage.includes(needle)) {
