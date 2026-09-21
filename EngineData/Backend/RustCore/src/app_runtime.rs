@@ -151,11 +151,8 @@ impl SearchNowBackendRuntime {
         );
 
         let downloads = DownloadApplicationService::new(downloads, diagnostics.clone());
-        let content = ContentApplicationService::new(
-            settings.clone(),
-            platform.clone(),
-            diagnostics.clone(),
-        );
+        let content =
+            ContentApplicationService::new(settings.clone(), platform.clone(), diagnostics.clone());
 
         diagnostics.mark_ready();
         diagnostics.record(
@@ -316,12 +313,6 @@ impl SearchNowBackendRuntime {
     }
 
     pub fn download_snapshot(&self) -> BackendResult<DownloadManagerSnapshot> {
-        self.downloads.snapshot()
-    }
-
-    pub fn set_download_change_notifier<F>(&self, notifier: F)
-    where
-        F: Fn() + Send + Sync + 's    pub fn download_snapshot(&self) -> BackendResult<DownloadManagerSnapshot> {
         self.downloads.download_snapshot()
     }
 
@@ -339,7 +330,14 @@ impl SearchNowBackendRuntime {
         self.downloads.queue_catalog_download(request)
     }
 
-kendResult<PackageImportResult> {
+    pub fn inspect_package(&self, path: &Path) -> BackendResult<PackageInspection> {
+        self.content.inspect_package(path)
+    }
+
+    pub fn import_package(
+        &self,
+        request: PackageImportRequest,
+    ) -> BackendResult<PackageImportResult> {
         self.content.import_package(request)
     }
 
