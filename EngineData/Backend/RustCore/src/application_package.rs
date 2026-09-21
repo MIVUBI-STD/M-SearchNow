@@ -432,8 +432,6 @@ impl PackageApplicationService {
         );
         result
     }
-
-
 }
 
 fn parse_numeric_version(value: &str) -> Option<Vec<u32>> {
