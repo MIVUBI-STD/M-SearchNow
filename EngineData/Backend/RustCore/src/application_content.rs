@@ -50,7 +50,11 @@ impl ContentApplicationService {
         self.library.local_content_export_file_name(item_id)
     }
 
-    pub(crate) fn export_local_content(&self, item_id: &str, destination: &Path) -> BackendResult<()> {
+    pub(crate) fn export_local_content(
+        &self,
+        item_id: &str,
+        destination: &Path,
+    ) -> BackendResult<()> {
         self.library.export_local_content(item_id, destination)
     }
 
@@ -103,7 +107,10 @@ impl ContentApplicationService {
         self.package.replace_package_bundle(request)
     }
 
-    pub(crate) fn remove_local_content(&self, item_id: &str) -> BackendResult<LocalBackendSnapshot> {
+    pub(crate) fn remove_local_content(
+        &self,
+        item_id: &str,
+    ) -> BackendResult<LocalBackendSnapshot> {
         self.library.remove_local_content(item_id)
     }
 
