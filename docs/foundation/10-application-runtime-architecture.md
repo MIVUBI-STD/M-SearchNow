@@ -225,3 +225,26 @@ Current event vocabulary is intentionally closed:
 Queries read application state and do not publish events. Actions may perform external side effects such as opening a picker, exporting a file, or opening a folder, but do not invalidate application state. Commands mutate application-owned state and publish exactly one semantic event after success.
 
 Do not replace this with a free-form string event bus or make pages infer invalidation from backend error codes. When a new cross-domain mutation is introduced, add one bounded event only if an existing event cannot describe the product-level change.
+
+
+## Lightweight startup snapshot
+
+The application bootstrap snapshot is intentionally lightweight. It carries runtime status, lifecycle, capabilities, provider status, and diagnostics only.
+
+Minecraft discovery and download queue snapshots are feature queries, not bootstrap requirements:
+
+```text
+App bootstrap
+  -> runtime / lifecycle / capabilities / providers / diagnostics
+
+Library active
+  -> local library query (includes Minecraft discovery)
+
+Downloads active
+  -> download snapshot query
+
+Settings active
+  -> settings + Minecraft discovery in parallel
+```
+
+Do not re-add Minecraft discovery or download snapshots to `BackendRuntimeSnapshot`. Doing so would move feature-specific filesystem or persistence work back onto every application start.
