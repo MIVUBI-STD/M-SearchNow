@@ -52,10 +52,10 @@ function productActionCall<T>(
 async function productCommandCall<T>(
   operation: () => Promise<T>,
   fallbackMessage: string,
-  event: ApplicationEvent | ((data: T) => ApplicationEvent),
+  event?: ApplicationEvent | ((data: T) => ApplicationEvent),
 ): Promise<ProductResult<T>> {
   const result = await productRequest(operation, fallbackMessage);
-  if (result.ok) {
+  if (result.ok && event) {
     publishApplicationEvent(typeof event === "function" ? event(result.data) : event);
   }
   return result;
@@ -120,7 +120,6 @@ export const runtimeProductFacade = {
     return productCommandCall(
       () => runtimeApi.removeLocalContent(itemId),
       "SearchNow could not remove this Minecraft content.",
-      { kind: "contentRemoved" },
     );
   },
 
@@ -172,7 +171,6 @@ export const runtimeProductFacade = {
     return productCommandCall(
       () => runtimeApi.importPackage(request),
       "SearchNow could not import this Minecraft package.",
-      { kind: "packageImported" },
     );
   },
 
@@ -180,7 +178,6 @@ export const runtimeProductFacade = {
     return productCommandCall(
       () => runtimeApi.replacePackage(request),
       "SearchNow could not update this installed Minecraft pack.",
-      { kind: "packageReplaced" },
     );
   },
 
@@ -188,7 +185,6 @@ export const runtimeProductFacade = {
     return productCommandCall(
       () => runtimeApi.replacePackageBundle(request),
       "SearchNow could not update this Minecraft add-on bundle.",
-      { kind: "packageReplaced" },
     );
   },
 
@@ -277,7 +273,6 @@ export const runtimeProductFacade = {
     return productCommandCall(
       () => runtimeApi.queueCatalogDownload(request),
       "SearchNow could not start this download.",
-      { kind: "downloadChanged" },
     );
   },
 
@@ -288,7 +283,6 @@ export const runtimeProductFacade = {
     return productCommandCall(
       () => runtimeApi.moveDownloadInQueue(jobId, direction),
       "SearchNow could not change this download's queue position.",
-      { kind: "downloadChanged" },
     );
   },
 
@@ -296,7 +290,6 @@ export const runtimeProductFacade = {
     return productCommandCall(
       () => runtimeApi.pauseDownload(jobId),
       "SearchNow could not pause this download.",
-      { kind: "downloadChanged" },
     );
   },
 
@@ -304,7 +297,6 @@ export const runtimeProductFacade = {
     return productCommandCall(
       () => runtimeApi.resumeDownload(jobId),
       "SearchNow could not resume this download.",
-      { kind: "downloadChanged" },
     );
   },
 
@@ -312,7 +304,6 @@ export const runtimeProductFacade = {
     return productCommandCall(
       () => runtimeApi.cancelDownload(jobId),
       "SearchNow could not cancel this download.",
-      { kind: "downloadChanged" },
     );
   },
 
@@ -320,7 +311,6 @@ export const runtimeProductFacade = {
     return productCommandCall(
       () => runtimeApi.retryDownload(jobId),
       "SearchNow could not retry this download.",
-      { kind: "downloadChanged" },
     );
   },
 
@@ -328,14 +318,12 @@ export const runtimeProductFacade = {
     return productCommandCall(
       () => runtimeApi.removeDownload(jobId),
       "SearchNow could not remove this download from the list.",
-      { kind: "downloadChanged" },
     );
   },
   clearCompletedDownloads(): Promise<ProductResult<DownloadManagerSnapshot>> {
     return productCommandCall(
       () => runtimeApi.clearCompletedDownloads(),
       "SearchNow could not clear completed downloads.",
-      { kind: "downloadChanged" },
     );
   },
 
