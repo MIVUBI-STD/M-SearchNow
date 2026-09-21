@@ -248,3 +248,10 @@ Settings active
 ```
 
 Do not re-add Minecraft discovery or download snapshots to `BackendRuntimeSnapshot`. Doing so would move feature-specific filesystem or persistence work back onto every application start.
+
+
+### Health-only bootstrap diagnostics
+
+The global runtime snapshot carries only `BackendHealthSnapshot`. Diagnostic event history remains available through the dedicated diagnostics query used by Advanced Settings.
+
+This avoids cloning and serializing the bounded diagnostics event buffer on every startup/status refresh while preserving the same health state and counters for the shell.
