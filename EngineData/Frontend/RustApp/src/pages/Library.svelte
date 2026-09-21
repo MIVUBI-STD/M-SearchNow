@@ -218,13 +218,16 @@
       return "cancelled";
     }
 
-    const saved = await runtimeProductFacade.saveSettings({
-      ...settings.data,
-      export: {
-        ...settings.data.export,
-        defaultDirectory: picker.data,
+    const saved = await runtimeProductFacade.saveSettings(
+      {
+        ...settings.data,
+        export: {
+          ...settings.data.export,
+          defaultDirectory: picker.data,
+        },
       },
-    });
+      settings.data,
+    );
     if (!saved.ok) {
       feedback = {
         tone: "error",
@@ -542,13 +545,16 @@
       return;
     }
 
-    const saveResult = await runtimeProductFacade.saveSettings({
-      ...settingsResult.data,
-      minecraft: {
-        ...settingsResult.data.minecraft,
-        rootOverride: selected.data,
+    const saveResult = await runtimeProductFacade.saveSettings(
+      {
+        ...settingsResult.data,
+        minecraft: {
+          ...settingsResult.data.minecraft,
+          rootOverride: selected.data,
+        },
       },
-    });
+      settingsResult.data,
+    );
     if (!saveResult.ok) {
       feedback = {
         tone: "error",
@@ -661,7 +667,7 @@
   $effect(() => {
     if (!runtimeReady) return;
     return subscribeApplicationChanges((changes) => {
-      if (!changes.minecraft) return;
+      if (!changes.minecraft || locationBusy) return;
       loaded = false;
       if (active && !loading) void refresh();
     });
