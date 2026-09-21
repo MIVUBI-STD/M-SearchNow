@@ -556,8 +556,8 @@
           </div>
           <div>
             <span>Health</span>
-            <strong>{snapshot?.backend?.diagnostics.health.state ?? "Unknown"}</strong>
-            <small>{snapshot?.backend ? `${snapshot.backend.diagnostics.health.errorEvents} errors · ${snapshot.backend.diagnostics.health.warningEvents} warnings` : "Health information is not available yet."}</small>
+            <strong>{snapshot?.backend?.health.state ?? "Unknown"}</strong>
+            <small>{snapshot?.backend ? `${snapshot.backend.health.errorEvents} errors · ${snapshot.backend.health.warningEvents} warnings` : "Health information is not available yet."}</small>
           </div>
         </div>
 
