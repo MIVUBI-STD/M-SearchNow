@@ -14,19 +14,10 @@ pub fn get_runtime_status(state: State<'_, SearchNowBackendRuntime>) -> RuntimeS
 }
 
 #[tauri::command]
-pub async fn get_backend_snapshot(
+pub fn get_backend_snapshot(
     state: State<'_, SearchNowBackendRuntime>,
-) -> Result<BackendRuntimeSnapshot, CommandError> {
-    let runtime = state.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || runtime.snapshot())
-        .await
-        .map_err(|error| {
-            CommandError::new(
-                "backend_snapshot_task_failed",
-                format!("Backend snapshot task failed: {error}"),
-            )
-        })?
-        .map_err(CommandError::from)
+) -> BackendRuntimeSnapshot {
+    state.snapshot()
 }
 
 #[tauri::command]
