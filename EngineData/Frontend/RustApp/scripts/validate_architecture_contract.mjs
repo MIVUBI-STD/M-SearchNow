@@ -30,6 +30,8 @@ const backendRequired = [
   "src/app_runtime.rs",
   "src/application_content.rs",
   "src/application_download.rs",
+  "src/application_library.rs",
+  "src/application_package.rs",
   "src/identity.rs",
   "src/settings.rs",
   "src/minecraft.rs",
@@ -226,6 +228,8 @@ if (!lib.includes("mod storage;") || lib.includes("pub mod storage;")) errors.pu
 const appRuntime = await readFile(resolve(backendRoot, "src/app_runtime.rs"), "utf8");
 const applicationContent = await readFile(resolve(backendRoot, "src/application_content.rs"), "utf8");
 const applicationDownload = await readFile(resolve(backendRoot, "src/application_download.rs"), "utf8");
+const applicationLibrary = await readFile(resolve(backendRoot, "src/application_library.rs"), "utf8");
+const applicationPackage = await readFile(resolve(backendRoot, "src/application_package.rs"), "utf8");
 const frontendTypes = await readFile(resolve(appRoot, "src/app/shared/types.ts"), "utf8");
 const settingsModel = await readFile(resolve(backendRoot, "src/settings.rs"), "utf8");
 const catalogModel = await readFile(resolve(backendRoot, "src/catalog/model.rs"), "utf8");
@@ -277,15 +281,33 @@ for (const requiredDownload of [
   }
 }
 
-for (const requiredContent of [
-  "ContentApplicationService",
+for (const forbiddenContent of [
   "replace_single_pack(",
   "replace_bundle(",
   "export_directory(",
   "validate_bundle_dependencies(",
 ]) {
-  if (!applicationContent.includes(requiredContent)) {
-    errors.push(`application_content.rs is missing content ownership contract ${requiredContent}`);
+  if (applicationContent.includes(forbiddenContent)) {
+    errors.push(`application_content.rs must remain a thin facade instead of owning ${forbiddenContent}`);
+  }
+}
+for (const requiredLibrary of [
+  "LibraryApplicationService",
+  "export_directory(",
+  "remove_local_content",
+]) {
+  if (!applicationLibrary.includes(requiredLibrary)) {
+    errors.push(`application_library.rs is missing library ownership contract ${requiredLibrary}`);
+  }
+}
+for (const requiredPackage of [
+  "PackageApplicationService",
+  "replace_single_pack(",
+  "replace_bundle(",
+  "validate_bundle_dependencies(",
+]) {
+  if (!applicationPackage.includes(requiredPackage)) {
+    errors.push(`application_package.rs is missing package ownership contract ${requiredPackage}`);
   }
 }
 
