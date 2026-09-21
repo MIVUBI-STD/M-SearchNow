@@ -254,9 +254,7 @@ export type BackendRuntimeSnapshot = {
   runtime: RuntimeStatus;
   lifecycle: ApplicationLifecycleState;
   capabilities: ApplicationCapabilities;
-  minecraft: MinecraftDiscoverySnapshot;
   providers: ProviderRuntimeStatus[];
-  downloads: DownloadManagerSnapshot;
   diagnostics: BackendDiagnosticsSnapshot;
 };
 
