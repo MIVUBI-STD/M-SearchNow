@@ -18,13 +18,16 @@ import type {
   PackageReplaceRequest,
   PackageBundleUpdateRequest,
 } from "../shared/types";
-import { publishApplicationChanges, settingsChangeSet, type ApplicationChangeSet } from "../state/applicationChanges";
+import { publishApplicationEvent, type ApplicationEvent } from "../state/applicationEvents";
 import { toProductError } from "../shared/productErrors";
 import { runtimeApi } from "./runtimeApi";
 
 const DOWNLOADS_CHANGED_EVENT = "searchnow://downloads-changed";
 
-async function productCall<T>(operation: () => Promise<T>, fallbackMessage: string): Promise<ProductResult<T>> {
+async function productRequest<T>(
+  operation: () => Promise<T>,
+  fallbackMessage: string,
+): Promise<ProductResult<T>> {
   try {
     return { ok: true, data: await operation() };
   } catch (error) {
@@ -32,20 +35,34 @@ async function productCall<T>(operation: () => Promise<T>, fallbackMessage: stri
   }
 }
 
-async function productMutationCall<T>(
+function productQueryCall<T>(
   operation: () => Promise<T>,
   fallbackMessage: string,
-  changes: ApplicationChangeSet | ((data: T) => ApplicationChangeSet),
 ): Promise<ProductResult<T>> {
-  const result = await productCall(operation, fallbackMessage);
+  return productRequest(operation, fallbackMessage);
+}
+
+function productActionCall<T>(
+  operation: () => Promise<T>,
+  fallbackMessage: string,
+): Promise<ProductResult<T>> {
+  return productRequest(operation, fallbackMessage);
+}
+
+async function productCommandCall<T>(
+  operation: () => Promise<T>,
+  fallbackMessage: string,
+  event: ApplicationEvent | ((data: T) => ApplicationEvent),
+): Promise<ProductResult<T>> {
+  const result = await productRequest(operation, fallbackMessage);
   if (result.ok) {
-    publishApplicationChanges(typeof changes === "function" ? changes(result.data) : changes);
+    publishApplicationEvent(typeof event === "function" ? event(result.data) : event);
   }
   return result;
 }
 
 export async function loadProductRuntimeSnapshot(): Promise<ProductRuntimeSnapshot> {
-  const backendResult = await productCall(
+  const backendResult = await productQueryCall(
     () => runtimeApi.getBackendSnapshot(),
     "SearchNow could not read the desktop runtime snapshot.",
   );
@@ -66,7 +83,7 @@ export async function loadProductRuntimeSnapshot(): Promise<ProductRuntimeSnapsh
     };
   }
 
-  const runtimeResult = await productCall(
+  const runtimeResult = await productQueryCall(
     () => runtimeApi.getRuntimeStatus(),
     "SearchNow could not connect to the desktop runtime.",
   );
@@ -93,50 +110,50 @@ export const runtimeProductFacade = {
   loadProductRuntimeSnapshot,
 
   loadLibrary(): Promise<ProductResult<LocalBackendSnapshot>> {
-    return productCall(
+    return productQueryCall(
       () => runtimeApi.scanLocalLibrary(),
       "SearchNow could not scan your Minecraft content.",
     );
   },
 
   removeLocalContent(itemId: string): Promise<ProductResult<LocalBackendSnapshot>> {
-    return productMutationCall(
+    return productCommandCall(
       () => runtimeApi.removeLocalContent(itemId),
       "SearchNow could not remove this Minecraft content.",
-      { library: true, diagnostics: true },
+      { kind: "contentRemoved" },
     );
   },
 
   exportLocalContent(itemId: string): Promise<ProductResult<string | null>> {
-    return productCall(
+    return productActionCall(
       () => runtimeApi.exportLocalContent(itemId),
       "SearchNow could not export this Minecraft content.",
     );
   },
 
   exportLocalContentBatch(itemIds: string[]): Promise<ProductResult<string[] | null>> {
-    return productCall(
+    return productActionCall(
       () => runtimeApi.exportLocalContentBatch(itemIds),
       "SearchNow could not export the selected Minecraft content.",
     );
   },
 
   chooseAndInspectPackage(): Promise<ProductResult<PackageInspection | null>> {
-    return productCall(
+    return productActionCall(
       () => runtimeApi.chooseAndInspectPackage(),
       "SearchNow could not inspect this Minecraft package.",
     );
   },
 
   chooseAndInspectPackageFolder(): Promise<ProductResult<PackageInspection | null>> {
-    return productCall(
+    return productActionCall(
       () => runtimeApi.chooseAndInspectPackageFolder(),
       "SearchNow could not inspect this Minecraft package folder.",
     );
   },
 
   inspectPackagePath(path: string): Promise<ProductResult<PackageInspection>> {
-    return productCall(
+    return productQueryCall(
       () => runtimeApi.inspectPackagePath(path),
       "SearchNow could not inspect the dropped Minecraft package.",
     );
@@ -145,45 +162,45 @@ export const runtimeProductFacade = {
   subscribeDesktopDrops(
     handler: (event: DesktopDropEvent) => void,
   ): Promise<ProductResult<() => void>> {
-    return productCall(
+    return productActionCall(
       () => runtimeApi.subscribeDesktopDrops(handler),
       "SearchNow could not listen for dropped Minecraft packages.",
     );
   },
 
   importPackage(request: PackageImportRequest): Promise<ProductResult<PackageImportResult>> {
-    return productMutationCall(
+    return productCommandCall(
       () => runtimeApi.importPackage(request),
       "SearchNow could not import this Minecraft package.",
-      { library: true, diagnostics: true },
+      { kind: "packageImported" },
     );
   },
 
   replacePackage(request: PackageReplaceRequest): Promise<ProductResult<PackageImportResult>> {
-    return productMutationCall(
+    return productCommandCall(
       () => runtimeApi.replacePackage(request),
       "SearchNow could not update this installed Minecraft pack.",
-      { library: true, diagnostics: true },
+      { kind: "packageReplaced" },
     );
   },
 
   replacePackageBundle(request: PackageBundleUpdateRequest): Promise<ProductResult<PackageImportResult>> {
-    return productMutationCall(
+    return productCommandCall(
       () => runtimeApi.replacePackageBundle(request),
       "SearchNow could not update this Minecraft add-on bundle.",
-      { library: true, diagnostics: true },
+      { kind: "packageReplaced" },
     );
   },
 
   discoverMinecraft(): Promise<ProductResult<MinecraftDiscoverySnapshot>> {
-    return productCall(
+    return productQueryCall(
       () => runtimeApi.discoverMinecraft(),
       "SearchNow could not detect Minecraft Bedrock storage.",
     );
   },
 
   loadSettings(): Promise<ProductResult<AppSettings>> {
-    return productCall(
+    return productQueryCall(
       () => runtimeApi.loadAppSettings(),
       "SearchNow could not load your settings.",
     );
@@ -193,74 +210,74 @@ export const runtimeProductFacade = {
     settings: AppSettings,
     previous: AppSettings | null = null,
   ): Promise<ProductResult<AppSettings>> {
-    return productMutationCall(
+    return productCommandCall(
       () => runtimeApi.saveAppSettings(settings),
       "SearchNow could not save your settings.",
-      (saved) => settingsChangeSet(previous, saved),
+      (saved) => ({ kind: "settingsChanged", previous, next: saved }),
     );
   },
 
   getStartupRouteOverride(): Promise<ProductResult<string | null>> {
-    return productCall(
+    return productQueryCall(
       () => runtimeApi.getStartupRouteOverride(),
       "SearchNow could not read the startup route override.",
     );
   },
 
   chooseDownloadDirectory(): Promise<ProductResult<string | null>> {
-    return productCall(
+    return productActionCall(
       () => runtimeApi.chooseDownloadDirectory(),
       "SearchNow could not open the folder picker.",
     );
   },
 
   chooseMinecraftDirectory(): Promise<ProductResult<string | null>> {
-    return productCall(
+    return productActionCall(
       () => runtimeApi.chooseMinecraftDirectory(),
       "SearchNow could not choose a Minecraft data folder.",
     );
   },
 
   chooseExportDirectory(): Promise<ProductResult<string | null>> {
-    return productCall(
+    return productActionCall(
       () => runtimeApi.chooseExportDirectory(),
       "SearchNow could not choose an export folder.",
     );
   },
 
   openLocalContentDirectory(itemId: string): Promise<ProductResult<void>> {
-    return productCall(
+    return productActionCall(
       () => runtimeApi.openLocalContentDirectory(itemId),
       "SearchNow could not open this content folder.",
     );
   },
 
   openDownloadDirectory(jobId: string): Promise<ProductResult<void>> {
-    return productCall(
+    return productActionCall(
       () => runtimeApi.openDownloadDirectory(jobId),
       "SearchNow could not open this folder.",
     );
   },
 
   loadDownloads(): Promise<ProductResult<DownloadManagerSnapshot>> {
-    return productCall(
+    return productQueryCall(
       () => runtimeApi.getDownloadSnapshot(),
       "SearchNow could not read your downloads.",
     );
   },
 
   subscribeDownloadChanges(onChange: () => void): Promise<ProductResult<() => void>> {
-    return productCall(
+    return productActionCall(
       () => listen(DOWNLOADS_CHANGED_EVENT, () => onChange()),
       "SearchNow could not subscribe to download updates.",
     );
   },
 
   queueCatalogDownload(request: QueueCatalogDownloadRequest): Promise<ProductResult<DownloadJob>> {
-    return productMutationCall(
+    return productCommandCall(
       () => runtimeApi.queueCatalogDownload(request),
       "SearchNow could not start this download.",
-      { downloads: true, diagnostics: true },
+      { kind: "downloadChanged" },
     );
   },
 
@@ -268,76 +285,76 @@ export const runtimeProductFacade = {
     jobId: string,
     direction: "earlier" | "later",
   ): Promise<ProductResult<DownloadJob>> {
-    return productMutationCall(
+    return productCommandCall(
       () => runtimeApi.moveDownloadInQueue(jobId, direction),
       "SearchNow could not change this download's queue position.",
-      { downloads: true, diagnostics: true },
+      { kind: "downloadChanged" },
     );
   },
 
   pauseDownload(jobId: string): Promise<ProductResult<DownloadJob>> {
-    return productMutationCall(
+    return productCommandCall(
       () => runtimeApi.pauseDownload(jobId),
       "SearchNow could not pause this download.",
-      { downloads: true, diagnostics: true },
+      { kind: "downloadChanged" },
     );
   },
 
   resumeDownload(jobId: string): Promise<ProductResult<DownloadJob>> {
-    return productMutationCall(
+    return productCommandCall(
       () => runtimeApi.resumeDownload(jobId),
       "SearchNow could not resume this download.",
-      { downloads: true, diagnostics: true },
+      { kind: "downloadChanged" },
     );
   },
 
   cancelDownload(jobId: string): Promise<ProductResult<DownloadJob>> {
-    return productMutationCall(
+    return productCommandCall(
       () => runtimeApi.cancelDownload(jobId),
       "SearchNow could not cancel this download.",
-      { downloads: true, diagnostics: true },
+      { kind: "downloadChanged" },
     );
   },
 
   retryDownload(jobId: string): Promise<ProductResult<DownloadJob>> {
-    return productMutationCall(
+    return productCommandCall(
       () => runtimeApi.retryDownload(jobId),
       "SearchNow could not retry this download.",
-      { downloads: true, diagnostics: true },
+      { kind: "downloadChanged" },
     );
   },
 
   removeDownload(jobId: string): Promise<ProductResult<DownloadManagerSnapshot>> {
-    return productMutationCall(
+    return productCommandCall(
       () => runtimeApi.removeDownload(jobId),
       "SearchNow could not remove this download from the list.",
-      { downloads: true, diagnostics: true },
+      { kind: "downloadChanged" },
     );
   },
   clearCompletedDownloads(): Promise<ProductResult<DownloadManagerSnapshot>> {
-    return productMutationCall(
+    return productCommandCall(
       () => runtimeApi.clearCompletedDownloads(),
       "SearchNow could not clear completed downloads.",
-      { downloads: true, diagnostics: true },
+      { kind: "downloadChanged" },
     );
   },
 
   loadDiagnostics(): Promise<ProductResult<BackendDiagnosticsSnapshot>> {
-    return productCall(
+    return productQueryCall(
       () => runtimeApi.getBackendDiagnostics(),
       "SearchNow could not read diagnostics.",
     );
   },
 
   exportDiagnosticsReport(): Promise<ProductResult<string | null>> {
-    return productCall(
+    return productActionCall(
       () => runtimeApi.exportDiagnosticsReport(),
       "SearchNow could not export the diagnostics report.",
     );
   },
 
   queryCatalog(request: CatalogRequest): Promise<ProductResult<CatalogPage>> {
-    return productCall(
+    return productQueryCall(
       () => runtimeApi.queryCatalog(request),
       "SearchNow could not search this content source.",
     );
