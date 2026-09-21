@@ -241,8 +241,19 @@ export type BackendDiagnosticsSnapshot = {
   events: DiagnosticEvent[];
 };
 
+export type ApplicationLifecycleState = "starting" | "ready" | "degraded" | "unknown";
+
+export type ApplicationCapabilities = {
+  library: boolean;
+  discover: boolean;
+  downloads: boolean;
+  settings: boolean;
+};
+
 export type BackendRuntimeSnapshot = {
   runtime: RuntimeStatus;
+  lifecycle: ApplicationLifecycleState;
+  capabilities: ApplicationCapabilities;
   minecraft: MinecraftDiscoverySnapshot;
   providers: ProviderRuntimeStatus[];
   downloads: DownloadManagerSnapshot;
