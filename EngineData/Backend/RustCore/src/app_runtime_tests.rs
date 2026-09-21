@@ -1,5 +1,6 @@
 use crate::{
     app_runtime::{QueueCatalogDownloadRequest, SearchNowBackendPaths, SearchNowBackendRuntime},
+    application::ApplicationLifecycleState,
     catalog::CatalogDownloadRef,
     diagnostics::BackendStartupPhase,
     download::{
@@ -84,6 +85,11 @@ fn runtime_snapshot_is_safe_and_consistent_without_providers() {
 
     let snapshot = runtime.snapshot().expect("snapshot");
     assert!(snapshot.runtime.app_ready);
+    assert_eq!(snapshot.lifecycle, ApplicationLifecycleState::Ready);
+    assert!(snapshot.capabilities.library);
+    assert!(snapshot.capabilities.downloads);
+    assert!(snapshot.capabilities.settings);
+    assert!(!snapshot.capabilities.discover);
     assert!(snapshot.providers.is_empty());
     assert_eq!(snapshot.downloads.active_jobs, 0);
     assert_eq!(snapshot.downloads.queued_jobs, 0);
