@@ -126,6 +126,22 @@ for (const needle of [
 if (applicationEvents.includes("Record<string")) {
   errors.push("application events must remain a closed union instead of a free-form event map");
 }
+for (const needle of [
+  'case "settingsChanged":',
+  'return settingsChangeSet(event.previous, event.next)',
+  'case "packageImported":',
+  'case "packageReplaced":',
+  'case "contentRemoved":',
+  'return { library: true, diagnostics: true }',
+  'case "downloadChanged":',
+  'return { downloads: true, diagnostics: true }',
+  'case "providerStateChanged":',
+  'return { providers: true, catalog: true, diagnostics: true }',
+]) {
+  if (!applicationEvents.includes(needle)) {
+    errors.push(`application event invalidation mapping is missing: ${needle}`);
+  }
+}
 for (const forbidden of ["eventName: string", "kind: string", "Map<string", "Record<string"]) {
   if (applicationEvents.includes(forbidden)) {
     errors.push(`application events must not become a free-form bus: ${forbidden}`);
@@ -166,6 +182,12 @@ if (productFacade.includes("productMutationCall")) {
 }
 if (!productFacade.includes("publishApplicationEvent")) {
   errors.push("state-changing product commands must publish bounded application events");
+}
+if (productFacade.includes("publishApplicationChanges")) {
+  errors.push("runtimeProductFacade must publish semantic events instead of raw ChangeSets");
+}
+if (productFacade.includes("ApplicationChangeSet")) {
+  errors.push("runtimeProductFacade must not own raw invalidation sets");
 }
 const libraryPage = await readFile(resolve(appRoot, "src/pages/Library.svelte"), "utf8");
 for (const needle of ["settings.data,", "settingsResult.data,", "!changes.minecraft || locationBusy"]) {
