@@ -200,3 +200,28 @@ Cross-domain product workflows belong outside pages. Catalog-download destinatio
 `src/app/workflows/catalogDownload.ts`; Discover requests the workflow and renders its product result. Pages must not branch on backend recovery codes or manually coordinate settings + picker + download retry chains.
 
 The source-size gate keeps advisory thresholds for broad visibility and adds hard no-growth ceilings around current orchestration hotspots. Exceeding a hard ceiling requires responsibility extraction rather than raising the ceiling by default.
+
+
+## Application events and invalidation
+
+SearchNow keeps application events bounded and semantic. Events describe what happened; change sets describe which cached product surfaces may be stale.
+
+```text
+command
+  -> ApplicationEvent
+  -> ApplicationChangeSet
+  -> selective invalidation
+```
+
+Current event vocabulary is intentionally closed:
+
+- `settingsChanged`
+- `packageImported`
+- `packageReplaced`
+- `contentRemoved`
+- `downloadChanged`
+- `providerStateChanged`
+
+Queries read application state and do not publish events. Actions may perform external side effects such as opening a picker, exporting a file, or opening a folder, but do not invalidate application state. Commands mutate application-owned state and publish exactly one semantic event after success.
+
+Do not replace this with a free-form string event bus or make pages infer invalidation from backend error codes. When a new cross-domain mutation is introduced, add one bounded event only if an existing event cannot describe the product-level change.
