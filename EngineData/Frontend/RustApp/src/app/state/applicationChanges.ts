@@ -3,9 +3,6 @@ import type { AppSettings } from "../shared/types";
 export type ApplicationChangeSet = {
   settings?: boolean;
   minecraft?: boolean;
-  library?: boolean;
-  downloads?: boolean;
-  diagnostics?: boolean;
 };
 
 type ApplicationChangeListener = (changes: Readonly<ApplicationChangeSet>) => void;
@@ -36,16 +33,8 @@ export function settingsChangeSet(
     previous.minecraft.includeLegacyUwp !== next.minecraft.includeLegacyUwp ||
     previous.minecraft.includeDevelopmentContent !== next.minecraft.includeDevelopmentContent;
 
-  const downloadChanged =
-    previous === null ||
-    previous.download.bandwidthLimitBytesPerSecond !== next.download.bandwidthLimitBytesPerSecond ||
-    previous.download.defaultDirectory !== next.download.defaultDirectory;
-
   return {
     settings: true,
     minecraft: minecraftChanged,
-    library: minecraftChanged,
-    downloads: downloadChanged,
-    diagnostics: true,
   };
 }
