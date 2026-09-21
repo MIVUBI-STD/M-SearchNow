@@ -387,13 +387,27 @@ for (const needle of [
   if (!appRuntime.includes(needle)) errors.push(`application backend runtime is missing composition contract ${needle}`);
 }
 if (appRuntime.includes("DownloadTransportRegistry::with_local_file")) errors.push("production application runtime must not register local-file fixture transport");
-for (const forbiddenBootstrapField of [
-  "pub minecraft: MinecraftDiscoverySnapshot",
-  "pub downloads: DownloadManagerSnapshot",
-  "pub diagnostics: BackendDiagnosticsSnapshot",
-]) {
-  if (appRuntime.includes(forbiddenBootstrapField)) {
-    errors.push(`BackendRuntimeSnapshot must remain lightweight; move ${forbiddenBootstrapField} to its feature query`);
+const backendRuntimeSnapshotStart = appRuntime.indexOf("pub struct BackendRuntimeSnapshot");
+const backendRuntimeSnapshotEnd = appRuntime.indexOf("}", backendRuntimeSnapshotStart);
+const backendRuntimeSnapshotBlock =
+  backendRuntimeSnapshotStart >= 0 && backendRuntimeSnapshotEnd > backendRuntimeSnapshotStart
+    ? appRuntime.slice(backendRuntimeSnapshotStart, backendRuntimeSnapshotEnd + 1)
+    : "";
+
+if (!backendRuntimeSnapshotBlock) {
+  errors.push("BackendRuntimeSnapshot declaration could not be inspected");
+} else {
+  for (const forbiddenBootstrapField of [
+    "pub minecraft: MinecraftDiscoverySnapshot",
+    "pub downloads: DownloadManagerSnapshot",
+    "pub diagnostics: BackendDiagnosticsSnapshot",
+  ]) {
+    if (backendRuntimeSnapshotBlock.includes(forbiddenBootstrapField)) {
+      errors.push(`BackendRuntimeSnapshot must remain lightweight; move ${forbiddenBootstrapField} to its feature query`);
+    }
+  }
+  if (!backendRuntimeSnapshotBlock.includes("pub health: BackendHealthSnapshot")) {
+    errors.push("BackendRuntimeSnapshot must carry health summary instead of full diagnostic events");
   }
 }
 if (appRuntime.includes("minecraft: self.discover_minecraft_raw()?")) {
@@ -401,9 +415,6 @@ if (appRuntime.includes("minecraft: self.discover_minecraft_raw()?")) {
 }
 if (appRuntime.includes("downloads: self.downloads.download_snapshot()?")) {
   errors.push("backend runtime snapshot must not load the download snapshot during bootstrap");
-}
-if (!appRuntime.includes("pub health: BackendHealthSnapshot")) {
-  errors.push("BackendRuntimeSnapshot must carry health summary instead of full diagnostic events");
 }
 if (!diagnosticsModel.includes("pub fn health_snapshot(&self) -> BackendHealthSnapshot")) {
   errors.push("diagnostics buffer must expose a health-only snapshot for application bootstrap");
